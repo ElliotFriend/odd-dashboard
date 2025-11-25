@@ -1,9 +1,11 @@
 # GitHub Contribution Dashboard - Implementation Plan
 
 ## Project Overview
+
 A SvelteKit application with PostgreSQL backend to track and visualize GitHub contribution activities. The system will store commits, authors, repositories, and ecosystems with agency associations, and provide dashboard views for analyzing contributions over time.
 
 ## Technology Stack
+
 - **Framework**: SvelteKit (with TypeScript)
 - **Database**: PostgreSQL
 - **ORM**: Drizzle ORM (lightweight, type-safe)
@@ -14,76 +16,78 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
 ## Database Schema
 
 ### Core Tables
+
 1. **ecosystems** - Hierarchical ecosystem structure
-   - `id` (uuid, primary key)
-   - `name` (text, unique)
-   - `parent_id` (uuid, foreign key to ecosystems.id, nullable)
-   - `created_at`, `updated_at` (timestamps)
+    - `id` (uuid, primary key)
+    - `name` (text, unique)
+    - `parent_id` (uuid, foreign key to ecosystems.id, nullable)
+    - `created_at`, `updated_at` (timestamps)
 
 2. **agencies** - Agencies/organizations that source repositories, authors, or events
-   - `id` (uuid, primary key)
-   - `name` (text, unique) - Agency name
-   - `description` (text, nullable)
-   - `created_at`, `updated_at` (timestamps)
+    - `id` (uuid, primary key)
+    - `name` (text, unique) - Agency name
+    - `description` (text, nullable)
+    - `created_at`, `updated_at` (timestamps)
 
 3. **repositories** - GitHub repositories
-   - `id` (uuid, primary key)
-   - `github_id` (bigint, unique, NOT NULL) - GitHub's repository ID
-   - `full_name` (text, unique, NOT NULL) - e.g., "owner/repo" (name and URL can be derived from this)
-   - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that sourced this repository
-   - `is_fork` (boolean, NOT NULL, default false) - Whether this repository is a fork
-   - `parent_repository_id` (uuid, foreign key to repositories.id, nullable) - Upstream repository if fork exists in database
-   - `parent_full_name` (text, nullable) - Upstream repository full_name (e.g., "owner/parent-repo") even if not in database
-   - `default_branch` (text, NOT NULL, default 'main') - Default/primary branch name (e.g., "main", "master")
-   - `created_at`, `updated_at` (timestamps, NOT NULL)
-   - `last_synced_at` (timestamp, nullable) - Track when we last fetched commits
+    - `id` (uuid, primary key)
+    - `github_id` (bigint, unique, NOT NULL) - GitHub's repository ID
+    - `full_name` (text, unique, NOT NULL) - e.g., "owner/repo" (name and URL can be derived from this)
+    - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that sourced this repository
+    - `is_fork` (boolean, NOT NULL, default false) - Whether this repository is a fork
+    - `parent_repository_id` (uuid, foreign key to repositories.id, nullable) - Upstream repository if fork exists in database
+    - `parent_full_name` (text, nullable) - Upstream repository full_name (e.g., "owner/parent-repo") even if not in database
+    - `default_branch` (text, NOT NULL, default 'main') - Default/primary branch name (e.g., "main", "master")
+    - `created_at`, `updated_at` (timestamps, NOT NULL)
+    - `last_synced_at` (timestamp, nullable) - Track when we last fetched commits
 
 4. **authors** - Commit authors/contributors
-   - `id` (uuid, primary key)
-   - `github_id` (bigint, unique, nullable) - GitHub user ID (primary identifier when available, NULL for email-only commits)
-   - `username` (text, nullable) - GitHub username (can be updated when user changes username)
-   - `name` (text, nullable) - Author name from commit
-   - `email` (text, nullable) - Author email from commit (for non-GitHub users or as fallback identifier)
-   - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that sourced this author
-   - `created_at`, `updated_at` (timestamps)
-   - Note: Avatar URL can be constructed from `github_id` or `username` (e.g., `https://avatars.githubusercontent.com/u/{github_id}`, `https://github.com/{username}.png`)
-   - Note: `github_id` is the primary identifier when available; for email-only commits, use email as fallback identifier
-   - Note: Authors without GitHub accounts will have NULL `github_id` and `username`, identified by email
+    - `id` (uuid, primary key)
+    - `github_id` (bigint, unique, nullable) - GitHub user ID (primary identifier when available, NULL for email-only commits)
+    - `username` (text, nullable) - GitHub username (can be updated when user changes username)
+    - `name` (text, nullable) - Author name from commit
+    - `email` (text, nullable) - Author email from commit (for non-GitHub users or as fallback identifier)
+    - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that sourced this author
+    - `created_at`, `updated_at` (timestamps)
+    - Note: Avatar URL can be constructed from `github_id` or `username` (e.g., `https://avatars.githubusercontent.com/u/{github_id}`, `https://github.com/{username}.png`)
+    - Note: `github_id` is the primary identifier when available; for email-only commits, use email as fallback identifier
+    - Note: Authors without GitHub accounts will have NULL `github_id` and `username`, identified by email
 
 5. **commits** - Individual commits
-   - `id` (uuid, primary key)
-   - `repository_id` (uuid, foreign key to repositories.id, NOT NULL)
-   - `author_id` (uuid, foreign key to authors.id, NOT NULL)
-   - `sha` (text, NOT NULL) - Commit SHA
-   - `commit_date` (timestamp, NOT NULL) - Stored as UTC
-   - `branch` (text, NOT NULL) - Branch name where commit was found (default branch to start, extensible for future)
-   - Unique constraint on (repository_id, sha) - Same SHA can exist in multiple repos
+    - `id` (uuid, primary key)
+    - `repository_id` (uuid, foreign key to repositories.id, NOT NULL)
+    - `author_id` (uuid, foreign key to authors.id, NOT NULL)
+    - `sha` (text, NOT NULL) - Commit SHA
+    - `commit_date` (timestamp, NOT NULL) - Stored as UTC
+    - `branch` (text, NOT NULL) - Branch name where commit was found (default branch to start, extensible for future)
+    - Unique constraint on (repository_id, sha) - Same SHA can exist in multiple repos
 
 6. **events** - Events like hackathons, conferences, etc.
-   - `id` (uuid, primary key)
-   - `name` (text, unique) - Event name (e.g., "Stellar Hackathon 2024")
-   - `description` (text, nullable)
-   - `start_date` (date, nullable)
-   - `end_date` (date, nullable)
-   - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that organized/put on the event
-   - `created_at`, `updated_at` (timestamps)
+    - `id` (uuid, primary key)
+    - `name` (text, unique) - Event name (e.g., "Stellar Hackathon 2024")
+    - `description` (text, nullable)
+    - `start_date` (date, nullable)
+    - `end_date` (date, nullable)
+    - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that organized/put on the event
+    - `created_at`, `updated_at` (timestamps)
 
 7. **author_events** - Many-to-many: Authors associated with events
-   - `author_id` (uuid, foreign key to authors.id)
-   - `event_id` (uuid, foreign key to events.id)
-   - Primary key on (author_id, event_id)
+    - `author_id` (uuid, foreign key to authors.id)
+    - `event_id` (uuid, foreign key to events.id)
+    - Primary key on (author_id, event_id)
 
 8. **repository_events** - Many-to-many: Repositories associated with events
-   - `repository_id` (uuid, foreign key to repositories.id)
-   - `event_id` (uuid, foreign key to events.id)
-   - Primary key on (repository_id, event_id)
+    - `repository_id` (uuid, foreign key to repositories.id)
+    - `event_id` (uuid, foreign key to events.id)
+    - Primary key on (repository_id, event_id)
 
 9. **repository_ecosystems** - Many-to-many: Repositories associated with ecosystems
-   - `repository_id` (uuid, foreign key to repositories.id)
-   - `ecosystem_id` (uuid, foreign key to ecosystems.id)
-   - Primary key on (repository_id, ecosystem_id)
+    - `repository_id` (uuid, foreign key to repositories.id)
+    - `ecosystem_id` (uuid, foreign key to ecosystems.id)
+    - Primary key on (repository_id, ecosystem_id)
 
 ### Indexes
+
 - Index on `commits.commit_date` for time-based queries
 - Index on `commits.repository_id` and `commits.author_id` for joins
 - Index on `commits.sha` for fork comparison queries (checking if commit exists in parent)
@@ -186,6 +190,7 @@ odd-dashboard/
 ## Implementation Steps
 
 ### Phase 1: Project Setup & Database (Days 1-3)
+
 1. Initialize SvelteKit project with TypeScript
 2. Set up SvelteKit adapter: `@sveltejs/adapter-auto` (flexible deployment option)
 3. Set up Prettier with configuration (2 spaces indentation, trailing commas, semicolons)
@@ -196,6 +201,7 @@ odd-dashboard/
 8. Create seed data for initial ecosystems (Stellar, Ethereum, Bitcoin, etc.)
 
 ### Phase 2: GitHub API Integration (Days 4-6)
+
 1. Set up Octokit client with environment token in `$lib/server/github`
 2. Implement repository fetching (list repos, get repo details, including fork information and default branch)
 3. Implement repository rename detection (compare full_name with GitHub API response)
@@ -206,6 +212,7 @@ odd-dashboard/
 8. Handle rate limiting and error cases
 
 ### Phase 3: Core Services & API Routes (Days 7-10)
+
 1. Set up Drizzle validators (zod schemas) for all entities
 2. Implement agency service (CRUD operations with validation)
 3. Implement repository service (CRUD operations, fork detection, parent repository linking, rename detection, validation)
@@ -220,6 +227,7 @@ odd-dashboard/
 12. Implement error handling and user-friendly error responses
 
 ### Phase 4: Dashboard UI - Core Views (Days 11-14)
+
 1. Create main dashboard layout with navigation using shadcn-svelte components
 2. Build agencies management view (list view with inline create/edit) using shadcn-svelte components
 3. Build repository list view with filters (ecosystem, agency, event) using shadcn-svelte components
@@ -233,6 +241,7 @@ odd-dashboard/
 11. Create basic charts for contribution activity (using Chart.js)
 
 ### Phase 5: Advanced Features & Polish (Days 15-18)
+
 1. Implement "contributors over time period" query and view
 2. Add ecosystem hierarchy visualization
 3. Create aggregated statistics (total commits, contributors per ecosystem/event)
@@ -241,6 +250,7 @@ odd-dashboard/
 6. Optimize queries for performance (indexes, query optimization)
 
 ### Phase 6: Testing & Documentation (Days 19-21)
+
 1. Test with real GitHub repositories
 2. Performance testing with larger datasets
 3. Fix any bugs or issues
@@ -251,23 +261,26 @@ odd-dashboard/
 ## Key Implementation Details
 
 ### Security: Server-Only Modules
+
 - All database connections and GitHub API tokens must be in `$lib/server/*` modules
 - These modules are automatically excluded from client bundles by SvelteKit
 - Never import `$lib/server/*` modules in client-side code
 - Use `server-only` package as an additional safeguard if needed
 
 ### GitHub API Rate Limiting
+
 - Use authenticated requests (5000 requests/hour)
 - Implement request queuing/throttling
 - Cache repository metadata to reduce API calls
 - Store last_synced_at to only fetch new commits
 
 ### Data Sync Strategy
+
 - Detect repository's default/primary branch via GitHub API (typically "main" or "master")
 - Initial sync: Fetch all commits from the default branch only
-  - For large repositories, process commits in batches (e.g., 1000 commits at a time)
-  - Use pagination to handle repositories with thousands of commits
-  - Update `last_synced_at` after each successful batch
+    - For large repositories, process commits in batches (e.g., 1000 commits at a time)
+    - Use pagination to handle repositories with thousands of commits
+    - Update `last_synced_at` after each successful batch
 - Incremental sync: Only fetch commits from default branch since last_synced_at
 - Store branch name with each commit for future extensibility (can expand to other branches later)
 - Batch processing for multiple repositories
@@ -275,56 +288,61 @@ odd-dashboard/
 - Note: Starting with primary branch only to keep initial implementation simple and focused on merged contributions
 
 ### Non-GitHub Authors Handling
+
 - Commits can have authors without GitHub accounts (email-only commits)
 - Author identification strategy:
-  - If commit author has GitHub account: use `github_id` as primary identifier, store `username` and `email`
-  - If commit author has no GitHub account: `github_id` and `username` are NULL, use `email` as fallback identifier
+    - If commit author has GitHub account: use `github_id` as primary identifier, store `username` and `email`
+    - If commit author has no GitHub account: `github_id` and `username` are NULL, use `email` as fallback identifier
 - Author deduplication:
-  - First, try to match by `github_id` (if available)
-  - If no `github_id`, try to match by `email` (case-insensitive)
-  - If no match found, create new author record
+    - First, try to match by `github_id` (if available)
+    - If no `github_id`, try to match by `email` (case-insensitive)
+    - If no match found, create new author record
 - When syncing commits, check if author exists by `github_id` or `email` before creating new author
 - Authors without GitHub accounts can still be associated with agencies and events
 
 ### Repository Rename Handling
+
 - GitHub repositories can be renamed (changing `full_name`)
 - During sync, check if repository `full_name` has changed by comparing with GitHub API response
 - If `full_name` has changed:
-  - Update `repositories.full_name` in database
-  - Log the rename event for audit purposes
-  - All existing commits remain linked via `repository_id` (UUID doesn't change)
+    - Update `repositories.full_name` in database
+    - Log the rename event for audit purposes
+    - All existing commits remain linked via `repository_id` (UUID doesn't change)
 - Repository renames don't affect commit attribution or relationships
 
 ### Fork Handling & Commit Attribution
+
 - When fetching repository data from GitHub API, detect if repository is a fork (`fork: true`)
 - Store `is_fork` flag and `parent_full_name` from GitHub API response
 - If parent repository exists in database, link via `parent_repository_id`
 - When syncing commits for a fork:
-  - Fetch commits from the fork repository's default branch
-  - If parent repository exists in database, also fetch commits from parent repository's default branch
-  - Compare commits by SHA to identify which commits are unique to the fork
-  - Commits that exist in parent repository → attribute to parent repository (`repository_id` = parent)
-  - Commits unique to fork (not present in parent) → attribute to fork repository (`repository_id` = fork)
-  - This allows tracking original contributions made in forks separately from upstream commits
+    - Fetch commits from the fork repository's default branch
+    - If parent repository exists in database, also fetch commits from parent repository's default branch
+    - Compare commits by SHA to identify which commits are unique to the fork
+    - Commits that exist in parent repository → attribute to parent repository (`repository_id` = parent)
+    - Commits unique to fork (not present in parent) → attribute to fork repository (`repository_id` = fork)
+    - This allows tracking original contributions made in forks separately from upstream commits
 - Commit attribution logic:
-  - Check if commit SHA exists in parent repository commits (on default branch)
-  - If SHA found in parent → `repository_id` points to parent repository
-  - If SHA not found in parent → `repository_id` points to fork repository
+    - Check if commit SHA exists in parent repository commits (on default branch)
+    - If SHA found in parent → `repository_id` points to parent repository
+    - If SHA not found in parent → `repository_id` points to fork repository
 - Fork comparison performance optimization:
-  - Use indexed SHA lookups (index on `commits.sha`) for fast parent commit checks
-  - Batch SHA lookups: collect all fork commit SHAs, query parent commits in single query with `WHERE sha IN (...)`
-  - For very large repositories, process commits in batches (e.g., 1000 at a time)
-  - Cache parent commit SHA sets in memory during sync to avoid repeated database queries
+    - Use indexed SHA lookups (index on `commits.sha`) for fast parent commit checks
+    - Batch SHA lookups: collect all fork commit SHAs, query parent commits in single query with `WHERE sha IN (...)`
+    - For very large repositories, process commits in batches (e.g., 1000 at a time)
+    - Cache parent commit SHA sets in memory during sync to avoid repeated database queries
 - This ensures accurate attribution: upstream commits go to parent, original fork contributions go to fork
 - All comparisons are done on the default/primary branch of both fork and parent repositories
 - UI should clearly indicate when viewing a fork, show it's linked to parent, and distinguish between upstream and original commits
 
 ### Query Optimization
+
 - Use database indexes on frequently queried fields (including composite indexes)
 - Implement pagination for large result sets
 - Cache frequently accessed data
 
 ### Foreign Key CASCADE Strategy
+
 - **Repositories**: On delete, CASCADE delete related commits (commits are meaningless without repository)
 - **Authors**: On delete, SET NULL for commits.author_id (preserve commit history even if author deleted)
 - **Agencies**: On delete, SET NULL for repositories.agency_id, authors.agency_id, events.agency_id (preserve data, just remove association)
@@ -333,6 +351,7 @@ odd-dashboard/
 - **Parent repositories**: On delete, SET NULL for repositories.parent_repository_id (preserve fork data)
 
 ### Data Validation
+
 - Use Drizzle validators (zod schemas) for all data validation
 - Validate data before database insertion in all services
 - Validate API request payloads using Drizzle validators
@@ -340,6 +359,7 @@ odd-dashboard/
 - Type-safe validation ensures data integrity and catches errors early
 
 ### Error Handling Strategy
+
 - Implement comprehensive error handling for GitHub API calls (rate limits, network errors, 404s)
 - Handle database connection errors gracefully
 - Implement retry logic with exponential backoff for transient failures
@@ -349,6 +369,7 @@ odd-dashboard/
 - Gracefully handle missing parent repositories during fork sync
 
 ### Timezone Handling
+
 - Store all dates/times in database as UTC (PostgreSQL TIMESTAMP)
 - Convert to browser's local timezone for display in UI
 - Use date-fns or native JavaScript Date API for timezone conversions
@@ -356,6 +377,7 @@ odd-dashboard/
 - All commit dates from GitHub API are already in UTC
 
 ### Ecosystem Hierarchy Cycle Prevention
+
 - Validate ecosystem parent_id assignments to prevent circular references
 - Before setting parent_id, check that the new parent is not a descendant of the current ecosystem
 - Implement recursive check: traverse up the parent chain to ensure no cycles
@@ -363,6 +385,7 @@ odd-dashboard/
 - Provide clear error message if cycle detected
 
 ### Agency Management
+
 - Dedicated `agencies` table with id, name, and description
 - Foreign key relationships: `repositories.agency_id`, `authors.agency_id`, `events.agency_id`
 - Agencies can be associated with repositories, authors, and events
@@ -371,6 +394,7 @@ odd-dashboard/
 - Agency service provides CRUD operations for managing agencies
 
 ### Event System
+
 - Events table stores event metadata (name, description, dates, agency)
 - Agency field tracks which agency organized/put on the event
 - Many-to-many relationships via junction tables (author_events, repository_events)
@@ -379,11 +403,13 @@ odd-dashboard/
 - Events managed via list view with inline editing
 
 ### Ecosystem Hierarchy
+
 - Self-referencing foreign key (parent_id)
 - Recursive queries for getting all child ecosystems
 - UI tree view for managing hierarchy
 
 ### Code Formatting: Prettier
+
 - Use 4 spaces for indentation (not tabs)
 - Trailing commas enabled everywhere
 - Semicolons enabled
@@ -391,6 +417,7 @@ odd-dashboard/
 - Prettier plugin for Svelte support
 
 ### Database Connection Pooling
+
 - Configure PostgreSQL connection pool for production use
 - Recommended pool settings: min 2, max 10 connections (adjust based on deployment)
 - Use connection pooling library (pg-pool or postgres.js built-in pooling)
@@ -398,12 +425,14 @@ odd-dashboard/
 - Handle connection pool exhaustion gracefully with appropriate error messages
 
 ## Environment Variables
+
 ```
 DATABASE_URL=postgresql://user:password@localhost:5432/odd_dashboard
 GITHUB_TOKEN=ghp_xxxxxxxxxxxxx
 ```
 
 ## Dependencies
+
 - `sveltekit` - Framework
 - `@sveltejs/adapter-auto` - Deployment adapter
 - `drizzle-orm` + `drizzle-kit` - ORM and migrations
@@ -424,26 +453,31 @@ GITHUB_TOKEN=ghp_xxxxxxxxxxxxx
 The following features have been deferred to future phases to focus on core functionality:
 
 ### Detail Pages
+
 - Add dedicated detail pages for agencies and events (currently using inline editing in list views)
 - Enhanced views with more detailed information and relationships
 
 ### Soft Deletes
+
 - Add `deleted_at` timestamp column to all major tables (ecosystems, agencies, repositories, authors, events)
 - Update all queries to filter out soft-deleted records
 - Implement restore functionality
 
 ### Daily Repository Stats Aggregation
+
 - Create `daily_repository_stats` table for pre-aggregated metrics:
-  - `repository_id`, `date`, `commit_count`, `active_developer_count`, `additions`, `deletions`
+    - `repository_id`, `date`, `commit_count`, `active_developer_count`, `additions`, `deletions`
 - Implement background job to populate stats table during sync
 - Use stats table for dashboard charts to improve performance with large datasets
 
 ### Search Functionality
+
 - Add full-text search for repositories, authors, and commits
 - Implement search API endpoints with filtering
 - Add search UI components to dashboard
 
 ### Bulk Repository Sync
+
 - Implement batch sync endpoint for multiple repositories
 - Add progress tracking for bulk operations
 - Queue management for large sync jobs
@@ -455,6 +489,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 ### Phase 1: Project Setup & Database (Days 1-3)
 
 #### Project Initialization
+
 - [x] Run `pnpm dlx sv create .` with TypeScript template
 - [x] Verify `package.json` exists with correct dependencies
 - [x] Verify `tsconfig.json` is configured correctly
@@ -463,14 +498,16 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [x] Verify `pnpm build` completes successfully
 
 #### Prettier Setup
-- [ ] Install prettier and dependencies (`pnpm dlx sv add prettier`)
-- [ ] Ensure prettier config specifies:
-  - [ ] 4 spaces indentation
-  - [ ] Trailing commas enabled
-  - [ ] Semicolons enabled
-- [ ] Test Prettier formatting on a sample file
+
+- [x] Install prettier and dependencies (`pnpm dlx sv add prettier`)
+- [x] Ensure prettier config specifies:
+    - [x] 4 spaces indentation
+    - [x] Trailing commas enabled
+    - [x] Semicolons enabled
+- [x] Test Prettier formatting on a sample file
 
 #### Tailwind CSS & shadcn-svelte Setup
+
 - [ ] Install Tailwind CSS and dependencies (`tailwindcss`, `postcss`, `autoprefixer`)
 - [ ] Initialize Tailwind config (`pnpm dlx sv add tailwindcss="plugins:forms,typography"`)
 - [ ] Configure `tailwind.config.js` with content paths
@@ -482,11 +519,13 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify Tailwind styles are applied correctly
 
 #### SvelteKit Adapter Setup
+
 - [ ] Install `@sveltejs/adapter-auto`
 - [ ] Update `svelte.config.js` to use adapter-auto
 - [ ] Verify adapter is configured correctly
 
 #### Database Setup
+
 - [ ] Install PostgreSQL (if not already installed)
 - [ ] Create database: `odd_dashboard`
 - [ ] Install `drizzle-orm` and `drizzle-kit`
@@ -497,6 +536,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Configure connection pooling (min 2, max 10 connections)
 
 #### Database Schema Creation
+
 - [ ] Create `src/lib/server/db/schema.ts`
 - [ ] Define `ecosystems` table with all fields and constraints
 - [ ] Define `agencies` table with all fields and constraints
@@ -512,6 +552,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify schema compiles without TypeScript errors
 
 #### Database Migrations
+
 - [ ] Configure `drizzle.config.ts` with database connection
 - [ ] Run initial migration generation: `drizzle-kit generate`
 - [ ] Verify migration files are created correctly
@@ -522,6 +563,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify all constraints are applied
 
 #### Seed Data
+
 - [ ] Create seed script for ecosystems
 - [ ] Add seed data for Stellar ecosystem
 - [ ] Add seed data for Ethereum ecosystem
@@ -533,6 +575,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 ### Phase 2: GitHub API Integration (Days 4-6)
 
 #### Octokit Client Setup
+
 - [ ] Install `@octokit/rest`
 - [ ] Create `src/lib/server/github/client.ts`
 - [ ] Set up Octokit client with `GITHUB_TOKEN` from environment
@@ -541,6 +584,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify token authentication works (make a test API call)
 
 #### GitHub Types
+
 - [ ] Create `src/lib/server/github/types.ts`
 - [ ] Define TypeScript types for GitHub API responses
 - [ ] Define types for repository data
@@ -548,6 +592,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Define types for author/user data
 
 #### Repository Fetching
+
 - [ ] Create `src/lib/server/github/fetchers.ts`
 - [ ] Implement function to fetch repository by full_name
 - [ ] Implement function to fetch repository details (including fork info, default branch)
@@ -557,11 +602,13 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Handle API errors (404, rate limits, etc.)
 
 #### Repository Rename Detection
+
 - [ ] Implement logic to compare stored `full_name` with GitHub API response
 - [ ] Test rename detection with a renamed repository
 - [ ] Verify rename update logic works
 
 #### Commit Fetching
+
 - [ ] Implement function to fetch commits for a repository's default branch
 - [ ] Implement pagination for commit fetching
 - [ ] Test fetching commits from a real repository
@@ -569,6 +616,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Handle API errors gracefully
 
 #### Author/User Data Fetching
+
 - [ ] Implement function to fetch GitHub user by username
 - [ ] Implement function to fetch GitHub user by ID
 - [ ] Handle cases where user doesn't exist (404)
@@ -576,6 +624,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test fetching user data for both GitHub users and email-only commits
 
 #### Sync Service - Basic Structure
+
 - [ ] Create sync service file
 - [ ] Implement basic sync function structure
 - [ ] Implement initial sync (fetch all commits)
@@ -584,12 +633,14 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify commits are stored correctly
 
 #### Sync Service - Batching for Large Repos
+
 - [ ] Implement batching logic (process 1000 commits at a time)
 - [ ] Update `last_synced_at` after each batch
 - [ ] Test with a repository that has >1000 commits
 - [ ] Verify all commits are synced correctly
 
 #### Fork Detection & Linking
+
 - [ ] Implement fork detection logic
 - [ ] Implement parent repository lookup by `parent_full_name`
 - [ ] Implement `parent_repository_id` linking when parent exists
@@ -597,6 +648,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify parent linking works correctly
 
 #### Rate Limiting & Error Handling
+
 - [ ] Implement rate limit detection
 - [ ] Implement request queuing/throttling
 - [ ] Implement retry logic with exponential backoff
@@ -607,6 +659,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 ### Phase 3: Core Services & API Routes (Days 7-10)
 
 #### Drizzle Validators Setup
+
 - [ ] Install `zod` (if not already installed)
 - [ ] Create validator schemas for ecosystems
 - [ ] Create validator schemas for agencies
@@ -618,9 +671,10 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test validators with invalid data (verify errors)
 
 #### Agency Service
+
 - [ ] Create `src/lib/server/services/agency.service.ts`
 - [ ] Implement `createAgency()` with validation
-- [ ] Implement `getAgencyById()` 
+- [ ] Implement `getAgencyById()`
 - [ ] Implement `getAllAgencies()`
 - [ ] Implement `updateAgency()` with validation
 - [ ] Implement `deleteAgency()` with CASCADE handling
@@ -628,6 +682,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify validation works correctly
 
 #### Repository Service
+
 - [ ] Create `src/lib/server/services/repository.service.ts`
 - [ ] Implement `createRepository()` with validation
 - [ ] Implement `getRepositoryById()`
@@ -643,6 +698,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test rename detection
 
 #### Author Service
+
 - [ ] Create `src/lib/server/services/author.service.ts`
 - [ ] Implement `createAuthor()` with validation
 - [ ] Implement `getAuthorById()`
@@ -658,6 +714,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test username update logic
 
 #### Commit Service
+
 - [ ] Create `src/lib/server/services/commit.service.ts`
 - [ ] Implement `createCommit()` with validation
 - [ ] Implement `bulkInsertCommits()` for batch operations
@@ -670,6 +727,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test commit queries with filters
 
 #### Ecosystem Service
+
 - [ ] Create `src/lib/server/services/ecosystem.service.ts`
 - [ ] Implement `createEcosystem()` with validation
 - [ ] Implement `getEcosystemById()`
@@ -681,6 +739,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test hierarchy queries (get children, get ancestors)
 
 #### Event Service
+
 - [ ] Create `src/lib/server/services/event.service.ts`
 - [ ] Implement `createEvent()` with validation
 - [ ] Implement `getEventById()`
@@ -695,6 +754,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test author/repository associations
 
 #### Fork-Aware Sync Service Updates
+
 - [ ] Update sync service to handle forks
 - [ ] Implement commit SHA comparison logic
 - [ ] Implement batch SHA lookup for parent commits
@@ -706,6 +766,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify commit attribution is correct
 
 #### API Routes - Repositories
+
 - [ ] Create `src/routes/api/repositories/+server.ts`
 - [ ] Implement GET (list repositories with filters)
 - [ ] Implement POST (create repository) with validation
@@ -722,24 +783,28 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify error handling works
 
 #### API Routes - Authors
+
 - [ ] Create `src/routes/api/authors/+server.ts`
 - [ ] Implement GET (list authors with filters)
 - [ ] Test author endpoints
 - [ ] Verify filtering works
 
 #### API Routes - Commits
+
 - [ ] Create `src/routes/api/commits/+server.ts`
 - [ ] Implement GET (list commits with filters)
 - [ ] Test commit endpoints
 - [ ] Verify filtering works (repository, author, date range)
 
 #### API Routes - Ecosystems
+
 - [ ] Create `src/routes/api/ecosystems/+server.ts`
 - [ ] Implement GET (list ecosystems)
 - [ ] Implement POST (create ecosystem) with validation
 - [ ] Test ecosystem endpoints
 
 #### API Routes - Agencies
+
 - [ ] Create `src/routes/api/agencies/+server.ts`
 - [ ] Implement GET (list agencies)
 - [ ] Implement POST (create agency) with validation
@@ -750,6 +815,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test all agency endpoints
 
 #### API Routes - Events
+
 - [ ] Create `src/routes/api/events/+server.ts`
 - [ ] Implement GET (list events)
 - [ ] Implement POST (create event) with validation
@@ -760,6 +826,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test all event endpoints
 
 #### API Routes - Filtering & Pagination
+
 - [ ] Add filtering to all list endpoints (ecosystem, agency, event, date range)
 - [ ] Add pagination to all list endpoints
 - [ ] Test filtering with various combinations
@@ -767,11 +834,13 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify pagination metadata is returned correctly
 
 #### API Routes - Specialized Endpoints
+
 - [ ] Create endpoint for "contributors over time period"
 - [ ] Create endpoint for event associations
 - [ ] Test specialized endpoints
 
 #### Error Handling
+
 - [ ] Implement consistent error response format
 - [ ] Add user-friendly error messages
 - [ ] Test error handling for invalid requests
@@ -781,6 +850,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 ### Phase 4: Dashboard UI - Core Views (Days 11-14)
 
 #### Layout & Navigation
+
 - [ ] Create `src/routes/+layout.svelte`
 - [ ] Add navigation menu with links to all main views
 - [ ] Style navigation with shadcn-svelte components
@@ -788,12 +858,14 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify layout is responsive
 
 #### Dashboard Home
+
 - [ ] Create `src/routes/+page.svelte`
 - [ ] Add overview statistics (total repos, authors, commits)
 - [ ] Add recent activity section
 - [ ] Test dashboard home loads correctly
 
 #### Timezone Utilities
+
 - [ ] Create `src/lib/utils/date.ts`
 - [ ] Implement function to convert UTC to browser local time
 - [ ] Implement function to format dates for display
@@ -801,6 +873,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test date formatting
 
 #### Agencies Management View
+
 - [ ] Create `src/routes/agencies/+page.svelte`
 - [ ] Implement list view with table/cards
 - [ ] Implement inline create form
@@ -812,6 +885,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify form validation works
 
 #### Repository List View
+
 - [ ] Create `src/routes/repositories/+page.svelte`
 - [ ] Implement repository list display
 - [ ] Add ecosystem filter dropdown
@@ -823,6 +897,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test pagination works
 
 #### Repository Detail View
+
 - [ ] Create `src/routes/repositories/[id]/+page.svelte`
 - [ ] Display repository information
 - [ ] Display commits list for repository
@@ -835,6 +910,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test sync functionality
 
 #### Contributors View
+
 - [ ] Create `src/routes/contributors/+page.svelte`
 - [ ] Implement contributors list display
 - [ ] Add ecosystem filter
@@ -846,6 +922,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify contributor data displays correctly
 
 #### Events Management View
+
 - [ ] Create `src/routes/events/+page.svelte`
 - [ ] Implement events list display
 - [ ] Implement inline create form
@@ -857,6 +934,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test author/repository associations
 
 #### Date Range Picker Component
+
 - [ ] Create `src/components/DateRangePicker.svelte`
 - [ ] Use shadcn-svelte date picker component
 - [ ] Implement date range selection
@@ -864,6 +942,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Verify dates are handled in UTC
 
 #### Filter Components
+
 - [ ] Create `src/components/AgencyFilter.svelte`
 - [ ] Implement agency dropdown/combobox
 - [ ] Populate from agencies API
@@ -872,6 +951,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test event filter works
 
 #### Charts
+
 - [ ] Install Chart.js
 - [ ] Create `src/components/charts/ContributionChart.svelte`
 - [ ] Implement contribution activity chart
@@ -883,12 +963,14 @@ Use this detailed checklist to track progress and ensure each item is complete a
 ### Phase 5: Advanced Features & Polish (Days 15-18)
 
 #### Contributors Over Time Period
+
 - [ ] Implement query for contributors over time period
 - [ ] Create view/component to display this data
 - [ ] Test with various time periods
 - [ ] Verify data is accurate
 
 #### Ecosystem Hierarchy Visualization
+
 - [ ] Create `src/components/EcosystemTree.svelte`
 - [ ] Implement tree view for ecosystem hierarchy
 - [ ] Add expand/collapse functionality
@@ -896,6 +978,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test with nested hierarchies
 
 #### Aggregated Statistics
+
 - [ ] Implement query for total commits per ecosystem
 - [ ] Implement query for total contributors per ecosystem
 - [ ] Implement query for total commits per event
@@ -904,23 +987,27 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test statistics are accurate
 
 #### Event Associations UI
+
 - [ ] Add UI for associating authors with events in event management view
 - [ ] Add UI for associating repositories with events in event management view
 - [ ] Implement add/remove association functionality
 - [ ] Test associations work correctly
 
 #### Loading States
+
 - [ ] Add loading spinners to all async operations
 - [ ] Add skeleton loaders where appropriate
 - [ ] Test loading states display correctly
 
 #### Error Handling UI
+
 - [ ] Add error message display components
 - [ ] Add error boundaries where needed
 - [ ] Test error handling displays user-friendly messages
 - [ ] Test error recovery
 
 #### Query Optimization
+
 - [ ] Review all database queries
 - [ ] Add missing indexes if needed
 - [ ] Optimize slow queries
@@ -930,6 +1017,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 ### Phase 6: Testing & Documentation (Days 19-21)
 
 #### Testing with Real Repositories
+
 - [ ] Sync a real GitHub repository
 - [ ] Verify all commits are synced correctly
 - [ ] Verify authors are created correctly
@@ -939,6 +1027,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Test with email-only commits
 
 #### Performance Testing
+
 - [ ] Test with repository containing 1000+ commits
 - [ ] Test with repository containing 10000+ commits
 - [ ] Verify sync performance is acceptable
@@ -947,12 +1036,14 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Monitor database connection pool usage
 
 #### Bug Fixes
+
 - [ ] Document any bugs found during testing
 - [ ] Fix all critical bugs
 - [ ] Fix all high-priority bugs
 - [ ] Verify fixes work correctly
 
 #### README Documentation
+
 - [ ] Create `README.md`
 - [ ] Add project overview
 - [ ] Add setup instructions
@@ -962,6 +1053,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Add deployment instructions
 
 #### API Documentation
+
 - [ ] Document all API endpoints
 - [ ] Document request/response formats
 - [ ] Document authentication requirements
@@ -969,11 +1061,13 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [ ] Add example requests/responses
 
 #### Code Documentation
+
 - [ ] Add JSDoc comments to all service functions
 - [ ] Add inline comments for complex logic
 - [ ] Verify code is well-documented
 
 #### Final Verification
+
 - [ ] Run full test suite (if created)
 - [ ] Verify all features work end-to-end
 - [ ] Verify no console errors
