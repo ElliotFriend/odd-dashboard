@@ -30,6 +30,10 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `ecosystem_id` (uuid, foreign key to ecosystems.id)
    - `agency_tag` (text, nullable) - Simple tag for agency source
    - `is_private` (boolean)
+   - `is_fork` (boolean, default false) - Whether this repository is a fork
+   - `parent_repository_id` (uuid, foreign key to repositories.id, nullable) - Upstream repository if fork exists in database
+   - `parent_full_name` (text, nullable) - Upstream repository full_name (e.g., "owner/parent-repo") even if not in database
+   - `default_branch` (text, default 'main') - Default/primary branch name (e.g., "main", "master")
    - `created_at`, `updated_at` (timestamps)
    - `last_synced_at` (timestamp, nullable) - Track when we last fetched commits
 
@@ -50,6 +54,7 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `sha` (text, unique) - Commit SHA
    - `message` (text)
    - `commit_date` (timestamp)
+   - `branch` (text) - Branch name where commit was found (default branch to start, extensible for future)
    - `additions` (integer, default 0)
    - `deletions` (integer, default 0)
    - `url` (text)
@@ -83,8 +88,11 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
 ### Indexes
 - Index on `commits.commit_date` for time-based queries
 - Index on `commits.repository_id` and `commits.author_id` for joins
+- Index on `commits.branch` for branch-based queries (future extensibility)
 - Index on `repositories.ecosystem_id` for ecosystem filtering
 - Index on `repositories.agency_tag` and `authors.agency_tag` for agency filtering
+- Index on `repositories.parent_repository_id` for fork relationship queries
+- Index on `repositories.is_fork` for filtering forks
 - Index on `author_events.author_id` and `author_events.event_id` for event queries
 - Index on `repository_events.repository_id` and `repository_events.event_id` for event queries
 
@@ -184,21 +192,23 @@ odd-dashboard/
 
 ### Phase 2: GitHub API Integration (Days 4-6)
 1. Set up Octokit client with environment token in `$lib/server/github`
-2. Implement repository fetching (list repos, get repo details)
-3. Implement commit fetching (get commits for a repo with pagination)
+2. Implement repository fetching (list repos, get repo details, including fork information and default branch)
+3. Implement commit fetching (get commits for a repo's default branch with pagination)
 4. Implement author/user data fetching
-5. Create sync service to fetch and store commits from GitHub
-6. Handle rate limiting and error cases
+5. Create sync service to fetch and store commits from GitHub (default branch only)
+6. Implement fork detection and parent repository linking logic
+7. Handle rate limiting and error cases
 
 ### Phase 3: Core Services & API Routes (Days 7-10)
-1. Implement repository service (CRUD operations)
+1. Implement repository service (CRUD operations, fork detection, parent repository linking)
 2. Implement author service (CRUD, deduplication by email/username)
-3. Implement commit service (CRUD, bulk insert)
+3. Implement commit service (CRUD, bulk insert, fork-aware attribution with SHA comparison)
 4. Implement ecosystem service (CRUD, hierarchy management)
 5. Implement event service (CRUD, associate authors/repos with events)
-6. Create API routes for all entities
-7. Add filtering and pagination to API endpoints
-8. Create specialized endpoints (e.g., contributors over time period, event associations)
+6. Update sync service to handle forks (compare commits by SHA, attribute unique commits to fork, upstream commits to parent)
+7. Create API routes for all entities
+8. Add filtering and pagination to API endpoints
+9. Create specialized endpoints (e.g., contributors over time period, event associations)
 
 ### Phase 4: Dashboard UI - Core Views (Days 11-14)
 1. Create main dashboard layout with navigation using shadcn-svelte components
@@ -245,10 +255,32 @@ odd-dashboard/
 - Store last_synced_at to only fetch new commits
 
 ### Data Sync Strategy
-- Initial sync: Fetch all commits for a repository
-- Incremental sync: Only fetch commits since last_synced_at
+- Detect repository's default/primary branch via GitHub API (typically "main" or "master")
+- Initial sync: Fetch all commits from the default branch only
+- Incremental sync: Only fetch commits from default branch since last_synced_at
+- Store branch name with each commit for future extensibility (can expand to other branches later)
 - Batch processing for multiple repositories
 - Handle large repositories with pagination
+- Note: Starting with primary branch only to keep initial implementation simple and focused on merged contributions
+
+### Fork Handling & Commit Attribution
+- When fetching repository data from GitHub API, detect if repository is a fork (`fork: true`)
+- Store `is_fork` flag and `parent_full_name` from GitHub API response
+- If parent repository exists in database, link via `parent_repository_id`
+- When syncing commits for a fork:
+  - Fetch commits from the fork repository's default branch
+  - If parent repository exists in database, also fetch commits from parent repository's default branch
+  - Compare commits by SHA to identify which commits are unique to the fork
+  - Commits that exist in parent repository → attribute to parent repository (`repository_id` = parent)
+  - Commits unique to fork (not present in parent) → attribute to fork repository (`repository_id` = fork)
+  - This allows tracking original contributions made in forks separately from upstream commits
+- Commit attribution logic:
+  - Check if commit SHA exists in parent repository commits (on default branch)
+  - If SHA found in parent → `repository_id` points to parent repository
+  - If SHA not found in parent → `repository_id` points to fork repository
+- This ensures accurate attribution: upstream commits go to parent, original fork contributions go to fork
+- All comparisons are done on the default/primary branch of both fork and parent repositories
+- UI should clearly indicate when viewing a fork, show it's linked to parent, and distinguish between upstream and original commits
 
 ### Query Optimization
 - Use database indexes on frequently queried fields
