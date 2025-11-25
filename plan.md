@@ -9,7 +9,7 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
 - **ORM**: Drizzle ORM (lightweight, type-safe)
 - **GitHub API**: Octokit.js
 - **Styling**: Tailwind CSS + shadcn-svelte (component library for modern UI)
-- **Charts**: Chart.js or Recharts (for data visualization)
+- **Charts**: Chart.js (for data visualization)
 
 ## Database Schema
 
@@ -28,41 +28,34 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
 
 3. **repositories** - GitHub repositories
    - `id` (uuid, primary key)
-   - `github_id` (bigint, unique) - GitHub's repository ID
-   - `name` (text)
-   - `full_name` (text, unique) - e.g., "owner/repo"
-   - `url` (text)
-   - `description` (text, nullable)
+   - `github_id` (bigint, unique, NOT NULL) - GitHub's repository ID
+   - `full_name` (text, unique, NOT NULL) - e.g., "owner/repo" (name and URL can be derived from this)
    - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that sourced this repository
-   - `is_private` (boolean)
-   - `is_fork` (boolean, default false) - Whether this repository is a fork
+   - `is_fork` (boolean, NOT NULL, default false) - Whether this repository is a fork
    - `parent_repository_id` (uuid, foreign key to repositories.id, nullable) - Upstream repository if fork exists in database
    - `parent_full_name` (text, nullable) - Upstream repository full_name (e.g., "owner/parent-repo") even if not in database
-   - `default_branch` (text, default 'main') - Default/primary branch name (e.g., "main", "master")
-   - `created_at`, `updated_at` (timestamps)
+   - `default_branch` (text, NOT NULL, default 'main') - Default/primary branch name (e.g., "main", "master")
+   - `created_at`, `updated_at` (timestamps, NOT NULL)
    - `last_synced_at` (timestamp, nullable) - Track when we last fetched commits
 
 4. **authors** - Commit authors/contributors
    - `id` (uuid, primary key)
-   - `github_id` (bigint, unique, nullable) - GitHub user ID
-   - `username` (text, unique) - GitHub username
+   - `github_id` (bigint, unique, NOT NULL) - GitHub user ID (primary identifier when available)
+   - `username` (text, nullable) - GitHub username (can be updated when user changes username)
    - `name` (text, nullable)
    - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that sourced this author
    - `created_at`, `updated_at` (timestamps)
    - Note: Avatar URL can be constructed from `github_id` or `username` (e.g., `https://avatars.githubusercontent.com/u/{github_id}`, `https://github.com/{username}.png`)
+   - Note: `github_id` is the primary identifier; `username` can be updated when GitHub user changes their username
 
 5. **commits** - Individual commits
    - `id` (uuid, primary key)
-   - `repository_id` (uuid, foreign key to repositories.id)
-   - `author_id` (uuid, foreign key to authors.id)
-   - `sha` (text, unique) - Commit SHA
-   - `message` (text)
-   - `commit_date` (timestamp)
-   - `branch` (text) - Branch name where commit was found (default branch to start, extensible for future)
-   - `additions` (integer, default 0)
-   - `deletions` (integer, default 0)
-   - `url` (text)
-   - `created_at` (timestamp) - When we stored it
+   - `repository_id` (uuid, foreign key to repositories.id, NOT NULL)
+   - `author_id` (uuid, foreign key to authors.id, NOT NULL)
+   - `sha` (text, NOT NULL) - Commit SHA
+   - `commit_date` (timestamp, NOT NULL) - Stored as UTC
+   - `branch` (text, NOT NULL) - Branch name where commit was found (default branch to start, extensible for future)
+   - Unique constraint on (repository_id, sha) - Same SHA can exist in multiple repos
 
 6. **events** - Events like hackathons, conferences, etc.
    - `id` (uuid, primary key)
@@ -70,32 +63,28 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `description` (text, nullable)
    - `start_date` (date, nullable)
    - `end_date` (date, nullable)
-   - `location` (text, nullable)
-   - `event_type` (text, nullable) - e.g., "hackathon", "conference", "workshop"
    - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that organized/put on the event
    - `created_at`, `updated_at` (timestamps)
 
 7. **author_events** - Many-to-many: Authors associated with events
    - `author_id` (uuid, foreign key to authors.id)
    - `event_id` (uuid, foreign key to events.id)
-   - `created_at` (timestamp)
    - Primary key on (author_id, event_id)
 
 8. **repository_events** - Many-to-many: Repositories associated with events
    - `repository_id` (uuid, foreign key to repositories.id)
    - `event_id` (uuid, foreign key to events.id)
-   - `created_at` (timestamp)
    - Primary key on (repository_id, event_id)
 
 9. **repository_ecosystems** - Many-to-many: Repositories associated with ecosystems
    - `repository_id` (uuid, foreign key to repositories.id)
    - `ecosystem_id` (uuid, foreign key to ecosystems.id)
-   - `created_at` (timestamp)
    - Primary key on (repository_id, ecosystem_id)
 
 ### Indexes
 - Index on `commits.commit_date` for time-based queries
 - Index on `commits.repository_id` and `commits.author_id` for joins
+- Index on `commits.sha` for fork comparison queries (checking if commit exists in parent)
 - Composite index on `commits` (`repository_id`, `commit_date`) for fork/parent queries
 - Index on `commits.branch` for branch-based queries (future extensibility)
 - Index on `repository_ecosystems.repository_id` and `repository_ecosystems.ecosystem_id` for filtering
@@ -212,16 +201,18 @@ odd-dashboard/
 7. Handle rate limiting and error cases
 
 ### Phase 3: Core Services & API Routes (Days 7-10)
-1. Implement agency service (CRUD operations)
-2. Implement repository service (CRUD operations, fork detection, parent repository linking)
-3. Implement author service (CRUD, deduplication by username/github_id)
-4. Implement commit service (CRUD, bulk insert, fork-aware attribution with SHA comparison)
-5. Implement ecosystem service (CRUD, hierarchy management)
-6. Implement event service (CRUD, associate authors/repos with events)
-7. Update sync service to handle forks (compare commits by SHA, attribute unique commits to fork, upstream commits to parent)
-8. Create API routes for all entities (including agencies)
-9. Add filtering and pagination to API endpoints
-10. Create specialized endpoints (e.g., contributors over time period, event associations)
+1. Set up Drizzle validators (zod schemas) for all entities
+2. Implement agency service (CRUD operations with validation)
+3. Implement repository service (CRUD operations, fork detection, parent repository linking, validation)
+4. Implement author service (CRUD, deduplication by username/github_id, validation)
+5. Implement commit service (CRUD, bulk insert, fork-aware attribution with SHA comparison, validation)
+6. Implement ecosystem service (CRUD, hierarchy management, cycle prevention validation)
+7. Implement event service (CRUD, associate authors/repos with events, validation)
+8. Update sync service to handle forks (compare commits by SHA, attribute unique commits to fork, upstream commits to parent)
+9. Create API routes for all entities (including agencies) with request validation
+10. Add filtering and pagination to API endpoints
+11. Create specialized endpoints (e.g., contributors over time period, event associations)
+12. Implement error handling and user-friendly error responses
 
 ### Phase 4: Dashboard UI - Core Views (Days 11-14)
 1. Create main dashboard layout with navigation using shadcn-svelte components
@@ -231,9 +222,10 @@ odd-dashboard/
 5. Build contributors view with filtering (ecosystem, agency, event, time period)
 6. Build events management view (list view with inline create/edit) using shadcn-svelte components
 7. Implement date range picker component using shadcn-svelte date picker
-8. Add agency filtering UI using shadcn-svelte select/combobox components (populated from agencies table)
-9. Add event filtering UI using shadcn-svelte components
-10. Create basic charts for contribution activity
+8. Implement timezone conversion utilities (convert UTC dates to browser local time for display)
+9. Add agency filtering UI using shadcn-svelte select/combobox components (populated from agencies table)
+10. Add event filtering UI using shadcn-svelte components
+11. Create basic charts for contribution activity (using Chart.js)
 
 ### Phase 5: Advanced Features & Polish (Days 15-18)
 1. Implement "contributors over time period" query and view
@@ -289,6 +281,11 @@ odd-dashboard/
   - Check if commit SHA exists in parent repository commits (on default branch)
   - If SHA found in parent → `repository_id` points to parent repository
   - If SHA not found in parent → `repository_id` points to fork repository
+- Fork comparison performance optimization:
+  - Use indexed SHA lookups (index on `commits.sha`) for fast parent commit checks
+  - Batch SHA lookups: collect all fork commit SHAs, query parent commits in single query with `WHERE sha IN (...)`
+  - For very large repositories, process commits in batches (e.g., 1000 at a time)
+  - Cache parent commit SHA sets in memory during sync to avoid repeated database queries
 - This ensures accurate attribution: upstream commits go to parent, original fork contributions go to fork
 - All comparisons are done on the default/primary branch of both fork and parent repositories
 - UI should clearly indicate when viewing a fork, show it's linked to parent, and distinguish between upstream and original commits
@@ -297,6 +294,44 @@ odd-dashboard/
 - Use database indexes on frequently queried fields (including composite indexes)
 - Implement pagination for large result sets
 - Cache frequently accessed data
+
+### Foreign Key CASCADE Strategy
+- **Repositories**: On delete, CASCADE delete related commits (commits are meaningless without repository)
+- **Authors**: On delete, SET NULL for commits.author_id (preserve commit history even if author deleted)
+- **Agencies**: On delete, SET NULL for repositories.agency_id, authors.agency_id, events.agency_id (preserve data, just remove association)
+- **Ecosystems**: On delete, SET NULL for repository_ecosystems.ecosystem_id (preserve repository data)
+- **Events**: On delete, CASCADE delete author_events and repository_events (junction table entries)
+- **Parent repositories**: On delete, SET NULL for repositories.parent_repository_id (preserve fork data)
+
+### Data Validation
+- Use Drizzle validators (zod schemas) for all data validation
+- Validate data before database insertion in all services
+- Validate API request payloads using Drizzle validators
+- Validate GitHub API responses before storing in database
+- Type-safe validation ensures data integrity and catches errors early
+
+### Error Handling Strategy
+- Implement comprehensive error handling for GitHub API calls (rate limits, network errors, 404s)
+- Handle database connection errors gracefully
+- Implement retry logic with exponential backoff for transient failures
+- Log all errors with appropriate context (repository, commit SHA, etc.)
+- Return user-friendly error messages in API responses
+- Handle edge cases: deleted repositories, renamed repositories, deleted users
+- Gracefully handle missing parent repositories during fork sync
+
+### Timezone Handling
+- Store all dates/times in database as UTC (PostgreSQL TIMESTAMP)
+- Convert to browser's local timezone for display in UI
+- Use date-fns or native JavaScript Date API for timezone conversions
+- Display dates with timezone indicator in UI when relevant
+- All commit dates from GitHub API are already in UTC
+
+### Ecosystem Hierarchy Cycle Prevention
+- Validate ecosystem parent_id assignments to prevent circular references
+- Before setting parent_id, check that the new parent is not a descendant of the current ecosystem
+- Implement recursive check: traverse up the parent chain to ensure no cycles
+- Reject parent_id assignment if it would create a cycle
+- Provide clear error message if cycle detected
 
 ### Agency Management
 - Dedicated `agencies` table with id, name, and description
@@ -336,6 +371,7 @@ GITHUB_TOKEN=ghp_xxxxxxxxxxxxx
 - `sveltekit` - Framework
 - `@sveltejs/adapter-node` or `@sveltejs/adapter-vercel` - Deployment adapter
 - `drizzle-orm` + `drizzle-kit` - ORM and migrations
+- `zod` - Schema validation for Drizzle validators
 - `postgres` or `pg` - PostgreSQL driver
 - `@octokit/rest` - GitHub API client
 - `server-only` - Additional safeguard for server-only modules
@@ -343,7 +379,7 @@ GITHUB_TOKEN=ghp_xxxxxxxxxxxxx
 - `shadcn-svelte` - Component library built on Tailwind CSS
 - `class-variance-authority`, `clsx`, `tailwind-merge` - Utilities for shadcn-svelte
 - `@lucide/svelte` - Icon library for shadcn-svelte components
-- `chart.js` or `recharts` - Charts
+- `chart.js` - Charts
 - `date-fns` - Date utilities
 - `prettier` + `prettier-plugin-svelte` - Code formatting
 
