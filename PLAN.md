@@ -569,19 +569,19 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Database Schema Creation
 
-- [ ] Create `src/lib/server/db/schema.ts`
-- [ ] Define `ecosystems` table with all fields and constraints
-- [ ] Define `agencies` table with all fields and constraints
-- [ ] Define `repositories` table with all fields and constraints
-- [ ] Define `authors` table with all fields and constraints (including email)
-- [ ] Define `commits` table with all fields and constraints
-- [ ] Define `events` table with all fields and constraints
-- [ ] Define `author_events` junction table with composite primary key
-- [ ] Define `repository_events` junction table with composite primary key
-- [ ] Define `repository_ecosystems` junction table with composite primary key
-- [ ] Add all foreign key relationships
-- [ ] Add all unique constraints (including composite on commits)
-- [ ] Verify schema compiles without TypeScript errors
+- [x] Create `src/lib/server/db/schema.ts`
+- [x] Define `ecosystems` table with all fields and constraints
+- [x] Define `agencies` table with all fields and constraints
+- [x] Define `repositories` table with all fields and constraints
+- [x] Define `authors` table with all fields and constraints (including email)
+- [x] Define `commits` table with all fields and constraints
+- [x] Define `events` table with all fields and constraints
+- [x] Define `author_events` junction table with composite primary key
+- [x] Define `repository_events` junction table with composite primary key
+- [x] Define `repository_ecosystems` junction table with composite primary key
+- [x] Add all foreign key relationships (columns defined; FK constraints will be added in migrations)
+- [x] Add all unique constraints (including composite on commits)
+- [x] Verify schema compiles without TypeScript errors
 
 #### Database Migrations
 
