@@ -18,12 +18,14 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `id` (uuid, primary key)
    - `name` (text, unique)
    - `parent_id` (uuid, foreign key to ecosystems.id, nullable)
+   - `deleted_at` (timestamp, nullable) - Soft delete
    - `created_at`, `updated_at` (timestamps)
 
 2. **agencies** - Agencies/organizations that source repositories, authors, or events
    - `id` (uuid, primary key)
    - `name` (text, unique) - Agency name
    - `description` (text, nullable)
+   - `deleted_at` (timestamp, nullable) - Soft delete
    - `created_at`, `updated_at` (timestamps)
 
 3. **repositories** - GitHub repositories
@@ -33,13 +35,13 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `full_name` (text, unique) - e.g., "owner/repo"
    - `url` (text)
    - `description` (text, nullable)
-   - `ecosystem_id` (uuid, foreign key to ecosystems.id)
    - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that sourced this repository
    - `is_private` (boolean)
    - `is_fork` (boolean, default false) - Whether this repository is a fork
    - `parent_repository_id` (uuid, foreign key to repositories.id, nullable) - Upstream repository if fork exists in database
    - `parent_full_name` (text, nullable) - Upstream repository full_name (e.g., "owner/parent-repo") even if not in database
    - `default_branch` (text, default 'main') - Default/primary branch name (e.g., "main", "master")
+   - `deleted_at` (timestamp, nullable) - Soft delete
    - `created_at`, `updated_at` (timestamps)
    - `last_synced_at` (timestamp, nullable) - Track when we last fetched commits
 
@@ -47,11 +49,11 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `id` (uuid, primary key)
    - `github_id` (bigint, unique, nullable) - GitHub user ID
    - `username` (text, unique) - GitHub username
-   - `email` (text, nullable)
    - `name` (text, nullable)
-   - `avatar_url` (text, nullable)
    - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that sourced this author
+   - `deleted_at` (timestamp, nullable) - Soft delete
    - `created_at`, `updated_at` (timestamps)
+   - Note: Avatar URL can be constructed from `github_id` or `username` (e.g., `https://avatars.githubusercontent.com/u/{github_id}`, `https://github.com/{username}.png`)
 
 5. **commits** - Individual commits
    - `id` (uuid, primary key)
@@ -75,6 +77,7 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `location` (text, nullable)
    - `event_type` (text, nullable) - e.g., "hackathon", "conference", "workshop"
    - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that organized/put on the event
+   - `deleted_at` (timestamp, nullable) - Soft delete
    - `created_at`, `updated_at` (timestamps)
 
 7. **author_events** - Many-to-many: Authors associated with events
@@ -91,17 +94,37 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `created_at` (timestamp)
    - Unique constraint on (repository_id, event_id)
 
+9. **repository_ecosystems** - Many-to-many: Repositories associated with ecosystems
+   - `id` (uuid, primary key)
+   - `repository_id` (uuid, foreign key to repositories.id)
+   - `ecosystem_id` (uuid, foreign key to ecosystems.id)
+   - `created_at` (timestamp)
+   - Unique constraint on (repository_id, ecosystem_id)
+
+10. **daily_repository_stats** - Aggregated stats for performance
+    - `id` (uuid, primary key)
+    - `repository_id` (uuid, foreign key to repositories.id)
+    - `date` (date)
+    - `commit_count` (integer)
+    - `active_developer_count` (integer)
+    - `additions` (integer)
+    - `deletions` (integer)
+    - `created_at` (timestamp)
+    - Unique constraint on (repository_id, date)
+
 ### Indexes
 - Index on `commits.commit_date` for time-based queries
 - Index on `commits.repository_id` and `commits.author_id` for joins
+- Composite index on `commits` (`repository_id`, `commit_date`) for fork/parent queries
 - Index on `commits.branch` for branch-based queries (future extensibility)
-- Index on `repositories.ecosystem_id` for ecosystem filtering
+- Index on `repository_ecosystems.repository_id` and `repository_ecosystems.ecosystem_id` for filtering
 - Index on `repositories.agency_id` and `authors.agency_id` for agency filtering
 - Index on `events.agency_id` for agency filtering on events
 - Index on `repositories.parent_repository_id` for fork relationship queries
 - Index on `repositories.is_fork` for filtering forks
 - Index on `author_events.author_id` and `author_events.event_id` for event queries
 - Index on `repository_events.repository_id` and `repository_events.event_id` for event queries
+- Index on `daily_repository_stats.repository_id` and `daily_repository_stats.date` for dashboard charts
 
 ## Project Structure
 
@@ -213,13 +236,14 @@ odd-dashboard/
 3. Implement commit fetching (get commits for a repo's default branch with pagination)
 4. Implement author/user data fetching
 5. Create sync service to fetch and store commits from GitHub (default branch only)
-6. Implement fork detection and parent repository linking logic
-7. Handle rate limiting and error cases
+6. Implement stats aggregation service (populate daily_repository_stats)
+7. Implement fork detection and parent repository linking logic
+8. Handle rate limiting and error cases
 
 ### Phase 3: Core Services & API Routes (Days 7-10)
 1. Implement agency service (CRUD operations)
 2. Implement repository service (CRUD operations, fork detection, parent repository linking)
-3. Implement author service (CRUD, deduplication by email/username)
+3. Implement author service (CRUD, deduplication by username/github_id)
 4. Implement commit service (CRUD, bulk insert, fork-aware attribution with SHA comparison)
 5. Implement ecosystem service (CRUD, hierarchy management)
 6. Implement event service (CRUD, associate authors/repos with events)
@@ -302,9 +326,9 @@ odd-dashboard/
 - UI should clearly indicate when viewing a fork, show it's linked to parent, and distinguish between upstream and original commits
 
 ### Query Optimization
-- Use database indexes on frequently queried fields
+- Use `daily_repository_stats` table for dashboard charts to avoid scanning millions of commits
+- Use database indexes on frequently queried fields (including composite indexes)
 - Implement pagination for large result sets
-- Use materialized views or computed columns for aggregations if needed
 - Cache frequently accessed data
 
 ### Agency Management
