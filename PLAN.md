@@ -557,11 +557,15 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Database Setup
 
-- [ ] setup database access using the svelte cli (`pnpm dlx sv add drizzle="database:postgresql+client:postgres.js+docker:true`) - This should take care of everything we need
-- [ ] Test Docker Compose setup: start container, verify connection, stop container
-- [ ] Create `.env` file with `DATABASE_URL` pointing to Docker container
-- [ ] Test database connection with a simple script
-- [ ] Configure connection pooling (min 2, max 10 connections)
+- [x] setup database access using the svelte cli (`pnpm dlx sv add drizzle="database:postgresql+client:postgres.js+docker:true`) - This should take care of everything we need
+- [x] Create `docker-compose.yml` with PostgreSQL service configuration
+- [x] Create `.dockerignore` file to exclude unnecessary files
+- [x] Create `.env.example` with Docker-specific `DATABASE_URL` and instructions
+- [x] Add Docker-related npm scripts to `package.json` (docker:up, docker:down, docker:logs, docker:reset)
+- [x] Test Docker Compose setup: start container, verify connection, stop container
+- [x] Create `.env` file with `DATABASE_URL` pointing to Docker container
+- [x] Test database connection with a simple script
+- [x] Configure connection pooling (min 2, max 10 connections)
 
 #### Database Schema Creation
 
