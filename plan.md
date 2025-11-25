@@ -1,7 +1,7 @@
 # GitHub Contribution Dashboard - Implementation Plan
 
 ## Project Overview
-A SvelteKit application with PostgreSQL backend to track and visualize GitHub contribution activities. The system will store commits, authors, repositories, and ecosystems with agency tagging, and provide dashboard views for analyzing contributions over time.
+A SvelteKit application with PostgreSQL backend to track and visualize GitHub contribution activities. The system will store commits, authors, repositories, and ecosystems with agency associations, and provide dashboard views for analyzing contributions over time.
 
 ## Technology Stack
 - **Framework**: SvelteKit (with TypeScript)
@@ -20,7 +20,13 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `parent_id` (uuid, foreign key to ecosystems.id, nullable)
    - `created_at`, `updated_at` (timestamps)
 
-2. **repositories** - GitHub repositories
+2. **agencies** - Agencies/organizations that source repositories, authors, or events
+   - `id` (uuid, primary key)
+   - `name` (text, unique) - Agency name
+   - `description` (text, nullable)
+   - `created_at`, `updated_at` (timestamps)
+
+3. **repositories** - GitHub repositories
    - `id` (uuid, primary key)
    - `github_id` (bigint, unique) - GitHub's repository ID
    - `name` (text)
@@ -28,7 +34,7 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `url` (text)
    - `description` (text, nullable)
    - `ecosystem_id` (uuid, foreign key to ecosystems.id)
-   - `agency_tag` (text, nullable) - Simple tag for agency source
+   - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that sourced this repository
    - `is_private` (boolean)
    - `is_fork` (boolean, default false) - Whether this repository is a fork
    - `parent_repository_id` (uuid, foreign key to repositories.id, nullable) - Upstream repository if fork exists in database
@@ -37,17 +43,17 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `created_at`, `updated_at` (timestamps)
    - `last_synced_at` (timestamp, nullable) - Track when we last fetched commits
 
-3. **authors** - Commit authors/contributors
+4. **authors** - Commit authors/contributors
    - `id` (uuid, primary key)
    - `github_id` (bigint, unique, nullable) - GitHub user ID
    - `username` (text, unique) - GitHub username
    - `email` (text, nullable)
    - `name` (text, nullable)
    - `avatar_url` (text, nullable)
-   - `agency_tag` (text, nullable) - Simple tag for agency source
+   - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that sourced this author
    - `created_at`, `updated_at` (timestamps)
 
-4. **commits** - Individual commits
+5. **commits** - Individual commits
    - `id` (uuid, primary key)
    - `repository_id` (uuid, foreign key to repositories.id)
    - `author_id` (uuid, foreign key to authors.id)
@@ -60,7 +66,7 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `url` (text)
    - `created_at` (timestamp) - When we stored it
 
-5. **events** - Events like hackathons, conferences, etc.
+6. **events** - Events like hackathons, conferences, etc.
    - `id` (uuid, primary key)
    - `name` (text, unique) - Event name (e.g., "Stellar Hackathon 2024")
    - `description` (text, nullable)
@@ -68,17 +74,17 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `end_date` (date, nullable)
    - `location` (text, nullable)
    - `event_type` (text, nullable) - e.g., "hackathon", "conference", "workshop"
-   - `agency` (text, nullable) - Agency that organized/put on the event
+   - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that organized/put on the event
    - `created_at`, `updated_at` (timestamps)
 
-6. **author_events** - Many-to-many: Authors associated with events
+7. **author_events** - Many-to-many: Authors associated with events
    - `id` (uuid, primary key)
    - `author_id` (uuid, foreign key to authors.id)
    - `event_id` (uuid, foreign key to events.id)
    - `created_at` (timestamp)
    - Unique constraint on (author_id, event_id)
 
-7. **repository_events** - Many-to-many: Repositories associated with events
+8. **repository_events** - Many-to-many: Repositories associated with events
    - `id` (uuid, primary key)
    - `repository_id` (uuid, foreign key to repositories.id)
    - `event_id` (uuid, foreign key to events.id)
@@ -90,7 +96,8 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
 - Index on `commits.repository_id` and `commits.author_id` for joins
 - Index on `commits.branch` for branch-based queries (future extensibility)
 - Index on `repositories.ecosystem_id` for ecosystem filtering
-- Index on `repositories.agency_tag` and `authors.agency_tag` for agency filtering
+- Index on `repositories.agency_id` and `authors.agency_id` for agency filtering
+- Index on `events.agency_id` for agency filtering on events
 - Index on `repositories.parent_repository_id` for fork relationship queries
 - Index on `repositories.is_fork` for filtering forks
 - Index on `author_events.author_id` and `author_events.event_id` for event queries
@@ -116,6 +123,7 @@ odd-dashboard/
 │   │   │       ├── author.service.ts        # Author CRUD operations
 │   │   │       ├── commit.service.ts        # Commit CRUD operations
 │   │   │       ├── ecosystem.service.ts     # Ecosystem CRUD operations
+│   │   │       ├── agency.service.ts        # Agency CRUD operations
 │   │   │       └── event.service.ts         # Event CRUD operations
 │   │   ├── components/
 │   │   │   └── ui/                # shadcn-svelte components (Button, Card, Table, etc.)
@@ -136,6 +144,10 @@ odd-dashboard/
 │   │   │   │   └── +server.ts           # GET commits with filters
 │   │   │   ├── ecosystems/
 │   │   │   │   └── +server.ts           # GET/POST ecosystems
+│   │   │   ├── agencies/
+│   │   │   │   ├── +server.ts           # GET/POST agencies
+│   │   │   │   └── [id]/
+│   │   │   │       └── +server.ts       # GET/PUT/DELETE single agency
 │   │   │   ├── events/
 │   │   │   │   ├── +server.ts           # GET/POST events
 │   │   │   │   └── [id]/
@@ -154,6 +166,10 @@ odd-dashboard/
 │   │   │   └── +page.svelte      # Contributors view
 │   │   ├── ecosystems/
 │   │   │   └── +page.svelte      # Ecosystems management
+│   │   ├── agencies/
+│   │   │   ├── +page.svelte      # Agencies list view
+│   │   │   └── [id]/
+│   │   │       └── +page.svelte  # Agency detail view
 │   │   └── events/
 │   │       ├── +page.svelte      # Events list view
 │   │       └── [id]/
@@ -164,7 +180,8 @@ odd-dashboard/
 │   │   ├── RepositoryCard.svelte
 │   │   ├── EcosystemTree.svelte
 │   │   ├── DateRangePicker.svelte
-│   │   ├── AgencyTagFilter.svelte
+│   │   ├── AgencyFilter.svelte
+│   │   ├── AgencyCard.svelte
 │   │   ├── EventCard.svelte
 │   │   └── charts/
 │   │       ├── ContributionChart.svelte
@@ -200,27 +217,29 @@ odd-dashboard/
 7. Handle rate limiting and error cases
 
 ### Phase 3: Core Services & API Routes (Days 7-10)
-1. Implement repository service (CRUD operations, fork detection, parent repository linking)
-2. Implement author service (CRUD, deduplication by email/username)
-3. Implement commit service (CRUD, bulk insert, fork-aware attribution with SHA comparison)
-4. Implement ecosystem service (CRUD, hierarchy management)
-5. Implement event service (CRUD, associate authors/repos with events)
-6. Update sync service to handle forks (compare commits by SHA, attribute unique commits to fork, upstream commits to parent)
-7. Create API routes for all entities
-8. Add filtering and pagination to API endpoints
-9. Create specialized endpoints (e.g., contributors over time period, event associations)
+1. Implement agency service (CRUD operations)
+2. Implement repository service (CRUD operations, fork detection, parent repository linking)
+3. Implement author service (CRUD, deduplication by email/username)
+4. Implement commit service (CRUD, bulk insert, fork-aware attribution with SHA comparison)
+5. Implement ecosystem service (CRUD, hierarchy management)
+6. Implement event service (CRUD, associate authors/repos with events)
+7. Update sync service to handle forks (compare commits by SHA, attribute unique commits to fork, upstream commits to parent)
+8. Create API routes for all entities (including agencies)
+9. Add filtering and pagination to API endpoints
+10. Create specialized endpoints (e.g., contributors over time period, event associations)
 
 ### Phase 4: Dashboard UI - Core Views (Days 11-14)
 1. Create main dashboard layout with navigation using shadcn-svelte components
-2. Build repository list view with filters (ecosystem, agency tag, event) using shadcn-svelte components
-3. Build repository detail view showing commits and contributors
-4. Build contributors view with filtering (ecosystem, agency, event, time period)
-5. Build events management view (list, create, edit events) using shadcn-svelte form components
-6. Build event detail view (show associated authors and repositories)
-7. Implement date range picker component using shadcn-svelte date picker
-8. Add agency tag filtering UI using shadcn-svelte select/combobox components
-9. Add event filtering UI using shadcn-svelte components
-10. Create basic charts for contribution activity
+2. Build agencies management view (list, create, edit agencies) using shadcn-svelte form components
+3. Build repository list view with filters (ecosystem, agency, event) using shadcn-svelte components
+4. Build repository detail view showing commits and contributors
+5. Build contributors view with filtering (ecosystem, agency, event, time period)
+6. Build events management view (list, create, edit events) using shadcn-svelte form components
+7. Build event detail view (show associated authors and repositories)
+8. Implement date range picker component using shadcn-svelte date picker
+9. Add agency filtering UI using shadcn-svelte select/combobox components (populated from agencies table)
+10. Add event filtering UI using shadcn-svelte components
+11. Create basic charts for contribution activity
 
 ### Phase 5: Advanced Features & Polish (Days 15-18)
 1. Implement "contributors over time period" query and view
@@ -288,10 +307,13 @@ odd-dashboard/
 - Use materialized views or computed columns for aggregations if needed
 - Cache frequently accessed data
 
-### Agency Tagging
-- Simple text field on repositories and authors tables
-- UI dropdown/autocomplete for selecting tags
-- Filter queries support agency_tag parameter
+### Agency Management
+- Dedicated `agencies` table with id, name, and description
+- Foreign key relationships: `repositories.agency_id`, `authors.agency_id`, `events.agency_id`
+- Agencies can be associated with repositories, authors, and events
+- UI dropdown/select for selecting agencies (using agency names)
+- Filter queries support agency_id parameter
+- Agency service provides CRUD operations for managing agencies
 
 ### Event System
 - Events table stores event metadata (name, dates, type, location, agency)
