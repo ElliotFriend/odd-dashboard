@@ -76,25 +76,22 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `created_at`, `updated_at` (timestamps)
 
 7. **author_events** - Many-to-many: Authors associated with events
-   - `id` (uuid, primary key)
    - `author_id` (uuid, foreign key to authors.id)
    - `event_id` (uuid, foreign key to events.id)
    - `created_at` (timestamp)
-   - Unique constraint on (author_id, event_id)
+   - Primary key on (author_id, event_id)
 
 8. **repository_events** - Many-to-many: Repositories associated with events
-   - `id` (uuid, primary key)
    - `repository_id` (uuid, foreign key to repositories.id)
    - `event_id` (uuid, foreign key to events.id)
    - `created_at` (timestamp)
-   - Unique constraint on (repository_id, event_id)
+   - Primary key on (repository_id, event_id)
 
 9. **repository_ecosystems** - Many-to-many: Repositories associated with ecosystems
-   - `id` (uuid, primary key)
    - `repository_id` (uuid, foreign key to repositories.id)
    - `ecosystem_id` (uuid, foreign key to ecosystems.id)
    - `created_at` (timestamp)
-   - Unique constraint on (repository_id, ecosystem_id)
+   - Primary key on (repository_id, ecosystem_id)
 
 ### Indexes
 - Index on `commits.commit_date` for time-based queries
