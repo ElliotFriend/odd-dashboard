@@ -557,7 +557,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Database Setup
 
-- [ ] setup database access using the svelte cli (`pnpm dlx sv add drizzle="database:postgresql+client:neon+docker:true`) - This should take care of everything we need
+- [ ] setup database access using the svelte cli (`pnpm dlx sv add drizzle="database:postgresql+client:postgres.js+docker:true`) - This should take care of everything we need
 - [ ] Test Docker Compose setup: start container, verify connection, stop container
 - [ ] Create `.env` file with `DATABASE_URL` pointing to Docker container
 - [ ] Test database connection with a simple script
