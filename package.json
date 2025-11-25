@@ -20,7 +20,8 @@
         "docker:down": "docker compose down",
         "docker:logs": "docker compose logs -f postgres",
         "docker:reset": "docker compose down -v && docker compose up -d",
-        "db:test": "node scripts/test-db-connection.js"
+        "db:test": "node scripts/test-db-connection.js",
+        "db:seed": "tsx scripts/seed-ecosystems.ts"
     },
     "devDependencies": {
         "@sveltejs/adapter-auto": "^7.0.0",
@@ -42,6 +43,7 @@
         "svelte-check": "^4.3.4",
         "tailwind-merge": "^3.4.0",
         "tailwindcss": "^4.1.17",
+        "tsx": "^4.20.6",
         "typescript": "^5.9.3",
         "vite": "^7.2.2"
     },

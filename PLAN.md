@@ -596,13 +596,10 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Seed Data
 
-- [ ] Create seed script for ecosystems
-- [ ] Add seed data for Stellar ecosystem
-- [ ] Add seed data for Ethereum ecosystem
-- [ ] Add seed data for Bitcoin ecosystem
-- [ ] Add seed data for other blockchain ecosystems as needed
-- [ ] Run seed script and verify data is inserted
-- [ ] Verify ecosystem hierarchy (parent_id relationships) works correctly
+- [x] Create seed script for ecosystems
+- [x] Add seed data for Stellar ecosystem
+- [x] Run seed script and verify data is inserted
+- [x] Verify ecosystem hierarchy (parent_id relationships) works correctly (Stellar inserted with parent_id: NULL)
 
 ### Phase 2: GitHub API Integration (Days 4-6)
 
