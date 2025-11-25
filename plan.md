@@ -447,3 +447,537 @@ The following features have been deferred to future phases to focus on core func
 - Implement batch sync endpoint for multiple repositories
 - Add progress tracking for bulk operations
 - Queue management for large sync jobs
+
+## Implementation Checklist
+
+Use this detailed checklist to track progress and ensure each item is complete and working before moving to the next.
+
+### Phase 1: Project Setup & Database (Days 1-3)
+
+#### Project Initialization
+- [ ] Run `pnpm dlx sv create .` with TypeScript template
+- [ ] Verify `package.json` exists with correct dependencies
+- [ ] Verify `tsconfig.json` is configured correctly
+- [ ] Test that `pnpm install` completes without errors
+- [ ] Verify `pnpm dev` starts the development server
+- [ ] Verify `pnpm build` completes successfully
+
+#### Prettier Setup
+- [ ] Install prettier and dependencies (`pnpm dlx sv add prettier`)
+- [ ] Ensure prettier config specifies:
+  - [ ] 4 spaces indentation
+  - [ ] Trailing commas enabled
+  - [ ] Semicolons enabled
+- [ ] Test Prettier formatting on a sample file
+
+#### Tailwind CSS & shadcn-svelte Setup
+- [ ] Install Tailwind CSS and dependencies (`tailwindcss`, `postcss`, `autoprefixer`)
+- [ ] Initialize Tailwind config (`pnpm dlx sv add tailwindcss="plugins:forms,typography"`)
+- [ ] Configure `tailwind.config.js` with content paths
+- [ ] Set up `postcss.config.js`
+- [ ] Install shadcn-svelte CLI
+- [ ] Initialize shadcn-svelte (`pnpm dlx shadcn-svelte@latest init`)
+- [ ] Install required shadcn-svelte dependencies (`class-variance-authority`, `clsx`, `tailwind-merge`, `@lucide/svelte`)
+- [ ] Add a test shadcn-svelte component (e.g., Button) to verify setup
+- [ ] Verify Tailwind styles are applied correctly
+
+#### SvelteKit Adapter Setup
+- [ ] Install `@sveltejs/adapter-auto`
+- [ ] Update `svelte.config.js` to use adapter-auto
+- [ ] Verify adapter is configured correctly
+
+#### Database Setup
+- [ ] Install PostgreSQL (if not already installed)
+- [ ] Create database: `odd_dashboard`
+- [ ] Install `drizzle-orm` and `drizzle-kit`
+- [ ] Install PostgreSQL driver (`postgres` or `pg`)
+- [ ] Create `.env` file with `DATABASE_URL`
+- [ ] Create `.env.example` with template variables
+- [ ] Test database connection with a simple script
+- [ ] Configure connection pooling (min 2, max 10 connections)
+
+#### Database Schema Creation
+- [ ] Create `src/lib/server/db/schema.ts`
+- [ ] Define `ecosystems` table with all fields and constraints
+- [ ] Define `agencies` table with all fields and constraints
+- [ ] Define `repositories` table with all fields and constraints
+- [ ] Define `authors` table with all fields and constraints (including email)
+- [ ] Define `commits` table with all fields and constraints
+- [ ] Define `events` table with all fields and constraints
+- [ ] Define `author_events` junction table with composite primary key
+- [ ] Define `repository_events` junction table with composite primary key
+- [ ] Define `repository_ecosystems` junction table with composite primary key
+- [ ] Add all foreign key relationships
+- [ ] Add all unique constraints (including composite on commits)
+- [ ] Verify schema compiles without TypeScript errors
+
+#### Database Migrations
+- [ ] Configure `drizzle.config.ts` with database connection
+- [ ] Run initial migration generation: `drizzle-kit generate`
+- [ ] Verify migration files are created correctly
+- [ ] Run migration: `drizzle-kit migrate` or custom migrate script
+- [ ] Verify all tables are created in database
+- [ ] Verify all indexes are created
+- [ ] Verify all foreign keys are created
+- [ ] Verify all constraints are applied
+
+#### Seed Data
+- [ ] Create seed script for ecosystems
+- [ ] Add seed data for Stellar ecosystem
+- [ ] Add seed data for Ethereum ecosystem
+- [ ] Add seed data for Bitcoin ecosystem
+- [ ] Add seed data for other blockchain ecosystems as needed
+- [ ] Run seed script and verify data is inserted
+- [ ] Verify ecosystem hierarchy (parent_id relationships) works correctly
+
+### Phase 2: GitHub API Integration (Days 4-6)
+
+#### Octokit Client Setup
+- [ ] Install `@octokit/rest`
+- [ ] Create `src/lib/server/github/client.ts`
+- [ ] Set up Octokit client with `GITHUB_TOKEN` from environment
+- [ ] Add `server-only` import to prevent client-side usage
+- [ ] Test client initialization
+- [ ] Verify token authentication works (make a test API call)
+
+#### GitHub Types
+- [ ] Create `src/lib/server/github/types.ts`
+- [ ] Define TypeScript types for GitHub API responses
+- [ ] Define types for repository data
+- [ ] Define types for commit data
+- [ ] Define types for author/user data
+
+#### Repository Fetching
+- [ ] Create `src/lib/server/github/fetchers.ts`
+- [ ] Implement function to fetch repository by full_name
+- [ ] Implement function to fetch repository details (including fork info, default branch)
+- [ ] Test fetching a real repository from GitHub API
+- [ ] Verify fork detection works correctly
+- [ ] Verify default branch detection works
+- [ ] Handle API errors (404, rate limits, etc.)
+
+#### Repository Rename Detection
+- [ ] Implement logic to compare stored `full_name` with GitHub API response
+- [ ] Test rename detection with a renamed repository
+- [ ] Verify rename update logic works
+
+#### Commit Fetching
+- [ ] Implement function to fetch commits for a repository's default branch
+- [ ] Implement pagination for commit fetching
+- [ ] Test fetching commits from a real repository
+- [ ] Verify pagination works for repositories with many commits
+- [ ] Handle API errors gracefully
+
+#### Author/User Data Fetching
+- [ ] Implement function to fetch GitHub user by username
+- [ ] Implement function to fetch GitHub user by ID
+- [ ] Handle cases where user doesn't exist (404)
+- [ ] Handle email-only commits (no GitHub user)
+- [ ] Test fetching user data for both GitHub users and email-only commits
+
+#### Sync Service - Basic Structure
+- [ ] Create sync service file
+- [ ] Implement basic sync function structure
+- [ ] Implement initial sync (fetch all commits)
+- [ ] Implement incremental sync (fetch commits since last_synced_at)
+- [ ] Test sync with a small test repository
+- [ ] Verify commits are stored correctly
+
+#### Sync Service - Batching for Large Repos
+- [ ] Implement batching logic (process 1000 commits at a time)
+- [ ] Update `last_synced_at` after each batch
+- [ ] Test with a repository that has >1000 commits
+- [ ] Verify all commits are synced correctly
+
+#### Fork Detection & Linking
+- [ ] Implement fork detection logic
+- [ ] Implement parent repository lookup by `parent_full_name`
+- [ ] Implement `parent_repository_id` linking when parent exists
+- [ ] Test with a fork repository
+- [ ] Verify parent linking works correctly
+
+#### Rate Limiting & Error Handling
+- [ ] Implement rate limit detection
+- [ ] Implement request queuing/throttling
+- [ ] Implement retry logic with exponential backoff
+- [ ] Test rate limit handling
+- [ ] Test error handling for network failures
+- [ ] Test error handling for API errors (404, 403, etc.)
+
+### Phase 3: Core Services & API Routes (Days 7-10)
+
+#### Drizzle Validators Setup
+- [ ] Install `zod` (if not already installed)
+- [ ] Create validator schemas for ecosystems
+- [ ] Create validator schemas for agencies
+- [ ] Create validator schemas for repositories
+- [ ] Create validator schemas for authors
+- [ ] Create validator schemas for commits
+- [ ] Create validator schemas for events
+- [ ] Test validators with valid data
+- [ ] Test validators with invalid data (verify errors)
+
+#### Agency Service
+- [ ] Create `src/lib/server/services/agency.service.ts`
+- [ ] Implement `createAgency()` with validation
+- [ ] Implement `getAgencyById()` 
+- [ ] Implement `getAllAgencies()`
+- [ ] Implement `updateAgency()` with validation
+- [ ] Implement `deleteAgency()` with CASCADE handling
+- [ ] Test all CRUD operations
+- [ ] Verify validation works correctly
+
+#### Repository Service
+- [ ] Create `src/lib/server/services/repository.service.ts`
+- [ ] Implement `createRepository()` with validation
+- [ ] Implement `getRepositoryById()`
+- [ ] Implement `getRepositoryByFullName()`
+- [ ] Implement `getAllRepositories()` with filtering
+- [ ] Implement `updateRepository()` with validation
+- [ ] Implement `deleteRepository()` with CASCADE handling
+- [ ] Implement fork detection logic
+- [ ] Implement parent repository linking
+- [ ] Implement rename detection and update
+- [ ] Test all CRUD operations
+- [ ] Test fork detection and linking
+- [ ] Test rename detection
+
+#### Author Service
+- [ ] Create `src/lib/server/services/author.service.ts`
+- [ ] Implement `createAuthor()` with validation
+- [ ] Implement `getAuthorById()`
+- [ ] Implement `getAuthorByGithubId()`
+- [ ] Implement `getAuthorByEmail()` (case-insensitive)
+- [ ] Implement `getAllAuthors()` with filtering
+- [ ] Implement `updateAuthor()` with validation (including username updates)
+- [ ] Implement `deleteAuthor()` with SET NULL handling
+- [ ] Implement deduplication logic (github_id first, then email)
+- [ ] Test author creation for GitHub users
+- [ ] Test author creation for email-only commits
+- [ ] Test deduplication logic
+- [ ] Test username update logic
+
+#### Commit Service
+- [ ] Create `src/lib/server/services/commit.service.ts`
+- [ ] Implement `createCommit()` with validation
+- [ ] Implement `bulkInsertCommits()` for batch operations
+- [ ] Implement `getCommitById()`
+- [ ] Implement `getCommitsByRepository()` with filtering
+- [ ] Implement `getCommitsByAuthor()` with filtering
+- [ ] Implement `getCommitsBySha()` (for fork comparison)
+- [ ] Test commit creation
+- [ ] Test bulk insert with large batches
+- [ ] Test commit queries with filters
+
+#### Ecosystem Service
+- [ ] Create `src/lib/server/services/ecosystem.service.ts`
+- [ ] Implement `createEcosystem()` with validation
+- [ ] Implement `getEcosystemById()`
+- [ ] Implement `getAllEcosystems()` with hierarchy
+- [ ] Implement `updateEcosystem()` with validation
+- [ ] Implement `deleteEcosystem()` with SET NULL handling
+- [ ] Implement cycle prevention validation
+- [ ] Test cycle prevention (try to create circular reference)
+- [ ] Test hierarchy queries (get children, get ancestors)
+
+#### Event Service
+- [ ] Create `src/lib/server/services/event.service.ts`
+- [ ] Implement `createEvent()` with validation
+- [ ] Implement `getEventById()`
+- [ ] Implement `getAllEvents()` with filtering
+- [ ] Implement `updateEvent()` with validation
+- [ ] Implement `deleteEvent()` with CASCADE handling
+- [ ] Implement `associateAuthorWithEvent()`
+- [ ] Implement `associateRepositoryWithEvent()`
+- [ ] Implement `getAuthorsForEvent()`
+- [ ] Implement `getRepositoriesForEvent()`
+- [ ] Test all CRUD operations
+- [ ] Test author/repository associations
+
+#### Fork-Aware Sync Service Updates
+- [ ] Update sync service to handle forks
+- [ ] Implement commit SHA comparison logic
+- [ ] Implement batch SHA lookup for parent commits
+- [ ] Implement in-memory caching for parent commit SHAs
+- [ ] Implement commit attribution (parent vs fork)
+- [ ] Test sync with a fork repository
+- [ ] Test sync with fork that has parent in database
+- [ ] Test sync with fork that has parent NOT in database
+- [ ] Verify commit attribution is correct
+
+#### API Routes - Repositories
+- [ ] Create `src/routes/api/repositories/+server.ts`
+- [ ] Implement GET (list repositories with filters)
+- [ ] Implement POST (create repository) with validation
+- [ ] Create `src/routes/api/repositories/[id]/+server.ts`
+- [ ] Implement GET (single repository)
+- [ ] Implement PUT (update repository) with validation
+- [ ] Implement DELETE (delete repository)
+- [ ] Create `src/routes/api/repositories/[id]/sync/+server.ts`
+- [ ] Implement POST (trigger sync for repository)
+- [ ] Create `src/routes/api/repositories/[id]/contributors/+server.ts`
+- [ ] Implement GET (get contributors for repository)
+- [ ] Test all repository endpoints
+- [ ] Verify validation works
+- [ ] Verify error handling works
+
+#### API Routes - Authors
+- [ ] Create `src/routes/api/authors/+server.ts`
+- [ ] Implement GET (list authors with filters)
+- [ ] Test author endpoints
+- [ ] Verify filtering works
+
+#### API Routes - Commits
+- [ ] Create `src/routes/api/commits/+server.ts`
+- [ ] Implement GET (list commits with filters)
+- [ ] Test commit endpoints
+- [ ] Verify filtering works (repository, author, date range)
+
+#### API Routes - Ecosystems
+- [ ] Create `src/routes/api/ecosystems/+server.ts`
+- [ ] Implement GET (list ecosystems)
+- [ ] Implement POST (create ecosystem) with validation
+- [ ] Test ecosystem endpoints
+
+#### API Routes - Agencies
+- [ ] Create `src/routes/api/agencies/+server.ts`
+- [ ] Implement GET (list agencies)
+- [ ] Implement POST (create agency) with validation
+- [ ] Create `src/routes/api/agencies/[id]/+server.ts`
+- [ ] Implement GET (single agency)
+- [ ] Implement PUT (update agency) with validation
+- [ ] Implement DELETE (delete agency)
+- [ ] Test all agency endpoints
+
+#### API Routes - Events
+- [ ] Create `src/routes/api/events/+server.ts`
+- [ ] Implement GET (list events)
+- [ ] Implement POST (create event) with validation
+- [ ] Create `src/routes/api/events/[id]/+server.ts`
+- [ ] Implement GET (single event)
+- [ ] Implement PUT (update event) with validation
+- [ ] Implement DELETE (delete event)
+- [ ] Test all event endpoints
+
+#### API Routes - Filtering & Pagination
+- [ ] Add filtering to all list endpoints (ecosystem, agency, event, date range)
+- [ ] Add pagination to all list endpoints
+- [ ] Test filtering with various combinations
+- [ ] Test pagination with large datasets
+- [ ] Verify pagination metadata is returned correctly
+
+#### API Routes - Specialized Endpoints
+- [ ] Create endpoint for "contributors over time period"
+- [ ] Create endpoint for event associations
+- [ ] Test specialized endpoints
+
+#### Error Handling
+- [ ] Implement consistent error response format
+- [ ] Add user-friendly error messages
+- [ ] Test error handling for invalid requests
+- [ ] Test error handling for database errors
+- [ ] Test error handling for validation errors
+
+### Phase 4: Dashboard UI - Core Views (Days 11-14)
+
+#### Layout & Navigation
+- [ ] Create `src/routes/+layout.svelte`
+- [ ] Add navigation menu with links to all main views
+- [ ] Style navigation with shadcn-svelte components
+- [ ] Test navigation between pages
+- [ ] Verify layout is responsive
+
+#### Dashboard Home
+- [ ] Create `src/routes/+page.svelte`
+- [ ] Add overview statistics (total repos, authors, commits)
+- [ ] Add recent activity section
+- [ ] Test dashboard home loads correctly
+
+#### Timezone Utilities
+- [ ] Create `src/lib/utils/date.ts`
+- [ ] Implement function to convert UTC to browser local time
+- [ ] Implement function to format dates for display
+- [ ] Test timezone conversion with different timezones
+- [ ] Test date formatting
+
+#### Agencies Management View
+- [ ] Create `src/routes/agencies/+page.svelte`
+- [ ] Implement list view with table/cards
+- [ ] Implement inline create form
+- [ ] Implement inline edit form
+- [ ] Implement delete functionality
+- [ ] Add loading states
+- [ ] Add error handling
+- [ ] Test all CRUD operations in UI
+- [ ] Verify form validation works
+
+#### Repository List View
+- [ ] Create `src/routes/repositories/+page.svelte`
+- [ ] Implement repository list display
+- [ ] Add ecosystem filter dropdown
+- [ ] Add agency filter dropdown
+- [ ] Add event filter dropdown
+- [ ] Implement filtering logic
+- [ ] Add pagination UI
+- [ ] Test all filters work correctly
+- [ ] Test pagination works
+
+#### Repository Detail View
+- [ ] Create `src/routes/repositories/[id]/+page.svelte`
+- [ ] Display repository information
+- [ ] Display commits list for repository
+- [ ] Display contributors list
+- [ ] Add date range filter for commits
+- [ ] Add sync button
+- [ ] Test repository detail page loads
+- [ ] Test commits display correctly
+- [ ] Test contributors display correctly
+- [ ] Test sync functionality
+
+#### Contributors View
+- [ ] Create `src/routes/contributors/+page.svelte`
+- [ ] Implement contributors list display
+- [ ] Add ecosystem filter
+- [ ] Add agency filter
+- [ ] Add event filter
+- [ ] Add date range filter
+- [ ] Implement filtering logic
+- [ ] Test all filters work
+- [ ] Verify contributor data displays correctly
+
+#### Events Management View
+- [ ] Create `src/routes/events/+page.svelte`
+- [ ] Implement events list display
+- [ ] Implement inline create form
+- [ ] Implement inline edit form
+- [ ] Implement delete functionality
+- [ ] Add UI for associating authors with events
+- [ ] Add UI for associating repositories with events
+- [ ] Test all CRUD operations
+- [ ] Test author/repository associations
+
+#### Date Range Picker Component
+- [ ] Create `src/components/DateRangePicker.svelte`
+- [ ] Use shadcn-svelte date picker component
+- [ ] Implement date range selection
+- [ ] Test date range picker works
+- [ ] Verify dates are handled in UTC
+
+#### Filter Components
+- [ ] Create `src/components/AgencyFilter.svelte`
+- [ ] Implement agency dropdown/combobox
+- [ ] Populate from agencies API
+- [ ] Test agency filter works
+- [ ] Create event filter component
+- [ ] Test event filter works
+
+#### Charts
+- [ ] Install Chart.js
+- [ ] Create `src/components/charts/ContributionChart.svelte`
+- [ ] Implement contribution activity chart
+- [ ] Create `src/components/charts/ActivityTimeline.svelte`
+- [ ] Implement activity timeline chart
+- [ ] Test charts render correctly
+- [ ] Test charts update with filtered data
+
+### Phase 5: Advanced Features & Polish (Days 15-18)
+
+#### Contributors Over Time Period
+- [ ] Implement query for contributors over time period
+- [ ] Create view/component to display this data
+- [ ] Test with various time periods
+- [ ] Verify data is accurate
+
+#### Ecosystem Hierarchy Visualization
+- [ ] Create `src/components/EcosystemTree.svelte`
+- [ ] Implement tree view for ecosystem hierarchy
+- [ ] Add expand/collapse functionality
+- [ ] Test hierarchy displays correctly
+- [ ] Test with nested hierarchies
+
+#### Aggregated Statistics
+- [ ] Implement query for total commits per ecosystem
+- [ ] Implement query for total contributors per ecosystem
+- [ ] Implement query for total commits per event
+- [ ] Implement query for total contributors per event
+- [ ] Create UI components to display statistics
+- [ ] Test statistics are accurate
+
+#### Event Associations UI
+- [ ] Add UI for associating authors with events in event management view
+- [ ] Add UI for associating repositories with events in event management view
+- [ ] Implement add/remove association functionality
+- [ ] Test associations work correctly
+
+#### Loading States
+- [ ] Add loading spinners to all async operations
+- [ ] Add skeleton loaders where appropriate
+- [ ] Test loading states display correctly
+
+#### Error Handling UI
+- [ ] Add error message display components
+- [ ] Add error boundaries where needed
+- [ ] Test error handling displays user-friendly messages
+- [ ] Test error recovery
+
+#### Query Optimization
+- [ ] Review all database queries
+- [ ] Add missing indexes if needed
+- [ ] Optimize slow queries
+- [ ] Test query performance with larger datasets
+- [ ] Verify indexes are being used
+
+### Phase 6: Testing & Documentation (Days 19-21)
+
+#### Testing with Real Repositories
+- [ ] Sync a real GitHub repository
+- [ ] Verify all commits are synced correctly
+- [ ] Verify authors are created correctly
+- [ ] Test with a fork repository
+- [ ] Verify fork attribution works
+- [ ] Test with a repository that has been renamed
+- [ ] Test with email-only commits
+
+#### Performance Testing
+- [ ] Test with repository containing 1000+ commits
+- [ ] Test with repository containing 10000+ commits
+- [ ] Verify sync performance is acceptable
+- [ ] Verify query performance is acceptable
+- [ ] Test with multiple repositories
+- [ ] Monitor database connection pool usage
+
+#### Bug Fixes
+- [ ] Document any bugs found during testing
+- [ ] Fix all critical bugs
+- [ ] Fix all high-priority bugs
+- [ ] Verify fixes work correctly
+
+#### README Documentation
+- [ ] Create `README.md`
+- [ ] Add project overview
+- [ ] Add setup instructions
+- [ ] Add environment variables documentation
+- [ ] Add database setup instructions
+- [ ] Add development workflow
+- [ ] Add deployment instructions
+
+#### API Documentation
+- [ ] Document all API endpoints
+- [ ] Document request/response formats
+- [ ] Document authentication requirements
+- [ ] Document error responses
+- [ ] Add example requests/responses
+
+#### Code Documentation
+- [ ] Add JSDoc comments to all service functions
+- [ ] Add inline comments for complex logic
+- [ ] Verify code is well-documented
+
+#### Final Verification
+- [ ] Run full test suite (if created)
+- [ ] Verify all features work end-to-end
+- [ ] Verify no console errors
+- [ ] Verify no TypeScript errors
+- [ ] Verify Prettier formatting is applied
+- [ ] Verify all environment variables are documented
+- [ ] Verify README is complete and accurate
