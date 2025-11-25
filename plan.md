@@ -18,14 +18,12 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `id` (uuid, primary key)
    - `name` (text, unique)
    - `parent_id` (uuid, foreign key to ecosystems.id, nullable)
-   - `deleted_at` (timestamp, nullable) - Soft delete
    - `created_at`, `updated_at` (timestamps)
 
 2. **agencies** - Agencies/organizations that source repositories, authors, or events
    - `id` (uuid, primary key)
    - `name` (text, unique) - Agency name
    - `description` (text, nullable)
-   - `deleted_at` (timestamp, nullable) - Soft delete
    - `created_at`, `updated_at` (timestamps)
 
 3. **repositories** - GitHub repositories
@@ -41,7 +39,6 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `parent_repository_id` (uuid, foreign key to repositories.id, nullable) - Upstream repository if fork exists in database
    - `parent_full_name` (text, nullable) - Upstream repository full_name (e.g., "owner/parent-repo") even if not in database
    - `default_branch` (text, default 'main') - Default/primary branch name (e.g., "main", "master")
-   - `deleted_at` (timestamp, nullable) - Soft delete
    - `created_at`, `updated_at` (timestamps)
    - `last_synced_at` (timestamp, nullable) - Track when we last fetched commits
 
@@ -51,7 +48,6 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `username` (text, unique) - GitHub username
    - `name` (text, nullable)
    - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that sourced this author
-   - `deleted_at` (timestamp, nullable) - Soft delete
    - `created_at`, `updated_at` (timestamps)
    - Note: Avatar URL can be constructed from `github_id` or `username` (e.g., `https://avatars.githubusercontent.com/u/{github_id}`, `https://github.com/{username}.png`)
 
@@ -77,7 +73,6 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `location` (text, nullable)
    - `event_type` (text, nullable) - e.g., "hackathon", "conference", "workshop"
    - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that organized/put on the event
-   - `deleted_at` (timestamp, nullable) - Soft delete
    - `created_at`, `updated_at` (timestamps)
 
 7. **author_events** - Many-to-many: Authors associated with events
@@ -101,17 +96,6 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
    - `created_at` (timestamp)
    - Unique constraint on (repository_id, ecosystem_id)
 
-10. **daily_repository_stats** - Aggregated stats for performance
-    - `id` (uuid, primary key)
-    - `repository_id` (uuid, foreign key to repositories.id)
-    - `date` (date)
-    - `commit_count` (integer)
-    - `active_developer_count` (integer)
-    - `additions` (integer)
-    - `deletions` (integer)
-    - `created_at` (timestamp)
-    - Unique constraint on (repository_id, date)
-
 ### Indexes
 - Index on `commits.commit_date` for time-based queries
 - Index on `commits.repository_id` and `commits.author_id` for joins
@@ -124,7 +108,6 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
 - Index on `repositories.is_fork` for filtering forks
 - Index on `author_events.author_id` and `author_events.event_id` for event queries
 - Index on `repository_events.repository_id` and `repository_events.event_id` for event queries
-- Index on `daily_repository_stats.repository_id` and `daily_repository_stats.date` for dashboard charts
 
 ## Project Structure
 
@@ -174,11 +157,7 @@ odd-dashboard/
 │   │   │   ├── events/
 │   │   │   │   ├── +server.ts           # GET/POST events
 │   │   │   │   └── [id]/
-│   │   │   │       ├── +server.ts       # GET/PUT/DELETE single event
-│   │   │   │       ├── authors/+server.ts  # GET authors for event
-│   │   │   │       └── repositories/+server.ts  # GET repos for event
-│   │   │   └── sync/
-│   │   │       └── +server.ts           # Bulk sync endpoint
+│   │   │   │       └── +server.ts       # GET/PUT/DELETE single event (for inline editing)
 │   │   ├── +layout.svelte        # Main layout
 │   │   ├── +page.svelte          # Dashboard home
 │   │   ├── repositories/
@@ -190,13 +169,9 @@ odd-dashboard/
 │   │   ├── ecosystems/
 │   │   │   └── +page.svelte      # Ecosystems management
 │   │   ├── agencies/
-│   │   │   ├── +page.svelte      # Agencies list view
-│   │   │   └── [id]/
-│   │   │       └── +page.svelte  # Agency detail view
+│   │   │   └── +page.svelte      # Agencies list view with inline editing
 │   │   └── events/
-│   │       ├── +page.svelte      # Events list view
-│   │       └── [id]/
-│   │           └── +page.svelte  # Event detail view
+│   │       └── +page.svelte      # Events list view with inline editing
 │   ├── components/
 │   │   ├── CommitList.svelte
 │   │   ├── ContributorCard.svelte
@@ -236,9 +211,8 @@ odd-dashboard/
 3. Implement commit fetching (get commits for a repo's default branch with pagination)
 4. Implement author/user data fetching
 5. Create sync service to fetch and store commits from GitHub (default branch only)
-6. Implement stats aggregation service (populate daily_repository_stats)
-7. Implement fork detection and parent repository linking logic
-8. Handle rate limiting and error cases
+6. Implement fork detection and parent repository linking logic
+7. Handle rate limiting and error cases
 
 ### Phase 3: Core Services & API Routes (Days 7-10)
 1. Implement agency service (CRUD operations)
@@ -254,26 +228,23 @@ odd-dashboard/
 
 ### Phase 4: Dashboard UI - Core Views (Days 11-14)
 1. Create main dashboard layout with navigation using shadcn-svelte components
-2. Build agencies management view (list, create, edit agencies) using shadcn-svelte form components
+2. Build agencies management view (list view with inline create/edit) using shadcn-svelte components
 3. Build repository list view with filters (ecosystem, agency, event) using shadcn-svelte components
 4. Build repository detail view showing commits and contributors
 5. Build contributors view with filtering (ecosystem, agency, event, time period)
-6. Build events management view (list, create, edit events) using shadcn-svelte form components
-7. Build event detail view (show associated authors and repositories)
-8. Implement date range picker component using shadcn-svelte date picker
-9. Add agency filtering UI using shadcn-svelte select/combobox components (populated from agencies table)
-10. Add event filtering UI using shadcn-svelte components
-11. Create basic charts for contribution activity
+6. Build events management view (list view with inline create/edit) using shadcn-svelte components
+7. Implement date range picker component using shadcn-svelte date picker
+8. Add agency filtering UI using shadcn-svelte select/combobox components (populated from agencies table)
+9. Add event filtering UI using shadcn-svelte components
+10. Create basic charts for contribution activity
 
 ### Phase 5: Advanced Features & Polish (Days 15-18)
 1. Implement "contributors over time period" query and view
 2. Add ecosystem hierarchy visualization
 3. Create aggregated statistics (total commits, contributors per ecosystem/event)
-4. Add search functionality
-5. Implement bulk repository sync
-6. Add UI for associating authors/repos with events
-7. Add loading states and error handling
-8. Optimize queries for performance (indexes, query optimization)
+4. Add UI for associating authors/repos with events
+5. Add loading states and error handling
+6. Optimize queries for performance (indexes, query optimization)
 
 ### Phase 6: Testing & Documentation (Days 19-21)
 1. Test with real GitHub repositories
@@ -326,7 +297,6 @@ odd-dashboard/
 - UI should clearly indicate when viewing a fork, show it's linked to parent, and distinguish between upstream and original commits
 
 ### Query Optimization
-- Use `daily_repository_stats` table for dashboard charts to avoid scanning millions of commits
 - Use database indexes on frequently queried fields (including composite indexes)
 - Implement pagination for large result sets
 - Cache frequently accessed data
@@ -345,7 +315,7 @@ odd-dashboard/
 - Many-to-many relationships via junction tables (author_events, repository_events)
 - Authors and repositories can be associated with multiple events (e.g., author attended hackathon, repository created at hackathon)
 - Events can be filtered in queries and UI
-- Event detail views show all associated authors and repositories
+- Events managed via list view with inline editing
 
 ### Ecosystem Hierarchy
 - Self-referencing foreign key (parent_id)
@@ -380,3 +350,31 @@ GITHUB_TOKEN=ghp_xxxxxxxxxxxxx
 - `date-fns` - Date utilities
 - `prettier` + `prettier-plugin-svelte` - Code formatting
 
+## Future Enhancements (Deferred)
+
+The following features have been deferred to future phases to focus on core functionality:
+
+### Detail Pages
+- Add dedicated detail pages for agencies and events (currently using inline editing in list views)
+- Enhanced views with more detailed information and relationships
+
+### Soft Deletes
+- Add `deleted_at` timestamp column to all major tables (ecosystems, agencies, repositories, authors, events)
+- Update all queries to filter out soft-deleted records
+- Implement restore functionality
+
+### Daily Repository Stats Aggregation
+- Create `daily_repository_stats` table for pre-aggregated metrics:
+  - `repository_id`, `date`, `commit_count`, `active_developer_count`, `additions`, `deletions`
+- Implement background job to populate stats table during sync
+- Use stats table for dashboard charts to improve performance with large datasets
+
+### Search Functionality
+- Add full-text search for repositories, authors, and commits
+- Implement search API endpoints with filtering
+- Add search UI components to dashboard
+
+### Bulk Repository Sync
+- Implement batch sync endpoint for multiple repositories
+- Add progress tracking for bulk operations
+- Queue management for large sync jobs
