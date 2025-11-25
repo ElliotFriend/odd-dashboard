@@ -60,7 +60,9 @@ export const repositories = pgTable(
         id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
         githubId: bigint('github_id', { mode: 'number' }).notNull().unique(),
         fullName: text('full_name').notNull().unique(),
-        agencyId: integer('agency_id'),
+        agencyId: integer('agency_id').references(() => agencies.id, {
+            onDelete: 'set null',
+        }),
         isFork: boolean('is_fork').notNull().default(false),
         parentRepositoryId: integer('parent_repository_id'),
         parentFullName: text('parent_full_name'),
@@ -91,7 +93,9 @@ export const authors = pgTable(
         username: text('username'),
         name: text('name'),
         email: text('email'),
-        agencyId: integer('agency_id'),
+        agencyId: integer('agency_id').references(() => agencies.id, {
+            onDelete: 'set null',
+        }),
         createdAt: timestamp('created_at', { withTimezone: true })
             .notNull()
             .defaultNow(),
@@ -111,8 +115,16 @@ export const commits = pgTable(
     'commits',
     {
         id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-        repositoryId: integer('repository_id').notNull(),
-        authorId: integer('author_id').notNull(),
+        repositoryId: integer('repository_id')
+            .notNull()
+            .references(() => repositories.id, {
+                onDelete: 'cascade',
+            }),
+        authorId: integer('author_id')
+            .notNull()
+            .references(() => authors.id, {
+                onDelete: 'set null',
+            }),
         sha: text('sha').notNull(),
         commitDate: timestamp('commit_date', { withTimezone: true }).notNull(),
         branch: text('branch').notNull(),
@@ -148,7 +160,9 @@ export const events = pgTable(
         description: text('description'),
         startDate: date('start_date'),
         endDate: date('end_date'),
-        agencyId: integer('agency_id'),
+        agencyId: integer('agency_id').references(() => agencies.id, {
+            onDelete: 'set null',
+        }),
         createdAt: timestamp('created_at', { withTimezone: true })
             .notNull()
             .defaultNow(),
@@ -165,8 +179,16 @@ export const events = pgTable(
 export const authorEvents = pgTable(
     'author_events',
     {
-        authorId: integer('author_id').notNull(),
-        eventId: integer('event_id').notNull(),
+        authorId: integer('author_id')
+            .notNull()
+            .references(() => authors.id, {
+                onDelete: 'cascade',
+            }),
+        eventId: integer('event_id')
+            .notNull()
+            .references(() => events.id, {
+                onDelete: 'cascade',
+            }),
     },
     (table) => ({
         pk: primaryKey({ columns: [table.authorId, table.eventId] }),
@@ -179,8 +201,16 @@ export const authorEvents = pgTable(
 export const repositoryEvents = pgTable(
     'repository_events',
     {
-        repositoryId: integer('repository_id').notNull(),
-        eventId: integer('event_id').notNull(),
+        repositoryId: integer('repository_id')
+            .notNull()
+            .references(() => repositories.id, {
+                onDelete: 'cascade',
+            }),
+        eventId: integer('event_id')
+            .notNull()
+            .references(() => events.id, {
+                onDelete: 'cascade',
+            }),
     },
     (table) => ({
         pk: primaryKey({ columns: [table.repositoryId, table.eventId] }),
@@ -195,8 +225,16 @@ export const repositoryEvents = pgTable(
 export const repositoryEcosystems = pgTable(
     'repository_ecosystems',
     {
-        repositoryId: integer('repository_id').notNull(),
-        ecosystemId: integer('ecosystem_id').notNull(),
+        repositoryId: integer('repository_id')
+            .notNull()
+            .references(() => repositories.id, {
+                onDelete: 'cascade',
+            }),
+        ecosystemId: integer('ecosystem_id')
+            .notNull()
+            .references(() => ecosystems.id, {
+                onDelete: 'set null',
+            }),
     },
     (table) => ({
         pk: primaryKey({ columns: [table.repositoryId, table.ecosystemId] }),
