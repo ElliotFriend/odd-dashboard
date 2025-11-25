@@ -40,13 +40,15 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
 
 4. **authors** - Commit authors/contributors
    - `id` (uuid, primary key)
-   - `github_id` (bigint, unique, NOT NULL) - GitHub user ID (primary identifier when available)
+   - `github_id` (bigint, unique, nullable) - GitHub user ID (primary identifier when available, NULL for email-only commits)
    - `username` (text, nullable) - GitHub username (can be updated when user changes username)
-   - `name` (text, nullable)
+   - `name` (text, nullable) - Author name from commit
+   - `email` (text, nullable) - Author email from commit (for non-GitHub users or as fallback identifier)
    - `agency_id` (uuid, foreign key to agencies.id, nullable) - Agency that sourced this author
    - `created_at`, `updated_at` (timestamps)
    - Note: Avatar URL can be constructed from `github_id` or `username` (e.g., `https://avatars.githubusercontent.com/u/{github_id}`, `https://github.com/{username}.png`)
-   - Note: `github_id` is the primary identifier; `username` can be updated when GitHub user changes their username
+   - Note: `github_id` is the primary identifier when available; for email-only commits, use email as fallback identifier
+   - Note: Authors without GitHub accounts will have NULL `github_id` and `username`, identified by email
 
 5. **commits** - Individual commits
    - `id` (uuid, primary key)
@@ -89,6 +91,7 @@ A SvelteKit application with PostgreSQL backend to track and visualize GitHub co
 - Index on `commits.branch` for branch-based queries (future extensibility)
 - Index on `repository_ecosystems.repository_id` and `repository_ecosystems.ecosystem_id` for filtering
 - Index on `repositories.agency_id` and `authors.agency_id` for agency filtering
+- Index on `authors.email` for email-based author deduplication (case-insensitive lookups)
 - Index on `events.agency_id` for agency filtering on events
 - Index on `repositories.parent_repository_id` for fork relationship queries
 - Index on `repositories.is_fork` for filtering forks
@@ -184,27 +187,29 @@ odd-dashboard/
 
 ### Phase 1: Project Setup & Database (Days 1-3)
 1. Initialize SvelteKit project with TypeScript
-2. Set up Prettier with configuration (spaces, trailing commas, semicolons)
-3. Set up Tailwind CSS and shadcn-svelte component library
-4. Set up PostgreSQL connection and Drizzle ORM in `$lib/server/db`
-5. Create database schema with all tables (including events and junction tables)
-6. Set up database migrations
-7. Create seed data for initial ecosystems (Stellar, Ethereum, Bitcoin, etc.)
+2. Set up SvelteKit adapter: `@sveltejs/adapter-auto` (flexible deployment option)
+3. Set up Prettier with configuration (2 spaces indentation, trailing commas, semicolons)
+4. Set up Tailwind CSS and shadcn-svelte component library
+5. Set up PostgreSQL connection and Drizzle ORM in `$lib/server/db` (configure connection pooling)
+6. Create database schema with all tables (including events and junction tables)
+7. Set up database migrations
+8. Create seed data for initial ecosystems (Stellar, Ethereum, Bitcoin, etc.)
 
 ### Phase 2: GitHub API Integration (Days 4-6)
 1. Set up Octokit client with environment token in `$lib/server/github`
 2. Implement repository fetching (list repos, get repo details, including fork information and default branch)
-3. Implement commit fetching (get commits for a repo's default branch with pagination)
-4. Implement author/user data fetching
-5. Create sync service to fetch and store commits from GitHub (default branch only)
-6. Implement fork detection and parent repository linking logic
-7. Handle rate limiting and error cases
+3. Implement repository rename detection (compare full_name with GitHub API response)
+4. Implement commit fetching (get commits for a repo's default branch with pagination)
+5. Implement author/user data fetching (handle both GitHub users and email-only authors)
+6. Create sync service to fetch and store commits from GitHub (default branch only, with batching for large repos)
+7. Implement fork detection and parent repository linking logic
+8. Handle rate limiting and error cases
 
 ### Phase 3: Core Services & API Routes (Days 7-10)
 1. Set up Drizzle validators (zod schemas) for all entities
 2. Implement agency service (CRUD operations with validation)
-3. Implement repository service (CRUD operations, fork detection, parent repository linking, validation)
-4. Implement author service (CRUD, deduplication by username/github_id, validation)
+3. Implement repository service (CRUD operations, fork detection, parent repository linking, rename detection, validation)
+4. Implement author service (CRUD, deduplication by github_id/email, handle non-GitHub authors, validation)
 5. Implement commit service (CRUD, bulk insert, fork-aware attribution with SHA comparison, validation)
 6. Implement ecosystem service (CRUD, hierarchy management, cycle prevention validation)
 7. Implement event service (CRUD, associate authors/repos with events, validation)
@@ -260,11 +265,35 @@ odd-dashboard/
 ### Data Sync Strategy
 - Detect repository's default/primary branch via GitHub API (typically "main" or "master")
 - Initial sync: Fetch all commits from the default branch only
+  - For large repositories, process commits in batches (e.g., 1000 commits at a time)
+  - Use pagination to handle repositories with thousands of commits
+  - Update `last_synced_at` after each successful batch
 - Incremental sync: Only fetch commits from default branch since last_synced_at
 - Store branch name with each commit for future extensibility (can expand to other branches later)
 - Batch processing for multiple repositories
 - Handle large repositories with pagination
 - Note: Starting with primary branch only to keep initial implementation simple and focused on merged contributions
+
+### Non-GitHub Authors Handling
+- Commits can have authors without GitHub accounts (email-only commits)
+- Author identification strategy:
+  - If commit author has GitHub account: use `github_id` as primary identifier, store `username` and `email`
+  - If commit author has no GitHub account: `github_id` and `username` are NULL, use `email` as fallback identifier
+- Author deduplication:
+  - First, try to match by `github_id` (if available)
+  - If no `github_id`, try to match by `email` (case-insensitive)
+  - If no match found, create new author record
+- When syncing commits, check if author exists by `github_id` or `email` before creating new author
+- Authors without GitHub accounts can still be associated with agencies and events
+
+### Repository Rename Handling
+- GitHub repositories can be renamed (changing `full_name`)
+- During sync, check if repository `full_name` has changed by comparing with GitHub API response
+- If `full_name` has changed:
+  - Update `repositories.full_name` in database
+  - Log the rename event for audit purposes
+  - All existing commits remain linked via `repository_id` (UUID doesn't change)
+- Repository renames don't affect commit attribution or relationships
 
 ### Fork Handling & Commit Attribution
 - When fetching repository data from GitHub API, detect if repository is a fork (`fork: true`)
@@ -342,7 +371,7 @@ odd-dashboard/
 - Agency service provides CRUD operations for managing agencies
 
 ### Event System
-- Events table stores event metadata (name, dates, type, location, agency)
+- Events table stores event metadata (name, description, dates, agency)
 - Agency field tracks which agency organized/put on the event
 - Many-to-many relationships via junction tables (author_events, repository_events)
 - Authors and repositories can be associated with multiple events (e.g., author attended hackathon, repository created at hackathon)
@@ -355,11 +384,18 @@ odd-dashboard/
 - UI tree view for managing hierarchy
 
 ### Code Formatting: Prettier
-- Use spaces for indentation (not tabs)
+- Use 4 spaces for indentation (not tabs)
 - Trailing commas enabled everywhere
 - Semicolons enabled
-- Consistent indentation width across all files
+- Consistent indentation width (4 spaces) across all files
 - Prettier plugin for Svelte support
+
+### Database Connection Pooling
+- Configure PostgreSQL connection pool for production use
+- Recommended pool settings: min 2, max 10 connections (adjust based on deployment)
+- Use connection pooling library (pg-pool or postgres.js built-in pooling)
+- Monitor connection pool usage and adjust as needed
+- Handle connection pool exhaustion gracefully with appropriate error messages
 
 ## Environment Variables
 ```
@@ -369,7 +405,7 @@ GITHUB_TOKEN=ghp_xxxxxxxxxxxxx
 
 ## Dependencies
 - `sveltekit` - Framework
-- `@sveltejs/adapter-node` or `@sveltejs/adapter-vercel` - Deployment adapter
+- `@sveltejs/adapter-auto` - Deployment adapter
 - `drizzle-orm` + `drizzle-kit` - ORM and migrations
 - `zod` - Schema validation for Drizzle validators
 - `postgres` or `pg` - PostgreSQL driver
