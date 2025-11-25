@@ -416,6 +416,29 @@ odd-dashboard/
 - Consistent indentation width (4 spaces) across all files
 - Prettier plugin for Svelte support
 
+### Docker Compose Setup
+
+- Use Docker Compose to run PostgreSQL in a container for local development
+- **Service configuration**:
+    - Image: `postgres:latest`
+    - Port: `5432:5432`
+    - Database: `odd_dashboard`
+    - User: `postgres` (default, can be overridden via environment variables)
+    - Password: `postgres` (default, can be overridden via environment variables)
+    - Volume: Named volume `postgres_data` for data persistence
+    - Health check: Ensures database is ready before connections
+- **Environment variables** (can be overridden via `.env` file):
+    - `POSTGRES_USER` (default: `postgres`)
+    - `POSTGRES_PASSWORD` (default: `postgres`)
+    - `POSTGRES_DB` (default: `odd_dashboard`)
+- **Connection string**: `postgresql://postgres:postgres@localhost:5432/odd_dashboard`
+- **NPM scripts**:
+    - `docker:up` - Start PostgreSQL container
+    - `docker:down` - Stop PostgreSQL container
+    - `docker:logs` - View container logs
+    - `docker:reset` - Stop, remove volumes, and restart (fresh database)
+- Benefits: No local PostgreSQL installation required, consistent development environment, easy database reset for testing
+
 ### Database Connection Pooling
 
 - Configure PostgreSQL connection pool for production use
@@ -427,8 +450,16 @@ odd-dashboard/
 ## Environment Variables
 
 ```
-DATABASE_URL=postgresql://user:password@localhost:5432/odd_dashboard
+# Database connection (for Docker Compose setup)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/odd_dashboard
+
+# GitHub API token
 GITHUB_TOKEN=ghp_xxxxxxxxxxxxx
+
+# Docker Compose environment variables (optional, defaults shown)
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=odd_dashboard
 ```
 
 ## Dependencies
@@ -526,12 +557,9 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Database Setup
 
-- [ ] Install PostgreSQL (if not already installed)
-- [ ] Create database: `odd_dashboard`
-- [ ] Install `drizzle-orm` and `drizzle-kit`
-- [ ] Install PostgreSQL driver (`postgres` or `pg`)
-- [ ] Create `.env` file with `DATABASE_URL`
-- [ ] Create `.env.example` with template variables
+- [ ] setup database access using the svelte cli (`pnpm dlx sv add drizzle="database:postgresql+client:neon+docker:true`) - This should take care of everything we need
+- [ ] Test Docker Compose setup: start container, verify connection, stop container
+- [ ] Create `.env` file with `DATABASE_URL` pointing to Docker container
 - [ ] Test database connection with a simple script
 - [ ] Configure connection pooling (min 2, max 10 connections)
 
