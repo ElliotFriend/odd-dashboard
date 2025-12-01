@@ -1101,38 +1101,66 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Layout & Navigation
 
-- [ ] Create `src/routes/+layout.svelte`
-- [ ] Add navigation menu with links to all main views
-- [ ] Style navigation with shadcn-svelte components
-- [ ] Test navigation between pages
-- [ ] Verify layout is responsive
+- [x] Create `src/routes/+layout.svelte`
+  - [x] Created main layout with sidebar navigation
+- [x] Add navigation menu with links to all main views
+  - [x] Dashboard, Repositories, Contributors, Ecosystems, Agencies, Events
+  - [x] Uses lucide-svelte icons
+- [x] Style navigation with shadcn-svelte components
+  - [x] Styled with Tailwind CSS, active state highlighting
+- [ ] Test navigation between pages (implementation complete, needs manual testing)
+- [ ] Verify layout is responsive (implementation complete, needs manual testing)
 
 #### Dashboard Home
 
-- [ ] Create `src/routes/+page.svelte`
-- [ ] Add overview statistics (total repos, authors, commits)
-- [ ] Add recent activity section
-- [ ] Test dashboard home loads correctly
+- [x] Create `src/routes/+page.svelte`
+  - [x] Created dashboard home page
+- [x] Add overview statistics (total repos, authors, commits)
+  - [x] Statistics cards for Repositories, Contributors, Commits, Activity
+  - [x] Fetches data from API endpoints
+- [x] Add recent activity section
+  - [x] Recent activity display (placeholder for now)
+- [x] Add loading and error states
+  - [x] Loading spinner and error messages
+- [ ] Test dashboard home loads correctly (implementation complete, needs manual testing)
 
 #### Timezone Utilities
 
-- [ ] Create `src/lib/utils/date.ts`
-- [ ] Implement function to convert UTC to browser local time
-- [ ] Implement function to format dates for display
-- [ ] Test timezone conversion with different timezones
-- [ ] Test date formatting
+- [x] Create `src/lib/utils/date.ts`
+  - [x] Created date utility module
+- [x] Implement function to convert UTC to browser local time
+  - [x] `utcToLocal()` function
+- [x] Implement function to format dates for display
+  - [x] `formatDate()` - basic date formatting
+  - [x] `formatDateTime()` - date and time formatting
+  - [x] `formatRelativeTime()` - relative time (e.g., "2 hours ago")
+  - [x] `formatDateRange()` - date range formatting
+  - [x] `startOfDay()` and `endOfDay()` utilities
+- [ ] Test timezone conversion with different timezones (implementation complete, needs manual testing)
+- [ ] Test date formatting (implementation complete, needs manual testing)
 
 #### Agencies Management View
 
-- [ ] Create `src/routes/agencies/+page.svelte`
-- [ ] Implement list view with table/cards
-- [ ] Implement inline create form
-- [ ] Implement inline edit form
-- [ ] Implement delete functionality
-- [ ] Add loading states
-- [ ] Add error handling
-- [ ] Test all CRUD operations in UI
-- [ ] Verify form validation works
+- [x] Create `src/routes/agencies/+page.svelte`
+  - [x] Created agencies management page
+- [x] Implement list view with table/cards
+  - [x] Card-based layout showing all agencies
+  - [x] Displays name, description, created/updated dates
+- [x] Implement inline create form
+  - [x] Create form appears when "Add Agency" button clicked
+  - [x] Form with name and description fields
+- [x] Implement inline edit form
+  - [x] Edit form appears inline when edit button clicked
+  - [x] Pre-populates with existing data
+- [x] Implement delete functionality
+  - [x] Delete button with confirmation dialog
+- [x] Add loading states
+  - [x] Loading indicator while fetching data
+- [x] Add error handling
+  - [x] Error messages displayed to user
+  - [x] Handles API errors gracefully
+- [ ] Test all CRUD operations in UI (implementation complete, needs manual testing)
+- [ ] Verify form validation works (implementation complete, needs manual testing)
 
 #### Repository List View
 
