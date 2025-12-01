@@ -762,14 +762,24 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Agency Service
 
-- [ ] Create `src/lib/server/services/agency.service.ts`
-- [ ] Implement `createAgency()` with validation
-- [ ] Implement `getAgencyById()`
-- [ ] Implement `getAllAgencies()`
-- [ ] Implement `updateAgency()` with validation
-- [ ] Implement `deleteAgency()` with CASCADE handling
-- [ ] Test all CRUD operations
-- [ ] Verify validation works correctly
+- [x] Create `src/lib/server/services/agency.service.ts`
+- [x] Implement `createAgency()` with validation
+  - [x] Uses `createAgencySchema` for validation
+  - [x] Handles unique constraint violations (duplicate name)
+- [x] Implement `getAgencyById()`
+  - [x] Returns agency or null if not found
+- [x] Implement `getAllAgencies()`
+  - [x] Returns all agencies ordered by name
+- [x] Implement `updateAgency()` with validation
+  - [x] Uses `updateAgencySchema` for validation
+  - [x] Only updates provided fields
+  - [x] Handles unique constraint violations (duplicate name)
+  - [x] Updates `updatedAt` timestamp
+- [x] Implement `deleteAgency()` with CASCADE handling
+  - [x] Verifies agency exists before deletion
+  - [x] CASCADE handling done by database (SET NULL on foreign keys)
+- [ ] Test all CRUD operations (implementation complete, needs manual testing)
+- [ ] Verify validation works correctly (implementation complete, needs manual testing)
 
 #### Repository Service
 
