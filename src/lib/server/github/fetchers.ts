@@ -118,6 +118,47 @@ export async function getRepositoryById(githubId: number): Promise<GitHubReposit
 }
 
 /**
+ * Extract author information from a GitHub commit.
+ * Handles both GitHub users and email-only commits (authors without GitHub accounts).
+ * 
+ * @param commit - The GitHub commit object
+ * @returns Author information with github_id and username if available, or email-only if not
+ */
+export function extractAuthorFromCommit(commit: GitHubCommit): {
+    name: string;
+    email: string;
+    githubId: number | null;
+    username: string | null;
+} {
+    // The commit.author field contains the GitHub user if they have an account
+    // The commit.commit.author field contains the commit author info (name, email) - always present
+    const commitAuthor = commit.commit.author;
+    const githubUser = commit.author;
+
+    // Extract name and email from commit.author (always present)
+    const name = commitAuthor?.name || '';
+    const email = commitAuthor?.email || '';
+
+    // If there's a GitHub user associated with the commit, extract their ID and username
+    if (githubUser && githubUser.id && githubUser.login) {
+        return {
+            name,
+            email,
+            githubId: githubUser.id,
+            username: githubUser.login,
+        };
+    }
+
+    // Email-only commit (no GitHub account)
+    return {
+        name,
+        email,
+        githubId: null,
+        username: null,
+    };
+}
+
+/**
  * Detect if a repository has been renamed by comparing the stored full_name with the current full_name from GitHub.
  * 
  * @param storedFullName - The full_name currently stored in the database (e.g., "owner/old-name")
