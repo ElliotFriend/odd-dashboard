@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { GitBranch, Users, GitCommit, TrendingUp } from 'lucide-svelte';
+    import { GitBranch, Users, GitCommit, TrendingUp } from '@lucide/svelte';
     import { formatDate } from '$lib/utils/date';
 
     interface Stats {

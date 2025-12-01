@@ -4,7 +4,7 @@
     import Card from '$lib/components/ui/card.svelte';
     import CardHeader from '$lib/components/ui/card-header.svelte';
     import CardContent from '$lib/components/ui/card-content.svelte';
-    import { Plus, Edit2, Trash2, X, Save } from 'lucide-svelte';
+    import { Plus, Edit2, Trash2, X, Save } from '@lucide/svelte';
     import { formatDate } from '$lib/utils/date';
 
     interface Agency {

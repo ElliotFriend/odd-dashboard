@@ -4,7 +4,7 @@
     import './layout.css';
     import favicon from '$lib/assets/favicon.svg';
     import Button from '$lib/components/ui/button.svelte';
-    import { Home, GitBranch, Users, FolderTree, Building2, Calendar } from 'lucide-svelte';
+    import { Home, GitBranch, Users, FolderTree, Building2, Calendar } from '@lucide/svelte';
 
     let { children } = $props();
 
