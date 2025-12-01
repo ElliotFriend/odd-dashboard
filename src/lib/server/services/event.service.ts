@@ -107,8 +107,8 @@ export async function updateEvent(id: number, input: UpdateEventInput) {
     const updateData: {
         name?: string;
         description?: string | null;
-        startDate?: Date | null;
-        endDate?: Date | null;
+        startDate?: string | null;
+        endDate?: string | null;
         agencyId?: number | null;
         updatedAt?: any;
     } = {
