@@ -783,19 +783,44 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Repository Service
 
-- [ ] Create `src/lib/server/services/repository.service.ts`
-- [ ] Implement `createRepository()` with validation
-- [ ] Implement `getRepositoryById()`
-- [ ] Implement `getRepositoryByFullName()`
-- [ ] Implement `getAllRepositories()` with filtering
-- [ ] Implement `updateRepository()` with validation
-- [ ] Implement `deleteRepository()` with CASCADE handling
-- [ ] Implement fork detection logic
-- [ ] Implement parent repository linking
-- [ ] Implement rename detection and update
-- [ ] Test all CRUD operations
-- [ ] Test fork detection and linking
-- [ ] Test rename detection
+- [x] Create `src/lib/server/services/repository.service.ts`
+- [x] Implement `createRepository()` with validation
+  - [x] Uses `createRepositorySchema` for validation
+  - [x] Handles unique constraint violations (githubId and fullName)
+- [x] Implement `getRepositoryById()`
+  - [x] Returns repository or null if not found
+- [x] Implement `getRepositoryByFullName()`
+  - [x] Returns repository by full_name or null if not found
+- [x] Implement `getRepositoryByGithubId()`
+  - [x] Returns repository by GitHub ID or null if not found
+- [x] Implement `getAllRepositories()` with filtering
+  - [x] Supports filtering by agencyId, isFork, and search (full_name)
+  - [x] Returns all repositories ordered by fullName
+  - [x] Note: ecosystemId and eventId filtering requires junction table joins (can be added later)
+- [x] Implement `updateRepository()` with validation
+  - [x] Uses `updateRepositorySchema` for validation
+  - [x] Only updates provided fields
+  - [x] Handles unique constraint violations
+  - [x] Updates `updatedAt` timestamp
+- [x] Implement `deleteRepository()` with CASCADE handling
+  - [x] Verifies repository exists before deletion
+  - [x] CASCADE handling done by database (CASCADE delete on commits)
+- [x] Implement fork detection logic
+  - [x] Uses `detectAndLinkFork()` from fork-detection.service
+  - [x] `detectForkForRepository()` function for manual fork detection
+- [x] Implement parent repository linking
+  - [x] Integrated into `detectAndLinkFork()` function
+  - [x] Links fork to parent if parent exists in database
+- [x] Implement rename detection and update
+  - [x] Uses `checkAndUpdateRepositoryName()` from repository-rename.service
+  - [x] `detectRenameForRepository()` function for manual rename detection
+- [x] Implement `createOrUpdateRepositoryFromGitHub()`
+  - [x] Creates or updates repository from GitHub API data
+  - [x] Optionally detects fork and rename
+  - [x] Useful for syncing repositories from GitHub
+- [ ] Test all CRUD operations (implementation complete, needs manual testing)
+- [ ] Test fork detection and linking (implementation complete, needs manual testing)
+- [ ] Test rename detection (implementation complete, needs manual testing)
 
 #### Author Service
 
