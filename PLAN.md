@@ -951,15 +951,26 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Fork-Aware Sync Service Updates
 
-- [ ] Update sync service to handle forks
-- [ ] Implement commit SHA comparison logic
-- [ ] Implement batch SHA lookup for parent commits
-- [ ] Implement in-memory caching for parent commit SHAs
-- [ ] Implement commit attribution (parent vs fork)
-- [ ] Test sync with a fork repository
-- [ ] Test sync with fork that has parent in database
-- [ ] Test sync with fork that has parent NOT in database
-- [ ] Verify commit attribution is correct
+- [x] Update sync service to handle forks
+  - [x] Updated `syncRepositoryCommits()` to detect if repository is a fork
+  - [x] Checks for parent repository in database before syncing
+- [x] Implement commit SHA comparison logic
+  - [x] Compares fork commit SHAs with parent repository commit SHAs
+  - [x] Uses SHA comparison to determine commit attribution
+- [x] Implement batch SHA lookup for parent commits
+  - [x] `getParentCommitShas()` function loads all parent commit SHAs for a branch
+  - [x] Uses indexed SHA lookups for fast parent commit checks
+- [x] Implement in-memory caching for parent commit SHAs
+  - [x] `parentCommitCache` Map caches parent commit SHA sets by repository ID
+  - [x] Avoids repeated database queries during sync
+- [x] Implement commit attribution (parent vs fork)
+  - [x] Commits that exist in parent repository → attributed to parent (repository_id = parent)
+  - [x] Commits unique to fork (not in parent) → attributed to fork (repository_id = fork)
+  - [x] All comparisons done on default branch of both fork and parent
+- [ ] Test sync with a fork repository (implementation complete, needs manual testing)
+- [ ] Test sync with fork that has parent in database (implementation complete, needs manual testing)
+- [ ] Test sync with fork that has parent NOT in database (implementation complete, needs manual testing)
+- [ ] Verify commit attribution is correct (implementation complete, needs verification)
 
 #### API Routes - Repositories
 

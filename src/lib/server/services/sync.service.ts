@@ -1,7 +1,8 @@
-import { eq, and, or, sql } from 'drizzle-orm';
+import { eq, and, or, sql, inArray } from 'drizzle-orm';
 import { db } from '../db';
 import { repositories, authors, commits } from '../db/schema';
 import { getCommits, extractAuthorFromCommit } from '../github/fetchers';
+import { getCommitsByShas } from './commit.service';
 import type { GitHubCommit } from '../github/types';
 
 /**
@@ -90,8 +91,35 @@ async function findOrCreateAuthor(authorInfo: {
 }
 
 /**
+ * Get parent commit SHAs for fork comparison.
+ * Caches results in memory to avoid repeated database queries.
+ */
+async function getParentCommitShas(
+    parentRepositoryId: number,
+    branch: string,
+    cache: Map<number, Set<string>>
+): Promise<Set<string>> {
+    // Check cache first
+    if (cache.has(parentRepositoryId)) {
+        return cache.get(parentRepositoryId)!;
+    }
+
+    // Fetch all commit SHAs from parent repository for the given branch
+    const parentCommits = await db
+        .select({ sha: commits.sha })
+        .from(commits)
+        .where(and(eq(commits.repositoryId, parentRepositoryId), eq(commits.branch, branch)));
+
+    const shaSet = new Set(parentCommits.map((c) => c.sha));
+    cache.set(parentRepositoryId, shaSet);
+
+    return shaSet;
+}
+
+/**
  * Sync commits for a repository.
  * Fetches commits from GitHub and stores them in the database.
+ * For forks, compares commits with parent repository to attribute correctly.
  * 
  * @param repositoryId - The database ID of the repository to sync
  * @param options - Sync options
@@ -131,6 +159,26 @@ export async function syncRepositoryCommits(
         errors: [],
     };
 
+    // Fork-aware commit attribution
+    let parentCommitShas: Set<string> | null = null;
+    const parentCommitCache = new Map<number, Set<string>>();
+
+    // If this is a fork and parent exists in database, load parent commit SHAs
+    if (repository.isFork && repository.parentRepositoryId) {
+        try {
+            parentCommitShas = await getParentCommitShas(
+                repository.parentRepositoryId,
+                repository.defaultBranch,
+                parentCommitCache
+            );
+        } catch (error: any) {
+            result.errors.push(
+                `Warning: Could not load parent commits for fork comparison: ${error.message}`
+            );
+            // Continue with sync even if parent commit loading fails
+        }
+    }
+
     try {
         // Determine the 'since' parameter for incremental sync
         let since: string | undefined;
@@ -164,6 +212,14 @@ export async function syncRepositoryCommits(
                 for (let i = 0; i < githubCommits.length; i += batchSize) {
                     const batch = githubCommits.slice(i, i + batchSize);
 
+                    // For fork-aware attribution, collect all SHAs in this batch first
+                    // Then do a batch lookup to see which exist in parent
+                    let batchParentShas: Set<string> | null = null;
+                    if (parentCommitShas && repository.isFork && repository.parentRepositoryId) {
+                        // For forks, we already have the parent commit SHAs cached
+                        batchParentShas = parentCommitShas;
+                    }
+
                     for (const commit of batch) {
                         try {
                             result.commitsProcessed++;
@@ -186,10 +242,25 @@ export async function syncRepositoryCommits(
                             }
                             const commitDate = new Date(commitDateStr);
 
+                            // Fork-aware commit attribution
+                            // If this is a fork and commit exists in parent, attribute to parent
+                            // Otherwise, attribute to the fork repository
+                            let targetRepositoryId = repository.id;
+
+                            if (
+                                repository.isFork &&
+                                repository.parentRepositoryId &&
+                                batchParentShas &&
+                                batchParentShas.has(commit.sha)
+                            ) {
+                                // Commit exists in parent repository, attribute to parent
+                                targetRepositoryId = repository.parentRepositoryId;
+                            }
+
                             // Create commit (handle unique constraint violation)
                             try {
                                 await db.insert(commits).values({
-                                    repositoryId: repository.id,
+                                    repositoryId: targetRepositoryId,
                                     authorId,
                                     sha: commit.sha,
                                     commitDate,
