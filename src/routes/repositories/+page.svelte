@@ -26,10 +26,10 @@
         name: string;
     }
 
-    let repositories: Repository[] = [];
-    let agencies: Agency[] = [];
-    let loading = true;
-    let error: string | null = null;
+    let repositories = $state<Repository[]>([]);
+    let agencies = $state<Agency[]>([]);
+    let loading = $state(true);
+    let error = $state<string | null>(null);
 
     // Filters
     let searchQuery = $state('');
@@ -129,7 +129,7 @@
                                 id="search"
                                 type="text"
                                 bind:value={searchQuery}
-                                on:input={handleFilterChange}
+                                oninput={handleFilterChange}
                                 placeholder="Search repositories..."
                                 class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
                             />
@@ -147,7 +147,7 @@
                         <select
                             id="agency"
                             bind:value={selectedAgencyId}
-                            on:change={handleFilterChange}
+                            onchange={handleFilterChange}
                             class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
                         >
                             <option value={null}>All Agencies</option>
@@ -163,7 +163,7 @@
                             <input
                                 type="checkbox"
                                 bind:checked={showForksOnly}
-                                on:change={handleFilterChange}
+                                onchange={handleFilterChange}
                                 class="w-4 h-4 text-slate-600 border-slate-300 rounded focus:ring-slate-500"
                             />
                             <span class="text-sm font-medium text-slate-700">Forks only</span>
@@ -233,7 +233,7 @@
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    on:click={() => goto(`/repositories/${repo.id}`)}
+                                    onclick={() => goto(`/repositories/${repo.id}`)}
                                 >
                                     View Details
                                 </Button>

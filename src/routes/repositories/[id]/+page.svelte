@@ -57,13 +57,13 @@
         email: string;
     }
 
-    let repository: Repository | null = null;
-    let commits: Commit[] = [];
-    let contributors: Contributor[] = [];
-    let authors: Map<number, Author> = new Map();
-    let loading = true;
-    let syncing = false;
-    let error: string | null = null;
+    let repository = $state<Repository | null>(null);
+    let commits = $state<Commit[]>([]);
+    let contributors = $state<Contributor[]>([]);
+    let authors = $state<Map<number, Author>>(new Map());
+    let loading = $state(true);
+    let syncing = $state(false);
+    let error = $state<string | null>(null);
 
     // Date range filter
     let startDate = $state<string>('');
@@ -210,7 +210,7 @@
 
 <div class="space-y-6">
     <!-- Back Button -->
-    <Button variant="outline" on:click={() => goto('/repositories')}>
+    <Button variant="outline" onclick={() => goto('/repositories')}>
         <ArrowLeft class="w-4 h-4 mr-2" />
         Back to Repositories
     </Button>
@@ -266,7 +266,7 @@
             <div class="flex gap-2">
                 <Button
                     variant="outline"
-                    on:click={syncRepository}
+                    onclick={syncRepository}
                     disabled={syncing}
                 >
                     <RefreshCw class="w-4 h-4 mr-2 {syncing ? 'animate-spin' : ''}" />
@@ -304,7 +304,7 @@
                             id="start-date"
                             type="date"
                             bind:value={startDate}
-                            on:change={handleDateFilterChange}
+                            onchange={handleDateFilterChange}
                             class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
                         />
                     </div>
@@ -319,7 +319,7 @@
                             id="end-date"
                             type="date"
                             bind:value={endDate}
-                            on:change={handleDateFilterChange}
+                            onchange={handleDateFilterChange}
                             class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
                         />
                     </div>

@@ -15,15 +15,15 @@
         updatedAt: string;
     }
 
-    let agencies: Agency[] = [];
-    let loading = true;
-    let error: string | null = null;
-    let editingId: number | null = null;
-    let creating = false;
-    let formData = {
+    let agencies = $state<Agency[]>([]);
+    let loading = $state(true);
+    let error = $state<string | null>(null);
+    let editingId = $state<number | null>(null);
+    let creating = $state(false);
+    let formData = $state({
         name: '',
         description: '',
-    };
+    });
 
     async function loadAgencies() {
         try {
@@ -125,7 +125,7 @@
             <h1 class="text-3xl font-bold text-slate-900">Agencies</h1>
             <p class="mt-2 text-slate-600">Manage agencies and organizations</p>
         </div>
-        <Button on:click={startCreate} disabled={creating || editingId !== null}>
+        <Button onclick={startCreate} disabled={creating || editingId !== null}>
             <Plus class="w-4 h-4 mr-2" />
             Add Agency
         </Button>
@@ -189,7 +189,7 @@
                                 <Save class="w-4 h-4 mr-2" />
                                 Save
                             </Button>
-                            <Button type="button" variant="outline" on:click={cancelEdit}>
+                            <Button type="button" variant="outline" onclick={cancelEdit}>
                                 <X class="w-4 h-4 mr-2" />
                                 Cancel
                             </Button>
@@ -247,7 +247,7 @@
                                         <Save class="w-4 h-4 mr-2" />
                                         Save
                                     </Button>
-                                    <Button type="button" variant="outline" on:click={cancelEdit}>
+                                    <Button type="button" variant="outline" onclick={cancelEdit}>
                                         <X class="w-4 h-4 mr-2" />
                                         Cancel
                                     </Button>
@@ -275,7 +275,7 @@
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        on:click={() => startEdit(agency)}
+                                        onclick={() => startEdit(agency)}
                                         disabled={creating || editingId !== null}
                                     >
                                         <Edit2 class="w-4 h-4" />
@@ -283,7 +283,7 @@
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        on:click={() => deleteAgency(agency.id)}
+                                        onclick={() => deleteAgency(agency.id)}
                                         disabled={creating || editingId !== null}
                                     >
                                         <Trash2 class="w-4 h-4" />
@@ -300,7 +300,7 @@
                     <CardContent>
                         <div class="text-center py-12">
                             <p class="text-slate-500">No agencies found</p>
-                            <Button class="mt-4" on:click={startCreate}>
+                            <Button class="mt-4" onclick={startCreate}>
                                 <Plus class="w-4 h-4 mr-2" />
                                 Create your first agency
                             </Button>

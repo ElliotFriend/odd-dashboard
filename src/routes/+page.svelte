@@ -14,9 +14,9 @@
         }>;
     }
 
-    let stats: Stats | null = null;
-    let loading = true;
-    let error: string | null = null;
+    let stats = $state<Stats | null>(null);
+    let loading = $state(true);
+    let error = $state<string | null>(null);
 
     async function loadStats() {
         try {
