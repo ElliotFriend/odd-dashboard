@@ -1,11 +1,16 @@
 import { Octokit } from '@octokit/rest';
-import { GITHUB_TOKEN } from '$env/static/private';
-import 'server-only';
+// import 'server-only';
+import dotenv from 'dotenv';
 
-if (!GITHUB_TOKEN) {
+// Ensure env vars are loaded if running in standalone script
+dotenv.config();
+
+const token = process.env.GITHUB_TOKEN;
+
+if (!token) {
     throw new Error('GITHUB_TOKEN environment variable is not set');
 }
 
 export const octokit = new Octokit({
-    auth: GITHUB_TOKEN,
+    auth: token,
 });

@@ -622,13 +622,13 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Repository Fetching
 
-- [ ] Create `src/lib/server/github/fetchers.ts`
-- [ ] Implement function to fetch repository by full_name
-- [ ] Implement function to fetch repository details (including fork info, default branch)
-- [ ] Test fetching a real repository from GitHub API
-- [ ] Verify fork detection works correctly
-- [ ] Verify default branch detection works
-- [ ] Handle API errors (404, rate limits, etc.)
+- [x] Create `src/lib/server/github/fetchers.ts`
+- [x] Implement function to fetch repository by full_name
+- [x] Implement function to fetch repository details (including fork info, default branch)
+- [x] Test fetching a real repository from GitHub API
+- [x] Verify fork detection works correctly
+- [x] Verify default branch detection works
+- [x] Handle API errors (404, rate limits, etc.)
 
 #### Repository Rename Detection
 
@@ -638,17 +638,17 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Commit Fetching
 
-- [ ] Implement function to fetch commits for a repository's default branch
-- [ ] Implement pagination for commit fetching
-- [ ] Test fetching commits from a real repository
-- [ ] Verify pagination works for repositories with many commits
-- [ ] Handle API errors gracefully
+- [x] Implement function to fetch commits for a repository's default branch
+- [x] Implement pagination for commit fetching
+- [x] Test fetching commits from a real repository
+- [x] Verify pagination works for repositories with many commits
+- [x] Handle API errors gracefully
 
 #### Author/User Data Fetching
 
-- [ ] Implement function to fetch GitHub user by username
-- [ ] Implement function to fetch GitHub user by ID
-- [ ] Handle cases where user doesn't exist (404)
+- [x] Implement function to fetch GitHub user by username
+- [x] Implement function to fetch GitHub user by ID
+- [x] Handle cases where user doesn't exist (404)
 - [ ] Handle email-only commits (no GitHub user)
 - [ ] Test fetching user data for both GitHub users and email-only commits
 
