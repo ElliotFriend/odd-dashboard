@@ -730,15 +730,35 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Drizzle Validators Setup
 
-- [ ] Install `zod` (if not already installed)
-- [ ] Create validator schemas for ecosystems
-- [ ] Create validator schemas for agencies
-- [ ] Create validator schemas for repositories
-- [ ] Create validator schemas for authors
-- [ ] Create validator schemas for commits
-- [ ] Create validator schemas for events
-- [ ] Test validators with valid data
-- [ ] Test validators with invalid data (verify errors)
+- [x] Install `zod` (if not already installed)
+  - [x] Installed `zod` package
+- [x] Create validator schemas for ecosystems
+  - [x] Created `createEcosystemSchema` and `updateEcosystemSchema`
+  - [x] Validates name (required, max 255 chars) and parentId (optional, positive integer)
+- [x] Create validator schemas for agencies
+  - [x] Created `createAgencySchema` and `updateAgencySchema`
+  - [x] Validates name (required, max 255 chars) and description (optional, max 1000 chars)
+- [x] Create validator schemas for repositories
+  - [x] Created `createRepositorySchema` and `updateRepositorySchema`
+  - [x] Validates githubId, fullName (format: "owner/repo"), defaultBranch, fork fields
+  - [x] Validates parentFullName format when provided
+- [x] Create validator schemas for authors
+  - [x] Created `createAuthorSchema` and `updateAuthorSchema`
+  - [x] Validates githubId, username, name, email (email format validation)
+  - [x] Requires at least one identifier (githubId or email)
+- [x] Create validator schemas for commits
+  - [x] Created `createCommitSchema`, `bulkCreateCommitsSchema`, and `updateCommitSchema`
+  - [x] Validates repositoryId, authorId, sha (max 40 chars), commitDate, branch
+- [x] Create validator schemas for events
+  - [x] Created `createEventSchema` and `updateEventSchema`
+  - [x] Validates name, description, startDate, endDate
+  - [x] Validates that endDate is after or equal to startDate
+- [x] Created junction table validators
+  - [x] `associateAuthorWithEventSchema`
+  - [x] `associateRepositoryWithEventSchema`
+  - [x] `associateRepositoryWithEcosystemSchema`
+- [ ] Test validators with valid data (implementation complete, needs manual testing)
+- [ ] Test validators with invalid data (verify errors) (implementation complete, needs manual testing)
 
 #### Agency Service
 
