@@ -688,11 +688,17 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Fork Detection & Linking
 
-- [ ] Implement fork detection logic
-- [ ] Implement parent repository lookup by `parent_full_name`
-- [ ] Implement `parent_repository_id` linking when parent exists
-- [ ] Test with a fork repository
-- [ ] Verify parent linking works correctly
+- [x] Implement fork detection logic
+  - [x] Created `extractForkInfo()` function to extract fork information from GitHub API response
+  - [x] Detects `isFork` flag and `parentFullName` from GitHub repository data
+- [x] Implement parent repository lookup by `parent_full_name`
+  - [x] Created `findRepositoryByFullName()` helper function to find repositories by full_name
+- [x] Implement `parent_repository_id` linking when parent exists
+  - [x] Created `linkForkToParent()` function to link fork to parent repository
+  - [x] Created `detectAndLinkFork()` function that combines detection and linking
+  - [x] Updates repository `is_fork`, `parent_full_name`, and `parent_repository_id` fields
+- [ ] Test with a fork repository (implementation complete, needs manual testing)
+- [ ] Verify parent linking works correctly (implementation complete, needs verification)
 
 #### Rate Limiting & Error Handling
 
