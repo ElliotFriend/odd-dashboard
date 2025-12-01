@@ -824,59 +824,130 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Author Service
 
-- [ ] Create `src/lib/server/services/author.service.ts`
-- [ ] Implement `createAuthor()` with validation
-- [ ] Implement `getAuthorById()`
-- [ ] Implement `getAuthorByGithubId()`
-- [ ] Implement `getAuthorByEmail()` (case-insensitive)
-- [ ] Implement `getAllAuthors()` with filtering
-- [ ] Implement `updateAuthor()` with validation (including username updates)
-- [ ] Implement `deleteAuthor()` with SET NULL handling
-- [ ] Implement deduplication logic (github_id first, then email)
-- [ ] Test author creation for GitHub users
-- [ ] Test author creation for email-only commits
-- [ ] Test deduplication logic
-- [ ] Test username update logic
+- [x] Create `src/lib/server/services/author.service.ts`
+- [x] Implement `createAuthor()` with validation
+  - [x] Uses `createAuthorSchema` for validation
+  - [x] Handles unique constraint violations (githubId)
+- [x] Implement `getAuthorById()`
+  - [x] Returns author or null if not found
+- [x] Implement `getAuthorByGithubId()`
+  - [x] Returns author by GitHub ID or null if not found
+- [x] Implement `getAuthorByEmail()` (case-insensitive)
+  - [x] Returns author by email (case-insensitive) or null if not found
+- [x] Implement `getAllAuthors()` with filtering
+  - [x] Supports filtering by agencyId, githubId, email, and search (name, username, email)
+  - [x] Returns all authors ordered by name, username
+- [x] Implement `updateAuthor()` with validation (including username updates)
+  - [x] Uses `updateAuthorSchema` for validation
+  - [x] Only updates provided fields
+  - [x] Handles unique constraint violations
+  - [x] Updates `updatedAt` timestamp
+- [x] Implement `deleteAuthor()` with SET NULL handling
+  - [x] Verifies author exists before deletion
+  - [x] SET NULL handling done by database (SET NULL on commits.author_id)
+- [x] Implement deduplication logic (github_id first, then email)
+  - [x] `findOrCreateAuthor()` function with deduplication logic
+  - [x] Uses github_id as primary identifier, falls back to email
+  - [x] Updates username if changed, updates github_id if now available
+- [ ] Test author creation for GitHub users (implementation complete, needs manual testing)
+- [ ] Test author creation for email-only commits (implementation complete, needs manual testing)
+- [ ] Test deduplication logic (implementation complete, needs manual testing)
+- [ ] Test username update logic (implementation complete, needs manual testing)
 
 #### Commit Service
 
-- [ ] Create `src/lib/server/services/commit.service.ts`
-- [ ] Implement `createCommit()` with validation
-- [ ] Implement `bulkInsertCommits()` for batch operations
-- [ ] Implement `getCommitById()`
-- [ ] Implement `getCommitsByRepository()` with filtering
-- [ ] Implement `getCommitsByAuthor()` with filtering
-- [ ] Implement `getCommitsBySha()` (for fork comparison)
-- [ ] Test commit creation
-- [ ] Test bulk insert with large batches
-- [ ] Test commit queries with filters
+- [x] Create `src/lib/server/services/commit.service.ts`
+- [x] Implement `createCommit()` with validation
+  - [x] Uses `createCommitSchema` for validation
+  - [x] Handles unique constraint violations (same SHA in same repository)
+- [x] Implement `bulkInsertCommits()` for batch operations
+  - [x] Uses `bulkCreateCommitsSchema` for validation
+  - [x] Skips duplicates gracefully (returns inserted and skipped counts)
+- [x] Implement `getCommitById()`
+  - [x] Returns commit or null if not found
+- [x] Implement `getCommitsByRepository()` with filtering
+  - [x] Supports filtering by startDate, endDate, and branch
+  - [x] Returns commits ordered by commitDate DESC
+- [x] Implement `getCommitsByAuthor()` with filtering
+  - [x] Supports filtering by startDate, endDate, and branch
+  - [x] Returns commits ordered by commitDate DESC
+- [x] Implement `getCommitsBySha()` (for fork comparison)
+  - [x] Returns all commits with given SHA across all repositories
+  - [x] `getCommitByRepositoryAndSha()` for specific repository and SHA
+  - [x] `getCommitsByShas()` for batch SHA lookups (fork comparison)
+- [x] Implement `updateCommit()` and `deleteCommit()`
+  - [x] Update with validation using `updateCommitSchema`
+  - [x] Delete with existence check
+- [ ] Test commit creation (implementation complete, needs manual testing)
+- [ ] Test bulk insert with large batches (implementation complete, needs manual testing)
+- [ ] Test commit queries with filters (implementation complete, needs manual testing)
 
 #### Ecosystem Service
 
-- [ ] Create `src/lib/server/services/ecosystem.service.ts`
-- [ ] Implement `createEcosystem()` with validation
-- [ ] Implement `getEcosystemById()`
-- [ ] Implement `getAllEcosystems()` with hierarchy
-- [ ] Implement `updateEcosystem()` with validation
-- [ ] Implement `deleteEcosystem()` with SET NULL handling
-- [ ] Implement cycle prevention validation
-- [ ] Test cycle prevention (try to create circular reference)
-- [ ] Test hierarchy queries (get children, get ancestors)
+- [x] Create `src/lib/server/services/ecosystem.service.ts`
+- [x] Implement `createEcosystem()` with validation
+  - [x] Uses `createEcosystemSchema` for validation
+  - [x] Verifies parent exists if parentId is provided
+  - [x] Handles unique constraint violations (duplicate name)
+- [x] Implement `getEcosystemById()`
+  - [x] Returns ecosystem or null if not found
+- [x] Implement `getAllEcosystems()` with hierarchy
+  - [x] Returns all ecosystems ordered by name
+  - [x] `getChildren()` function to get all child ecosystems (recursive)
+  - [x] `getAncestors()` function to get all parent ecosystems up the chain
+- [x] Implement `updateEcosystem()` with validation
+  - [x] Uses `updateEcosystemSchema` for validation
+  - [x] Only updates provided fields
+  - [x] Handles unique constraint violations
+  - [x] Updates `updatedAt` timestamp
+- [x] Implement `deleteEcosystem()` with SET NULL handling
+  - [x] Verifies ecosystem exists before deletion
+  - [x] SET NULL handling done by database (SET NULL on repository_ecosystems.ecosystem_id)
+- [x] Implement cycle prevention validation
+  - [x] `wouldCreateCycle()` function to check if setting parentId would create a cycle
+  - [x] Traverses up parent chain to ensure new parent is not a descendant
+  - [x] Prevents self-reference (ecosystem cannot be its own parent)
+  - [x] Validates cycle prevention in `updateEcosystem()`
+- [ ] Test cycle prevention (try to create circular reference) (implementation complete, needs manual testing)
+- [ ] Test hierarchy queries (get children, get ancestors) (implementation complete, needs manual testing)
 
 #### Event Service
 
-- [ ] Create `src/lib/server/services/event.service.ts`
-- [ ] Implement `createEvent()` with validation
-- [ ] Implement `getEventById()`
-- [ ] Implement `getAllEvents()` with filtering
-- [ ] Implement `updateEvent()` with validation
-- [ ] Implement `deleteEvent()` with CASCADE handling
-- [ ] Implement `associateAuthorWithEvent()`
-- [ ] Implement `associateRepositoryWithEvent()`
-- [ ] Implement `getAuthorsForEvent()`
-- [ ] Implement `getRepositoriesForEvent()`
-- [ ] Test all CRUD operations
-- [ ] Test author/repository associations
+- [x] Create `src/lib/server/services/event.service.ts`
+- [x] Implement `createEvent()` with validation
+  - [x] Uses `createEventSchema` for validation
+  - [x] Validates date range (endDate >= startDate)
+  - [x] Handles unique constraint violations (duplicate name)
+- [x] Implement `getEventById()`
+  - [x] Returns event or null if not found
+- [x] Implement `getAllEvents()` with filtering
+  - [x] Supports filtering by agencyId and search (name, description)
+  - [x] Returns all events ordered by name
+- [x] Implement `updateEvent()` with validation
+  - [x] Uses `updateEventSchema` for validation
+  - [x] Validates date range (endDate >= startDate)
+  - [x] Only updates provided fields
+  - [x] Handles unique constraint violations
+  - [x] Updates `updatedAt` timestamp
+- [x] Implement `deleteEvent()` with CASCADE handling
+  - [x] Verifies event exists before deletion
+  - [x] CASCADE handling done by database (CASCADE delete on author_events and repository_events)
+- [x] Implement `associateAuthorWithEvent()`
+  - [x] Validates author and event exist
+  - [x] Handles duplicate associations gracefully
+  - [x] `removeAuthorFromEvent()` to remove associations
+- [x] Implement `associateRepositoryWithEvent()`
+  - [x] Validates repository and event exist
+  - [x] Handles duplicate associations gracefully
+  - [x] `removeRepositoryFromEvent()` to remove associations
+- [x] Implement `getAuthorsForEvent()`
+  - [x] Returns all authors associated with an event
+  - [x] Ordered by name, username
+- [x] Implement `getRepositoriesForEvent()`
+  - [x] Returns all repositories associated with an event
+  - [x] Ordered by fullName
+- [ ] Test all CRUD operations (implementation complete, needs manual testing)
+- [ ] Test author/repository associations (implementation complete, needs manual testing)
 
 #### Fork-Aware Sync Service Updates
 
