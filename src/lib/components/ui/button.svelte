@@ -31,6 +31,7 @@
     type ButtonProps = VariantProps<typeof buttonVariants> & {
         class?: string;
         children?: import('svelte').Snippet;
+        [key: string]: any; // Allow any HTML button attributes
     };
 
     let {
