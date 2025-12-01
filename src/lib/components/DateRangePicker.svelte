@@ -15,21 +15,11 @@
         class: className = '',
     }: DateRangePickerProps = $props();
 
-    function handleStartDateChange(e: Event) {
-        const target = e.currentTarget as HTMLInputElement;
-        startDate = target.value;
-        if (onDateChange && endDate) {
+    $effect(() => {
+        if (onDateChange && startDate && endDate) {
             onDateChange(startDate, endDate);
         }
-    }
-
-    function handleEndDateChange(e: Event) {
-        const target = e.currentTarget as HTMLInputElement;
-        endDate = target.value;
-        if (onDateChange && startDate) {
-            onDateChange(startDate, endDate);
-        }
-    }
+    });
 </script>
 
 <div class="flex items-center gap-4 {className}">
@@ -47,8 +37,7 @@
             <input
                 id="start-date-picker"
                 type="date"
-                value={startDate}
-                onchange={handleStartDateChange}
+                bind:value={startDate}
                 class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
             />
         </div>
@@ -67,8 +56,7 @@
             <input
                 id="end-date-picker"
                 type="date"
-                value={endDate}
-                onchange={handleEndDateChange}
+                bind:value={endDate}
                 class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
             />
         </div>

@@ -37,14 +37,11 @@
         }
     }
 
-    function handleChange(e: Event) {
-        const target = e.currentTarget as HTMLSelectElement;
-        const value = target.value === '' ? null : parseInt(target.value, 10);
-        selectedEventId = value;
+    $effect(() => {
         if (onEventChange) {
-            onEventChange(value);
+            onEventChange(selectedEventId);
         }
-    }
+    });
 
     onMount(() => {
         loadEvents();
@@ -64,14 +61,13 @@
         />
         <select
             id="event-filter"
-            value={selectedEventId?.toString() || ''}
-            onchange={handleChange}
+            bind:value={selectedEventId}
             disabled={loading}
             class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
         >
-            <option value="">All Events</option>
+            <option value={null}>All Events</option>
             {#each events as event}
-                <option value={event.id.toString()}>{event.name}</option>
+                <option value={event.id}>{event.name}</option>
             {/each}
         </select>
     </div>

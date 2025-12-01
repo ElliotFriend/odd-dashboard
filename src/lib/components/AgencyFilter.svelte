@@ -37,14 +37,11 @@
         }
     }
 
-    function handleChange(e: Event) {
-        const target = e.currentTarget as HTMLSelectElement;
-        const value = target.value === '' ? null : parseInt(target.value, 10);
-        selectedAgencyId = value;
+    $effect(() => {
         if (onAgencyChange) {
-            onAgencyChange(value);
+            onAgencyChange(selectedAgencyId);
         }
-    }
+    });
 
     onMount(() => {
         loadAgencies();
@@ -64,14 +61,13 @@
         />
         <select
             id="agency-filter"
-            value={selectedAgencyId?.toString() || ''}
-            onchange={handleChange}
+            bind:value={selectedAgencyId}
             disabled={loading}
             class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
         >
-            <option value="">All Agencies</option>
+            <option value={null}>All Agencies</option>
             {#each agencies as agency}
-                <option value={agency.id.toString()}>{agency.name}</option>
+                <option value={agency.id}>{agency.name}</option>
             {/each}
         </select>
     </div>
