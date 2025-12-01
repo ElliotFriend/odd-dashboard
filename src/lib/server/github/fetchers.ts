@@ -93,3 +93,71 @@ export async function getUserById(accountId: number): Promise<GitHubUser> {
         throw error;
     }
 }
+
+/**
+ * Fetch a repository by its GitHub ID.
+ * This is useful for detecting renames, as the GitHub ID never changes even if the repository is renamed.
+ */
+export async function getRepositoryById(githubId: number): Promise<GitHubRepository> {
+    try {
+        // GitHub API doesn't have a direct endpoint to fetch by ID, but we can use the generic request
+        // However, we need to know the owner/repo. Since we're using this for rename detection,
+        // we'll need to fetch by the current full_name first, then verify the ID matches.
+        // Actually, let's use a different approach: fetch by ID using the generic endpoint
+        // The endpoint is: GET /repositories/{id}
+        const { data } = await octokit.request('GET /repositories/{id}', {
+            id: githubId,
+        });
+        return data as GitHubRepository;
+    } catch (error: any) {
+        if (error.status === 404) {
+            throw new Error(`Repository with GitHub ID ${githubId} not found`);
+        }
+        throw error;
+    }
+}
+
+/**
+ * Detect if a repository has been renamed by comparing the stored full_name with the current full_name from GitHub.
+ * 
+ * @param storedFullName - The full_name currently stored in the database (e.g., "owner/old-name")
+ * @param githubId - The GitHub repository ID (which never changes, even on rename)
+ * @returns An object with `isRenamed` boolean and `newFullName` if renamed, or `null` if not renamed
+ */
+export async function detectRepositoryRename(
+    storedFullName: string,
+    githubId: number
+): Promise<{ isRenamed: boolean; newFullName: string | null; oldFullName: string }> {
+    try {
+        // Fetch the repository from GitHub using its ID (which never changes)
+        const repo = await getRepositoryById(githubId);
+        const currentFullName = repo.full_name;
+
+        // Compare the stored full_name with the current full_name from GitHub
+        if (storedFullName !== currentFullName) {
+            return {
+                isRenamed: true,
+                newFullName: currentFullName,
+                oldFullName: storedFullName,
+            };
+        }
+
+        return {
+            isRenamed: false,
+            newFullName: null,
+            oldFullName: storedFullName,
+        };
+    } catch (error: any) {
+        // If we can't fetch the repository, log the error but don't throw
+        // This allows the sync to continue even if rename detection fails
+        console.error(
+            `Error detecting rename for repository ${storedFullName} (GitHub ID: ${githubId}):`,
+            error
+        );
+        return {
+            isRenamed: false,
+            newFullName: null,
+            oldFullName: storedFullName,
+        };
+    }
+}

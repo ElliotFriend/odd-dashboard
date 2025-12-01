@@ -632,9 +632,14 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Repository Rename Detection
 
-- [ ] Implement logic to compare stored `full_name` with GitHub API response
-- [ ] Test rename detection with a renamed repository
-- [ ] Verify rename update logic works
+- [x] Implement logic to compare stored `full_name` with GitHub API response
+  - [x] Created `getRepositoryById()` function to fetch repository by GitHub ID
+  - [x] Created `detectRepositoryRename()` function to compare stored vs current full_name
+  - [x] Updated `checkAndUpdateRepositoryName()` service to use new detection logic
+  - [x] Added database update logic with audit logging
+  - [x] Created test script (`scripts/test-rename-detection.ts`) for manual testing
+- [ ] Test rename detection with a renamed repository (test script created, needs manual testing)
+- [ ] Verify rename update logic works (implementation complete, needs verification)
 
 #### Commit Fetching
 
