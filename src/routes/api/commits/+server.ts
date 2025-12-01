@@ -34,7 +34,7 @@ export const GET: RequestHandler = async ({ url }) => {
             options.branch = branch;
         }
 
-        let commits;
+        let commits: any[] = [];
         if (repositoryId) {
             const repoId = parseInt(repositoryId, 10);
             if (isNaN(repoId)) {
@@ -47,8 +47,6 @@ export const GET: RequestHandler = async ({ url }) => {
                 return errorResponse(400, 'Invalid authorId');
             }
             commits = await getCommitsByAuthor(authId, options);
-        } else {
-            commits = [];
         }
 
         return json({ data: commits });

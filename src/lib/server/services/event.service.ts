@@ -33,8 +33,10 @@ export async function createEvent(input: CreateEventInput) {
             .values({
                 name: validated.name,
                 description: validated.description ?? null,
-                startDate: validated.startDate ?? null,
-                endDate: validated.endDate ?? null,
+                startDate: validated.startDate
+                    ? validated.startDate.toISOString().split('T')[0]
+                    : null,
+                endDate: validated.endDate ? validated.endDate.toISOString().split('T')[0] : null,
                 agencyId: validated.agencyId ?? null,
             })
             .returning();
@@ -122,11 +124,15 @@ export async function updateEvent(id: number, input: UpdateEventInput) {
     }
 
     if (validated.startDate !== undefined) {
-        updateData.startDate = validated.startDate;
+        updateData.startDate = validated.startDate
+            ? validated.startDate.toISOString().split('T')[0]
+            : null;
     }
 
     if (validated.endDate !== undefined) {
-        updateData.endDate = validated.endDate;
+        updateData.endDate = validated.endDate
+            ? validated.endDate.toISOString().split('T')[0]
+            : null;
     }
 
     if (validated.agencyId !== undefined) {
