@@ -1,22 +1,25 @@
 import { octokit } from './client';
 import type { GitHubRepository, GitHubCommit, GitHubUser } from './types';
+import { withRateLimitAndRetry } from './rate-limit';
 
 /**
  * Fetch a repository by its owner and name.
  */
 export async function getRepository(owner: string, repo: string): Promise<GitHubRepository> {
-    try {
-        const { data } = await octokit.repos.get({
-            owner,
-            repo,
-        });
-        return data;
-    } catch (error: any) {
-        if (error.status === 404) {
-            throw new Error(`Repository ${owner}/${repo} not found`);
+    return await withRateLimitAndRetry(async () => {
+        try {
+            const { data } = await octokit.repos.get({
+                owner,
+                repo,
+            });
+            return data;
+        } catch (error: any) {
+            if (error.status === 404) {
+                throw new Error(`Repository ${owner}/${repo} not found`);
+            }
+            throw error;
         }
-        throw error;
-    }
+    });
 }
 
 /**
@@ -30,46 +33,50 @@ export async function getCommits(
     page: number = 1,
     per_page: number = 100
 ): Promise<GitHubCommit[]> {
-    try {
-        const params: any = {
-            owner,
-            repo,
-            sha: branch,
-            per_page,
-            page,
-        };
+    return await withRateLimitAndRetry(async () => {
+        try {
+            const params: any = {
+                owner,
+                repo,
+                sha: branch,
+                per_page,
+                page,
+            };
 
-        if (since) {
-            params.since = since;
-        }
+            if (since) {
+                params.since = since;
+            }
 
-        const { data } = await octokit.repos.listCommits(params);
-        return data;
-    } catch (error: any) {
-        if (error.status === 404) {
-            // If the branch doesn't exist or repo is empty, it might return 404 or 409
-            // For now, let's rethrow, but we might want to return empty array in some cases
-            throw new Error(`Commits not found for ${owner}/${repo} on branch ${branch}`);
+            const { data } = await octokit.repos.listCommits(params);
+            return data;
+        } catch (error: any) {
+            if (error.status === 404) {
+                // If the branch doesn't exist or repo is empty, it might return 404 or 409
+                // For now, let's rethrow, but we might want to return empty array in some cases
+                throw new Error(`Commits not found for ${owner}/${repo} on branch ${branch}`);
+            }
+            throw error;
         }
-        throw error;
-    }
+    });
 }
 
 /**
  * Fetch a GitHub user by username.
  */
 export async function getUserByUsername(username: string): Promise<GitHubUser> {
-    try {
-        const { data } = await octokit.users.getByUsername({
-            username,
-        });
-        return data;
-    } catch (error: any) {
-        if (error.status === 404) {
-            throw new Error(`User ${username} not found`);
+    return await withRateLimitAndRetry(async () => {
+        try {
+            const { data } = await octokit.users.getByUsername({
+                username,
+            });
+            return data;
+        } catch (error: any) {
+            if (error.status === 404) {
+                throw new Error(`User ${username} not found`);
+            }
+            throw error;
         }
-        throw error;
-    }
+    });
 }
 
 /**
@@ -81,17 +88,19 @@ export async function getUserByUsername(username: string): Promise<GitHubUser> {
  * Actually, `octokit.users.getById({ account_id })` usually exists.
  */
 export async function getUserById(accountId: number): Promise<GitHubUser> {
-    try {
-        const { data } = await octokit.request('GET /user/{account_id}', {
-            account_id: accountId,
-        });
-        return data as GitHubUser;
-    } catch (error: any) {
-        if (error.status === 404) {
-            throw new Error(`User with ID ${accountId} not found`);
+    return await withRateLimitAndRetry(async () => {
+        try {
+            const { data } = await octokit.request('GET /user/{account_id}', {
+                account_id: accountId,
+            });
+            return data as GitHubUser;
+        } catch (error: any) {
+            if (error.status === 404) {
+                throw new Error(`User with ID ${accountId} not found`);
+            }
+            throw error;
         }
-        throw error;
-    }
+    });
 }
 
 /**
@@ -99,22 +108,24 @@ export async function getUserById(accountId: number): Promise<GitHubUser> {
  * This is useful for detecting renames, as the GitHub ID never changes even if the repository is renamed.
  */
 export async function getRepositoryById(githubId: number): Promise<GitHubRepository> {
-    try {
-        // GitHub API doesn't have a direct endpoint to fetch by ID, but we can use the generic request
-        // However, we need to know the owner/repo. Since we're using this for rename detection,
-        // we'll need to fetch by the current full_name first, then verify the ID matches.
-        // Actually, let's use a different approach: fetch by ID using the generic endpoint
-        // The endpoint is: GET /repositories/{id}
-        const { data } = await octokit.request('GET /repositories/{id}', {
-            id: githubId,
-        });
-        return data as GitHubRepository;
-    } catch (error: any) {
-        if (error.status === 404) {
-            throw new Error(`Repository with GitHub ID ${githubId} not found`);
+    return await withRateLimitAndRetry(async () => {
+        try {
+            // GitHub API doesn't have a direct endpoint to fetch by ID, but we can use the generic request
+            // However, we need to know the owner/repo. Since we're using this for rename detection,
+            // we'll need to fetch by the current full_name first, then verify the ID matches.
+            // Actually, let's use a different approach: fetch by ID using the generic endpoint
+            // The endpoint is: GET /repositories/{id}
+            const { data } = await octokit.request('GET /repositories/{id}', {
+                id: githubId,
+            });
+            return data as GitHubRepository;
+        } catch (error: any) {
+            if (error.status === 404) {
+                throw new Error(`Repository with GitHub ID ${githubId} not found`);
+            }
+            throw error;
         }
-        throw error;
-    }
+    });
 }
 
 /**

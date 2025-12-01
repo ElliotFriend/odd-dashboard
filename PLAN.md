@@ -702,12 +702,29 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Rate Limiting & Error Handling
 
-- [ ] Implement rate limit detection
-- [ ] Implement request queuing/throttling
-- [ ] Implement retry logic with exponential backoff
-- [ ] Test rate limit handling
-- [ ] Test error handling for network failures
-- [ ] Test error handling for API errors (404, 403, etc.)
+- [x] Implement rate limit detection
+  - [x] Created `extractRateLimit()` function to extract rate limit info from API response headers
+  - [x] Created `isRateLimited()` function to check if rate limit is hit
+  - [x] Created `getRateLimitResetDelay()` function to calculate delay until reset
+- [x] Implement request queuing/throttling
+  - [x] Created `RequestQueue` class for throttling API requests
+  - [x] Supports configurable minimum delay between requests (default: 100ms)
+  - [x] Global request queue instance for shared throttling across all API calls
+- [x] Implement retry logic with exponential backoff
+  - [x] Created `withRetry()` function with configurable retry options
+  - [x] Supports exponential backoff with configurable multiplier
+  - [x] Handles rate limit errors (429) with special reset delay logic
+  - [x] Retries on transient errors (500, 502, 503, 504) and rate limits (429)
+  - [x] Created `withRateLimitAndRetry()` to combine throttling and retry logic
+- [x] Updated all GitHub API fetchers to use rate limiting and retry logic
+  - [x] `getRepository()` now uses rate limiting and retry
+  - [x] `getCommits()` now uses rate limiting and retry
+  - [x] `getUserByUsername()` now uses rate limiting and retry
+  - [x] `getUserById()` now uses rate limiting and retry
+  - [x] `getRepositoryById()` now uses rate limiting and retry
+- [ ] Test rate limit handling (implementation complete, needs manual testing)
+- [ ] Test error handling for network failures (implementation complete, needs manual testing)
+- [ ] Test error handling for API errors (404, 403, etc.) (implementation complete, needs verification)
 
 ### Phase 3: Core Services & API Routes (Days 7-10)
 
