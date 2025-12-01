@@ -974,85 +974,128 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### API Routes - Repositories
 
-- [ ] Create `src/routes/api/repositories/+server.ts`
-- [ ] Implement GET (list repositories with filters)
-- [ ] Implement POST (create repository) with validation
-- [ ] Create `src/routes/api/repositories/[id]/+server.ts`
-- [ ] Implement GET (single repository)
-- [ ] Implement PUT (update repository) with validation
-- [ ] Implement DELETE (delete repository)
-- [ ] Create `src/routes/api/repositories/[id]/sync/+server.ts`
-- [ ] Implement POST (trigger sync for repository)
-- [ ] Create `src/routes/api/repositories/[id]/contributors/+server.ts`
-- [ ] Implement GET (get contributors for repository)
-- [ ] Test all repository endpoints
-- [ ] Verify validation works
-- [ ] Verify error handling works
+- [x] Create `src/routes/api/repositories/+server.ts`
+- [x] Implement GET (list repositories with filters)
+  - [x] Supports filtering by agencyId, isFork, and search
+- [x] Implement POST (create repository) with validation
+  - [x] Uses `createRepositorySchema` for validation
+- [x] Create `src/routes/api/repositories/[id]/+server.ts`
+- [x] Implement GET (single repository)
+  - [x] Returns 404 if repository not found
+- [x] Implement PUT (update repository) with validation
+  - [x] Uses `updateRepositorySchema` for validation
+- [x] Implement DELETE (delete repository)
+- [x] Create `src/routes/api/repositories/[id]/sync/+server.ts`
+- [x] Implement POST (trigger sync for repository)
+  - [x] Supports initialSync and batchSize options
+- [x] Create `src/routes/api/repositories/[id]/contributors/+server.ts`
+- [x] Implement GET (get contributors for repository)
+  - [x] Supports filtering by date range and branch
+  - [x] Returns contributors with commit counts
+- [ ] Test all repository endpoints (implementation complete, needs manual testing)
+- [ ] Verify validation works (implementation complete, needs manual testing)
+- [ ] Verify error handling works (implementation complete, needs manual testing)
 
 #### API Routes - Authors
 
-- [ ] Create `src/routes/api/authors/+server.ts`
-- [ ] Implement GET (list authors with filters)
-- [ ] Test author endpoints
-- [ ] Verify filtering works
+- [x] Create `src/routes/api/authors/+server.ts`
+- [x] Implement GET (list authors with filters)
+  - [x] Supports filtering by agencyId, githubId, email, and search
+- [ ] Test author endpoints (implementation complete, needs manual testing)
+- [ ] Verify filtering works (implementation complete, needs manual testing)
 
 #### API Routes - Commits
 
-- [ ] Create `src/routes/api/commits/+server.ts`
-- [ ] Implement GET (list commits with filters)
-- [ ] Test commit endpoints
-- [ ] Verify filtering works (repository, author, date range)
+- [x] Create `src/routes/api/commits/+server.ts`
+- [x] Implement GET (list commits with filters)
+  - [x] Requires either repositoryId or authorId
+  - [x] Supports filtering by date range and branch
+- [ ] Test commit endpoints (implementation complete, needs manual testing)
+- [ ] Verify filtering works (repository, author, date range) (implementation complete, needs manual testing)
 
 #### API Routes - Ecosystems
 
-- [ ] Create `src/routes/api/ecosystems/+server.ts`
-- [ ] Implement GET (list ecosystems)
-- [ ] Implement POST (create ecosystem) with validation
-- [ ] Test ecosystem endpoints
+- [x] Create `src/routes/api/ecosystems/+server.ts`
+- [x] Implement GET (list ecosystems)
+- [x] Implement POST (create ecosystem) with validation
+  - [x] Uses `createEcosystemSchema` for validation
+- [ ] Test ecosystem endpoints (implementation complete, needs manual testing)
 
 #### API Routes - Agencies
 
-- [ ] Create `src/routes/api/agencies/+server.ts`
-- [ ] Implement GET (list agencies)
-- [ ] Implement POST (create agency) with validation
-- [ ] Create `src/routes/api/agencies/[id]/+server.ts`
-- [ ] Implement GET (single agency)
-- [ ] Implement PUT (update agency) with validation
-- [ ] Implement DELETE (delete agency)
-- [ ] Test all agency endpoints
+- [x] Create `src/routes/api/agencies/+server.ts`
+- [x] Implement GET (list agencies)
+- [x] Implement POST (create agency) with validation
+  - [x] Uses `createAgencySchema` for validation
+- [x] Create `src/routes/api/agencies/[id]/+server.ts`
+- [x] Implement GET (single agency)
+  - [x] Returns 404 if agency not found
+- [x] Implement PUT (update agency) with validation
+  - [x] Uses `updateAgencySchema` for validation
+- [x] Implement DELETE (delete agency)
+- [ ] Test all agency endpoints (implementation complete, needs manual testing)
 
 #### API Routes - Events
 
-- [ ] Create `src/routes/api/events/+server.ts`
-- [ ] Implement GET (list events)
-- [ ] Implement POST (create event) with validation
-- [ ] Create `src/routes/api/events/[id]/+server.ts`
-- [ ] Implement GET (single event)
-- [ ] Implement PUT (update event) with validation
-- [ ] Implement DELETE (delete event)
-- [ ] Test all event endpoints
+- [x] Create `src/routes/api/events/+server.ts`
+- [x] Implement GET (list events)
+  - [x] Supports filtering by agencyId and search
+- [x] Implement POST (create event) with validation
+  - [x] Uses `createEventSchema` for validation
+- [x] Create `src/routes/api/events/[id]/+server.ts`
+- [x] Implement GET (single event)
+  - [x] Returns 404 if event not found
+  - [x] Supports ?include=authors,repositories query parameter
+- [x] Implement PUT (update event) with validation
+  - [x] Uses `updateEventSchema` for validation
+- [x] Implement DELETE (delete event)
+- [x] Create `src/routes/api/events/[id]/authors/+server.ts`
+  - [x] GET (list authors for event)
+  - [x] POST (associate author with event)
+  - [x] DELETE (remove author from event)
+- [x] Create `src/routes/api/events/[id]/repositories/+server.ts`
+  - [x] GET (list repositories for event)
+  - [x] POST (associate repository with event)
+  - [x] DELETE (remove repository from event)
+- [ ] Test all event endpoints (implementation complete, needs manual testing)
 
 #### API Routes - Filtering & Pagination
 
-- [ ] Add filtering to all list endpoints (ecosystem, agency, event, date range)
-- [ ] Add pagination to all list endpoints
-- [ ] Test filtering with various combinations
-- [ ] Test pagination with large datasets
-- [ ] Verify pagination metadata is returned correctly
+- [x] Add filtering to all list endpoints (ecosystem, agency, event, date range)
+  - [x] Repositories: agencyId, isFork, search
+  - [x] Authors: agencyId, githubId, email, search
+  - [x] Commits: repositoryId/authorId, date range, branch
+  - [x] Events: agencyId, search
+  - [x] Contributors: date range, agencyId (ecosystemId and eventId TODO)
+- [ ] Add pagination to all list endpoints (not yet implemented - can be added later if needed)
+- [ ] Test filtering with various combinations (implementation complete, needs manual testing)
+- [ ] Test pagination with large datasets (pagination not yet implemented)
+- [ ] Verify pagination metadata is returned correctly (pagination not yet implemented)
 
 #### API Routes - Specialized Endpoints
 
-- [ ] Create endpoint for "contributors over time period"
-- [ ] Create endpoint for event associations
-- [ ] Test specialized endpoints
+- [x] Create endpoint for "contributors over time period"
+  - [x] GET /api/contributors with startDate, endDate, agencyId filters
+  - [x] Returns contributors with commit counts sorted by commit count
+- [x] Create endpoint for event associations
+  - [x] GET/POST/DELETE /api/events/[id]/authors
+  - [x] GET/POST/DELETE /api/events/[id]/repositories
+- [ ] Test specialized endpoints (implementation complete, needs manual testing)
 
 #### Error Handling
 
-- [ ] Implement consistent error response format
-- [ ] Add user-friendly error messages
-- [ ] Test error handling for invalid requests
-- [ ] Test error handling for database errors
-- [ ] Test error handling for validation errors
+- [x] Implement consistent error response format
+  - [x] Created `src/lib/server/api/errors.ts` with `errorResponse()` and `handleError()`
+  - [x] Standard format: `{ error: string, message: string, details?: any }`
+- [x] Add user-friendly error messages
+  - [x] Handles Zod validation errors (422)
+  - [x] Handles database constraint violations (409)
+  - [x] Handles not found errors (404)
+  - [x] Handles invalid input (400)
+  - [x] Handles server errors (500)
+- [ ] Test error handling for invalid requests (implementation complete, needs manual testing)
+- [ ] Test error handling for database errors (implementation complete, needs manual testing)
+- [ ] Test error handling for validation errors (implementation complete, needs manual testing)
 
 ### Phase 4: Dashboard UI - Core Views (Days 11-14)
 
