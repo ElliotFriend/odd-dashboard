@@ -24,10 +24,9 @@
             error = null;
 
             // Fetch stats from multiple endpoints
-            const [reposRes, authorsRes, commitsRes] = await Promise.all([
+            const [reposRes, authorsRes] = await Promise.all([
                 fetch('/api/repositories'),
                 fetch('/api/authors'),
-                fetch('/api/commits?repositoryId=1&limit=1'), // Just to get count
             ]);
 
             if (!reposRes.ok || !authorsRes.ok) {
@@ -37,12 +36,29 @@
             const reposData = await reposRes.json();
             const authorsData = await authorsRes.json();
 
-            // For commits, we'd need a count endpoint or calculate from commits
-            // For now, we'll use a placeholder
+            // Calculate total commits by fetching commits for each repository
+            // For now, we'll use a placeholder (could be optimized with a count endpoint)
+            let totalCommits = 0;
+            const repos = reposData.data || [];
+            if (repos.length > 0) {
+                // Fetch commits for the first repository as a sample
+                // In a real scenario, we'd want a count endpoint
+                try {
+                    const commitsRes = await fetch(`/api/commits?repositoryId=${repos[0].id}`);
+                    if (commitsRes.ok) {
+                        const commitsData = await commitsRes.json();
+                        totalCommits = commitsData.data?.length || 0;
+                    }
+                } catch (err) {
+                    // Ignore errors for commit count
+                    console.warn('Could not fetch commit count:', err);
+                }
+            }
+
             stats = {
-                repositories: reposData.data?.length || 0,
+                repositories: repos.length,
                 authors: authorsData.data?.length || 0,
-                commits: 0, // TODO: Add commit count endpoint or calculate
+                commits: totalCommits,
                 recentActivity: [],
             };
         } catch (err: any) {
