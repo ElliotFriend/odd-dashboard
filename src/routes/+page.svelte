@@ -2,6 +2,8 @@
     import { onMount } from 'svelte';
     import { GitBranch, Users, GitCommit, TrendingUp } from '@lucide/svelte';
     import { formatDate } from '$lib/utils/date';
+    import ContributionChart from '$lib/components/charts/ContributionChart.svelte';
+    import ActivityTimeline from '$lib/components/charts/ActivityTimeline.svelte';
 
     interface Stats {
         repositories: number;
@@ -13,6 +15,10 @@
             timestamp: string;
         }>;
     }
+
+    // Chart data (placeholder - would be fetched from API in real implementation)
+    let contributionData = $state<Array<{ date: string; commits: number }>>([]);
+    let activityData = $state<Array<{ date: string; commits: number; contributors: number }>>([]);
 
     let stats = $state<Stats | null>(null);
     let loading = $state(true);
@@ -61,6 +67,27 @@
                 commits: totalCommits,
                 recentActivity: [],
             };
+
+            // Generate sample chart data (in real implementation, this would come from API)
+            // For now, generate last 7 days of data
+            const today = new Date();
+            contributionData = [];
+            activityData = [];
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                // Sample data - would be replaced with real API data
+                contributionData.push({
+                    date: dateStr,
+                    commits: Math.floor(Math.random() * 20),
+                });
+                activityData.push({
+                    date: dateStr,
+                    commits: Math.floor(Math.random() * 20),
+                    contributors: Math.floor(Math.random() * 10),
+                });
+            }
         } catch (err: any) {
             error = err.message || 'Failed to load dashboard statistics';
             console.error('Error loading stats:', err);
@@ -145,6 +172,16 @@
                         <TrendingUp class="w-6 h-6 text-orange-600" />
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div class="rounded-lg bg-white shadow-sm border border-slate-200 p-6">
+                <ContributionChart data={contributionData} />
+            </div>
+            <div class="rounded-lg bg-white shadow-sm border border-slate-200 p-6">
+                <ActivityTimeline data={activityData} />
             </div>
         </div>
 
