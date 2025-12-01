@@ -210,7 +210,7 @@
                         </CardHeader>
                         <CardContent>
                             <form
-                                on:submit|preventDefault={saveAgency}
+                                onsubmit={(e) => { e.preventDefault(); saveAgency(); }}
                                 class="space-y-4"
                             >
                                 <div>
