@@ -49,6 +49,8 @@
     },
     "dependencies": {
         "@lucide/svelte": "^0.554.0",
-        "postgres": "^3.4.7"
+        "@octokit/rest": "^22.0.1",
+        "postgres": "^3.4.7",
+        "server-only": "^0.0.1"
     }
 }
