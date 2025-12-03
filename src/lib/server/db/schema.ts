@@ -20,16 +20,12 @@ export const ecosystems = pgTable(
         id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
         name: text('name').notNull().unique(),
         parentId: integer('parent_id'),
-        createdAt: timestamp('created_at', { withTimezone: true })
-            .notNull()
-            .defaultNow(),
-        updatedAt: timestamp('updated_at', { withTimezone: true })
-            .notNull()
-            .defaultNow(),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+        updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     },
     (table) => ({
         parentIdIdx: index('ecosystems_parent_id_idx').on(table.parentId),
-    })
+    }),
 );
 
 export const ecosystemsRelations = relations(ecosystems, ({ one, many }) => ({
@@ -45,12 +41,8 @@ export const agencies = pgTable('agencies', {
     id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     name: text('name').notNull().unique(),
     description: text('description'),
-    createdAt: timestamp('created_at', { withTimezone: true })
-        .notNull()
-        .defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true })
-        .notNull()
-        .defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 // 3. repositories - GitHub repositories
@@ -67,21 +59,17 @@ export const repositories = pgTable(
         parentRepositoryId: integer('parent_repository_id'),
         parentFullName: text('parent_full_name'),
         defaultBranch: text('default_branch').notNull().default('main'),
-        createdAt: timestamp('created_at', { withTimezone: true })
-            .notNull()
-            .defaultNow(),
-        updatedAt: timestamp('updated_at', { withTimezone: true })
-            .notNull()
-            .defaultNow(),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+        updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
         lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
     },
     (table) => ({
         agencyIdIdx: index('repositories_agency_id_idx').on(table.agencyId),
         parentRepositoryIdIdx: index('repositories_parent_repository_id_idx').on(
-            table.parentRepositoryId
+            table.parentRepositoryId,
         ),
         isForkIdx: index('repositories_is_fork_idx').on(table.isFork),
-    })
+    }),
 );
 
 // 4. authors - Commit authors/contributors
@@ -96,18 +84,14 @@ export const authors = pgTable(
         agencyId: integer('agency_id').references(() => agencies.id, {
             onDelete: 'set null',
         }),
-        createdAt: timestamp('created_at', { withTimezone: true })
-            .notNull()
-            .defaultNow(),
-        updatedAt: timestamp('updated_at', { withTimezone: true })
-            .notNull()
-            .defaultNow(),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+        updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     },
     (table) => ({
         githubIdIdx: index('authors_github_id_idx').on(table.githubId),
         emailIdx: index('authors_email_idx').on(table.email),
         agencyIdIdx: index('authors_agency_id_idx').on(table.agencyId),
-    })
+    }),
 );
 
 // 5. commits - Individual commits
@@ -128,27 +112,23 @@ export const commits = pgTable(
         sha: text('sha').notNull(),
         commitDate: timestamp('commit_date', { withTimezone: true }).notNull(),
         branch: text('branch').notNull(),
-        createdAt: timestamp('created_at', { withTimezone: true })
-            .notNull()
-            .defaultNow(),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     },
     (table) => ({
-        repositoryIdIdx: index('commits_repository_id_idx').on(
-            table.repositoryId
-        ),
+        repositoryIdIdx: index('commits_repository_id_idx').on(table.repositoryId),
         authorIdIdx: index('commits_author_id_idx').on(table.authorId),
         shaIdx: index('commits_sha_idx').on(table.sha),
         commitDateIdx: index('commits_commit_date_idx').on(table.commitDate),
         branchIdx: index('commits_branch_idx').on(table.branch),
         repositoryCommitDateIdx: index('commits_repository_commit_date_idx').on(
             table.repositoryId,
-            table.commitDate
+            table.commitDate,
         ),
         repositoryShaUnique: unique('commits_repository_sha_unique').on(
             table.repositoryId,
-            table.sha
+            table.sha,
         ),
-    })
+    }),
 );
 
 // 6. events - Events like hackathons, conferences, etc.
@@ -163,16 +143,12 @@ export const events = pgTable(
         agencyId: integer('agency_id').references(() => agencies.id, {
             onDelete: 'set null',
         }),
-        createdAt: timestamp('created_at', { withTimezone: true })
-            .notNull()
-            .defaultNow(),
-        updatedAt: timestamp('updated_at', { withTimezone: true })
-            .notNull()
-            .defaultNow(),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+        updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     },
     (table) => ({
         agencyIdIdx: index('events_agency_id_idx').on(table.agencyId),
-    })
+    }),
 );
 
 // 7. author_events - Many-to-many: Authors associated with events
@@ -194,7 +170,7 @@ export const authorEvents = pgTable(
         pk: primaryKey({ columns: [table.authorId, table.eventId] }),
         authorIdIdx: index('author_events_author_id_idx').on(table.authorId),
         eventIdIdx: index('author_events_event_id_idx').on(table.eventId),
-    })
+    }),
 );
 
 // 8. repository_events - Many-to-many: Repositories associated with events
@@ -214,11 +190,9 @@ export const repositoryEvents = pgTable(
     },
     (table) => ({
         pk: primaryKey({ columns: [table.repositoryId, table.eventId] }),
-        repositoryIdIdx: index('repository_events_repository_id_idx').on(
-            table.repositoryId
-        ),
+        repositoryIdIdx: index('repository_events_repository_id_idx').on(table.repositoryId),
         eventIdIdx: index('repository_events_event_id_idx').on(table.eventId),
-    })
+    }),
 );
 
 // 9. repository_ecosystems - Many-to-many: Repositories associated with ecosystems
@@ -238,11 +212,7 @@ export const repositoryEcosystems = pgTable(
     },
     (table) => ({
         pk: primaryKey({ columns: [table.repositoryId, table.ecosystemId] }),
-        repositoryIdIdx: index('repository_ecosystems_repository_id_idx').on(
-            table.repositoryId
-        ),
-        ecosystemIdIdx: index('repository_ecosystems_ecosystem_id_idx').on(
-            table.ecosystemId
-        ),
-    })
+        repositoryIdIdx: index('repository_ecosystems_repository_id_idx').on(table.repositoryId),
+        ecosystemIdIdx: index('repository_ecosystems_ecosystem_id_idx').on(table.ecosystemId),
+    }),
 );

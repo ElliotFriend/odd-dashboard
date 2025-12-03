@@ -19,7 +19,7 @@ export interface SyncResult {
 /**
  * Find or create an author in the database.
  * Uses github_id as primary identifier, falls back to email if no github_id.
- * 
+ *
  * @param authorInfo - Author information extracted from commit
  * @returns Object with author ID and whether the author was newly created
  */
@@ -97,7 +97,7 @@ async function findOrCreateAuthor(authorInfo: {
 async function getParentCommitShas(
     parentRepositoryId: number,
     branch: string,
-    cache: Map<number, Set<string>>
+    cache: Map<number, Set<string>>,
 ): Promise<Set<string>> {
     // Check cache first
     if (cache.has(parentRepositoryId)) {
@@ -120,7 +120,7 @@ async function getParentCommitShas(
  * Sync commits for a repository.
  * Fetches commits from GitHub and stores them in the database.
  * For forks, compares commits with parent repository to attribute correctly.
- * 
+ *
  * @param repositoryId - The database ID of the repository to sync
  * @param options - Sync options
  * @returns Sync result with statistics
@@ -130,7 +130,7 @@ export async function syncRepositoryCommits(
     options: {
         initialSync?: boolean; // If true, fetch all commits; if false, only fetch since last_synced_at
         batchSize?: number; // Number of commits to process per batch (default: 1000)
-    } = {}
+    } = {},
 ): Promise<SyncResult> {
     const { initialSync = false, batchSize = 1000 } = options;
 
@@ -169,11 +169,11 @@ export async function syncRepositoryCommits(
             parentCommitShas = await getParentCommitShas(
                 repository.parentRepositoryId,
                 repository.defaultBranch,
-                parentCommitCache
+                parentCommitCache,
             );
         } catch (error: any) {
             result.errors.push(
-                `Warning: Could not load parent commits for fork comparison: ${error.message}`
+                `Warning: Could not load parent commits for fork comparison: ${error.message}`,
             );
             // Continue with sync even if parent commit loading fails
         }
@@ -200,7 +200,7 @@ export async function syncRepositoryCommits(
                     repository.defaultBranch,
                     since,
                     page,
-                    perPage
+                    perPage,
                 );
 
                 if (githubCommits.length === 0) {
@@ -228,15 +228,15 @@ export async function syncRepositoryCommits(
                             const authorInfo = extractAuthorFromCommit(commit);
 
                             // Find or create author
-                            const { id: authorId, wasCreated } = await findOrCreateAuthor(authorInfo);
+                            const { id: authorId, wasCreated } =
+                                await findOrCreateAuthor(authorInfo);
                             if (wasCreated) {
                                 result.authorsCreated++;
                             }
 
                             // Extract commit date (prefer author date, fallback to committer date)
                             const commitDateStr =
-                                commit.commit.author?.date ||
-                                commit.commit.committer?.date;
+                                commit.commit.author?.date || commit.commit.committer?.date;
                             if (!commitDateStr) {
                                 throw new Error(`No commit date found for commit ${commit.sha}`);
                             }
@@ -278,7 +278,7 @@ export async function syncRepositoryCommits(
                             }
                         } catch (error: any) {
                             result.errors.push(
-                                `Error processing commit ${commit.sha}: ${error.message}`
+                                `Error processing commit ${commit.sha}: ${error.message}`,
                             );
                         }
                     }
@@ -311,4 +311,3 @@ export async function syncRepositoryCommits(
 
     return result;
 }
-

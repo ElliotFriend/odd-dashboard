@@ -7,7 +7,7 @@ import { detectRepositoryRename } from '../github/fetchers';
  * Check if a repository has been renamed on GitHub and update the database if so.
  * Uses the repository's GitHub ID (which never changes) to fetch the current repository data
  * and compare it with the stored full_name.
- * 
+ *
  * @param repositoryId The ID of the repository in our database
  * @param currentFullName The full name we currently have stored (e.g., "owner/repo")
  * @param githubId The GitHub repository ID (which never changes, even on rename)
@@ -16,7 +16,7 @@ import { detectRepositoryRename } from '../github/fetchers';
 export async function checkAndUpdateRepositoryName(
     repositoryId: number,
     currentFullName: string,
-    githubId: number
+    githubId: number,
 ): Promise<{ renamed: boolean; newFullName?: string; oldFullName?: string }> {
     try {
         // Detect if the repository has been renamed by comparing stored full_name with GitHub API response
@@ -25,7 +25,7 @@ export async function checkAndUpdateRepositoryName(
         if (renameInfo.isRenamed && renameInfo.newFullName) {
             // Log the rename event for audit purposes
             console.log(
-                `📝 Repository rename detected: ${renameInfo.oldFullName} -> ${renameInfo.newFullName} (Repository ID: ${repositoryId}, GitHub ID: ${githubId})`
+                `📝 Repository rename detected: ${renameInfo.oldFullName} -> ${renameInfo.newFullName} (Repository ID: ${repositoryId}, GitHub ID: ${githubId})`,
             );
 
             // Update the database with the new full_name
@@ -49,7 +49,7 @@ export async function checkAndUpdateRepositoryName(
     } catch (error) {
         console.error(
             `❌ Error checking for rename for repository ${currentFullName} (ID: ${repositoryId}, GitHub ID: ${githubId}):`,
-            error
+            error,
         );
         // Don't throw - allow sync to continue even if rename detection fails
         return { renamed: false };

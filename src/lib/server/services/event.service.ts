@@ -75,7 +75,7 @@ export async function getAllEvents(options: EventFilterOptions = {}) {
             sql`(
                 ${events.name} ILIKE ${`%${options.search}%`} OR
                 ${events.description} ILIKE ${`%${options.search}%`}
-            )`
+            )`,
         );
     }
 
@@ -191,11 +191,7 @@ export async function associateAuthorWithEvent(input: AssociateAuthorWithEventIn
     }
 
     // Verify event exists
-    const event = await db
-        .select()
-        .from(events)
-        .where(eq(events.id, validated.eventId))
-        .limit(1);
+    const event = await db.select().from(events).where(eq(events.id, validated.eventId)).limit(1);
     if (event.length === 0) {
         throw new Error(`Event with ID ${validated.eventId} not found`);
     }
@@ -244,11 +240,7 @@ export async function associateRepositoryWithEvent(input: AssociateRepositoryWit
     }
 
     // Verify event exists
-    const event = await db
-        .select()
-        .from(events)
-        .where(eq(events.id, validated.eventId))
-        .limit(1);
+    const event = await db.select().from(events).where(eq(events.id, validated.eventId)).limit(1);
     if (event.length === 0) {
         throw new Error(`Event with ID ${validated.eventId} not found`);
     }
@@ -277,8 +269,8 @@ export async function removeRepositoryFromEvent(repositoryId: number, eventId: n
         .where(
             and(
                 eq(repositoryEvents.repositoryId, repositoryId),
-                eq(repositoryEvents.eventId, eventId)
-            )
+                eq(repositoryEvents.eventId, eventId),
+            ),
         );
 
     return { success: true };
@@ -328,4 +320,3 @@ export async function getRepositoriesForEvent(eventId: number) {
         .where(eq(repositoryEvents.eventId, eventId))
         .orderBy(repositories.fullName);
 }
-

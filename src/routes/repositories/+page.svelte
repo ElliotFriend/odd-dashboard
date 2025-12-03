@@ -108,22 +108,19 @@
         <CardContent>
             <div class="space-y-4">
                 <div class="flex items-center gap-2">
-                    <Filter class="w-5 h-5 text-slate-500" />
+                    <Filter class="h-5 w-5 text-slate-500" />
                     <h2 class="text-lg font-semibold">Filters</h2>
                 </div>
 
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <!-- Search -->
                     <div>
-                        <label
-                            for="search"
-                            class="block text-sm font-medium text-slate-700 mb-1"
-                        >
+                        <label for="search" class="mb-1 block text-sm font-medium text-slate-700">
                             Search
                         </label>
                         <div class="relative">
                             <Search
-                                class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400"
+                                class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-slate-400"
                             />
                             <input
                                 id="search"
@@ -131,24 +128,21 @@
                                 bind:value={searchQuery}
                                 oninput={handleFilterChange}
                                 placeholder="Search repositories..."
-                                class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                class="w-full rounded-md border border-slate-300 py-2 pr-3 pl-10 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                             />
                         </div>
                     </div>
 
                     <!-- Agency Filter -->
                     <div>
-                        <label
-                            for="agency"
-                            class="block text-sm font-medium text-slate-700 mb-1"
-                        >
+                        <label for="agency" class="mb-1 block text-sm font-medium text-slate-700">
                             Agency
                         </label>
                         <select
                             id="agency"
                             bind:value={selectedAgencyId}
                             onchange={handleFilterChange}
-                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                         >
                             <option value={null}>All Agencies</option>
                             {#each agencies as agency}
@@ -159,12 +153,12 @@
 
                     <!-- Fork Filter -->
                     <div class="flex items-end">
-                        <label class="flex items-center gap-2 cursor-pointer">
+                        <label class="flex cursor-pointer items-center gap-2">
                             <input
                                 type="checkbox"
                                 bind:checked={showForksOnly}
                                 onchange={handleFilterChange}
-                                class="w-4 h-4 text-slate-600 border-slate-300 rounded focus:ring-slate-500"
+                                class="h-4 w-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
                             />
                             <span class="text-sm font-medium text-slate-700">Forks only</span>
                         </label>
@@ -193,13 +187,13 @@
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
                                 <div class="flex items-center gap-2">
-                                    <GitBranch class="w-5 h-5 text-slate-500" />
+                                    <GitBranch class="h-5 w-5 text-slate-500" />
                                     <h3 class="text-lg font-semibold text-slate-900">
                                         {repo.fullName}
                                     </h3>
                                     {#if repo.isFork}
                                         <span
-                                            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                            class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800"
                                         >
                                             Fork
                                         </span>
@@ -214,10 +208,22 @@
                                 {/if}
 
                                 <div class="mt-2 flex flex-wrap gap-4 text-sm text-slate-600">
-                                    <span>Default branch: <span class="font-medium">{repo.defaultBranch}</span></span>
-                                    <span>Agency: <span class="font-medium">{getAgencyName(repo.agencyId)}</span></span>
+                                    <span
+                                        >Default branch: <span class="font-medium"
+                                            >{repo.defaultBranch}</span
+                                        ></span
+                                    >
+                                    <span
+                                        >Agency: <span class="font-medium"
+                                            >{getAgencyName(repo.agencyId)}</span
+                                        ></span
+                                    >
                                     {#if repo.lastSyncedAt}
-                                        <span>Last synced: <span class="font-medium">{formatDate(repo.lastSyncedAt)}</span></span>
+                                        <span
+                                            >Last synced: <span class="font-medium"
+                                                >{formatDate(repo.lastSyncedAt)}</span
+                                            ></span
+                                        >
                                     {:else}
                                         <span class="text-slate-400">Never synced</span>
                                     {/if}
@@ -229,7 +235,7 @@
                                 </p>
                             </div>
 
-                            <div class="flex gap-2 ml-4">
+                            <div class="ml-4 flex gap-2">
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -243,7 +249,7 @@
                                     rel="noopener noreferrer"
                                 >
                                     <Button variant="outline" size="sm">
-                                        <ExternalLink class="w-4 h-4" />
+                                        <ExternalLink class="h-4 w-4" />
                                     </Button>
                                 </a>
                             </div>
@@ -255,8 +261,8 @@
             {#if repositories.length === 0}
                 <Card>
                     <CardContent>
-                        <div class="text-center py-12">
-                            <GitBranch class="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                        <div class="py-12 text-center">
+                            <GitBranch class="mx-auto mb-4 h-12 w-12 text-slate-400" />
                             <p class="text-slate-500">No repositories found</p>
                             {#if searchQuery || selectedAgencyId || showForksOnly}
                                 <p class="mt-2 text-sm text-slate-400">
@@ -270,4 +276,3 @@
         </div>
     {/if}
 </div>
-

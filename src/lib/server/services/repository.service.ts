@@ -64,7 +64,11 @@ export async function createRepository(input: CreateRepositoryInput) {
  * Get a repository by ID
  */
 export async function getRepositoryById(id: number) {
-    const [repository] = await db.select().from(repositories).where(eq(repositories.id, id)).limit(1);
+    const [repository] = await db
+        .select()
+        .from(repositories)
+        .where(eq(repositories.id, id))
+        .limit(1);
 
     return repository || null;
 }
@@ -232,7 +236,7 @@ export async function createOrUpdateRepositoryFromGitHub(
         agencyId?: number | null;
         detectFork?: boolean;
         detectRename?: boolean;
-    } = {}
+    } = {},
 ): Promise<{ repository: any; created: boolean }> {
     const { agencyId, detectFork = true, detectRename = true } = options;
 
@@ -298,6 +302,9 @@ export async function detectRenameForRepository(repositoryId: number) {
         throw new Error(`Repository with ID ${repositoryId} not found`);
     }
 
-    return await checkAndUpdateRepositoryName(repository.id, repository.fullName, repository.githubId);
+    return await checkAndUpdateRepositoryName(
+        repository.id,
+        repository.fullName,
+        repository.githubId,
+    );
 }
-

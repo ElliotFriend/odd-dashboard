@@ -206,7 +206,7 @@ export async function updateEcosystem(id: number, input: UpdateEcosystemInput) {
         const wouldCycle = await wouldCreateCycle(id, validated.parentId ?? null);
         if (wouldCycle) {
             throw new Error(
-                'Cannot set parent: this would create a circular reference in the ecosystem hierarchy'
+                'Cannot set parent: this would create a circular reference in the ecosystem hierarchy',
             );
         }
 
@@ -269,4 +269,3 @@ export async function deleteEcosystem(id: number) {
 
     return { success: true };
 }
-

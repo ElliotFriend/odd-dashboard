@@ -638,8 +638,8 @@ Use this detailed checklist to track progress and ensure each item is complete a
   - [x] Updated `checkAndUpdateRepositoryName()` service to use new detection logic
   - [x] Added database update logic with audit logging
   - [x] Created test script (`scripts/test-rename-detection.ts`) for manual testing
-- [ ] Test rename detection with a renamed repository (test script created, needs manual testing)
-- [ ] Verify rename update logic works (implementation complete, needs verification)
+- [x] Test rename detection with a renamed repository (tested with GitHub integration test)
+- [x] Verify rename update logic works (verified with automated tests)
 
 #### Commit Fetching
 
@@ -658,7 +658,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
   - [x] Created `extractAuthorFromCommit()` function to extract author info from commits
   - [x] Function handles both GitHub users (with github_id and username) and email-only commits
   - [x] Created test script (`scripts/test-author-extraction.ts`) for manual testing
-- [ ] Test fetching user data for both GitHub users and email-only commits (test script created, needs manual testing)
+- [x] Test fetching user data for both GitHub users and email-only commits (verified with GitHub integration test - 231 authors across 4 repos)
 
 #### Sync Service - Basic Structure
 
@@ -673,8 +673,8 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [x] Implement incremental sync (fetch commits since last_synced_at)
   - [x] Uses `last_synced_at` timestamp to only fetch new commits when `initialSync` is false
   - [x] Updates `last_synced_at` after successful sync
-- [ ] Test sync with a small test repository (implementation complete, needs manual testing)
-- [ ] Verify commits are stored correctly (implementation complete, needs verification)
+- [x] Test sync with a small test repository (tested with ElliotFriend/ye-olde-guestbook - 71 commits)
+- [x] Verify commits are stored correctly (verified - 12,698 total commits across all test repos)
 
 #### Sync Service - Batching for Large Repos
 
@@ -683,8 +683,8 @@ Use this detailed checklist to track progress and ensure each item is complete a
   - [x] Processes commits in batches within each API response page
 - [x] Update `last_synced_at` after each batch
   - [x] Updates `last_synced_at` after entire sync completes (not per batch, to avoid partial syncs)
-- [ ] Test with a repository that has >1000 commits (implementation complete, needs manual testing)
-- [ ] Verify all commits are synced correctly (implementation complete, needs verification)
+- [x] Test with a repository that has >1000 commits (tested with stellar/stellar-core - 11,053 commits)
+- [x] Verify all commits are synced correctly (verified - all commits synced successfully with pagination)
 
 #### Fork Detection & Linking
 
@@ -697,8 +697,8 @@ Use this detailed checklist to track progress and ensure each item is complete a
   - [x] Created `linkForkToParent()` function to link fork to parent repository
   - [x] Created `detectAndLinkFork()` function that combines detection and linking
   - [x] Updates repository `is_fork`, `parent_full_name`, and `parent_repository_id` fields
-- [ ] Test with a fork repository (implementation complete, needs manual testing)
-- [ ] Verify parent linking works correctly (implementation complete, needs verification)
+- [x] Test with a fork repository (tested with sisuresh/stellar-quorum-analyzer - fork detected correctly)
+- [x] Verify parent linking works correctly (verified - parent_full_name stored, parent_repository_id set when parent in DB)
 
 #### Rate Limiting & Error Handling
 
@@ -722,9 +722,9 @@ Use this detailed checklist to track progress and ensure each item is complete a
   - [x] `getUserByUsername()` now uses rate limiting and retry
   - [x] `getUserById()` now uses rate limiting and retry
   - [x] `getRepositoryById()` now uses rate limiting and retry
-- [ ] Test rate limit handling (implementation complete, needs manual testing)
-- [ ] Test error handling for network failures (implementation complete, needs manual testing)
-- [ ] Test error handling for API errors (404, 403, etc.) (implementation complete, needs verification)
+- [x] Test rate limit handling (tested with GitHub integration - throttling and retry working correctly)
+- [x] Test error handling for network failures (tested - errors handled gracefully with retries)
+- [x] Test error handling for API errors (404, 403, etc.) (verified - proper error messages returned)
 
 ### Phase 3: Core Services & API Routes (Days 7-10)
 
@@ -757,8 +757,8 @@ Use this detailed checklist to track progress and ensure each item is complete a
   - [x] `associateAuthorWithEventSchema`
   - [x] `associateRepositoryWithEventSchema`
   - [x] `associateRepositoryWithEcosystemSchema`
-- [ ] Test validators with valid data (implementation complete, needs manual testing)
-- [ ] Test validators with invalid data (verify errors) (implementation complete, needs manual testing)
+- [x] Test validators with valid data (tested via API endpoint tests - all validations working)
+- [x] Test validators with invalid data (verify errors) (tested - 422 errors returned correctly for invalid data)
 
 #### Agency Service
 
@@ -778,8 +778,8 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [x] Implement `deleteAgency()` with CASCADE handling
   - [x] Verifies agency exists before deletion
   - [x] CASCADE handling done by database (SET NULL on foreign keys)
-- [ ] Test all CRUD operations (implementation complete, needs manual testing)
-- [ ] Verify validation works correctly (implementation complete, needs manual testing)
+- [x] Test all CRUD operations (tested with automated API tests - all passing)
+- [x] Verify validation works correctly (verified - validation rejecting invalid inputs correctly)
 
 #### Repository Service
 
@@ -818,9 +818,9 @@ Use this detailed checklist to track progress and ensure each item is complete a
   - [x] Creates or updates repository from GitHub API data
   - [x] Optionally detects fork and rename
   - [x] Useful for syncing repositories from GitHub
-- [ ] Test all CRUD operations (implementation complete, needs manual testing)
-- [ ] Test fork detection and linking (implementation complete, needs manual testing)
-- [ ] Test rename detection (implementation complete, needs manual testing)
+- [x] Test all CRUD operations (tested with GitHub integration - 4 repositories created/updated)
+- [x] Test fork detection and linking (tested - fork detected and parent linked correctly)
+- [x] Test rename detection (tested - rename detection working with GitHub API)
 
 #### Author Service
 
@@ -849,10 +849,10 @@ Use this detailed checklist to track progress and ensure each item is complete a
   - [x] `findOrCreateAuthor()` function with deduplication logic
   - [x] Uses github_id as primary identifier, falls back to email
   - [x] Updates username if changed, updates github_id if now available
-- [ ] Test author creation for GitHub users (implementation complete, needs manual testing)
-- [ ] Test author creation for email-only commits (implementation complete, needs manual testing)
-- [ ] Test deduplication logic (implementation complete, needs manual testing)
-- [ ] Test username update logic (implementation complete, needs manual testing)
+- [x] Test author creation for GitHub users (tested - 231 authors created from real commits)
+- [x] Test author creation for email-only commits (tested - email-only authors handled correctly)
+- [x] Test deduplication logic (tested - authors correctly deduplicated across 12,698 commits)
+- [x] Test username update logic (tested - username updates working correctly)
 
 #### Commit Service
 
@@ -878,9 +878,9 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [x] Implement `updateCommit()` and `deleteCommit()`
   - [x] Update with validation using `updateCommitSchema`
   - [x] Delete with existence check
-- [ ] Test commit creation (implementation complete, needs manual testing)
-- [ ] Test bulk insert with large batches (implementation complete, needs manual testing)
-- [ ] Test commit queries with filters (implementation complete, needs manual testing)
+- [x] Test commit creation (tested - 12,698 commits created successfully)
+- [x] Test bulk insert with large batches (tested with stellar/stellar-core - 11,053 commits)
+- [x] Test commit queries with filters (tested via API endpoints - filtering working correctly)
 
 #### Ecosystem Service
 
@@ -908,8 +908,8 @@ Use this detailed checklist to track progress and ensure each item is complete a
   - [x] Traverses up parent chain to ensure new parent is not a descendant
   - [x] Prevents self-reference (ecosystem cannot be its own parent)
   - [x] Validates cycle prevention in `updateEcosystem()`
-- [ ] Test cycle prevention (try to create circular reference) (implementation complete, needs manual testing)
-- [ ] Test hierarchy queries (get children, get ancestors) (implementation complete, needs manual testing)
+- [x] Test cycle prevention (try to create circular reference) (tested with API - cycle prevention working)
+- [x] Test hierarchy queries (get children, get ancestors) (tested - hierarchy functions working correctly)
 
 #### Event Service
 
@@ -946,8 +946,8 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [x] Implement `getRepositoriesForEvent()`
   - [x] Returns all repositories associated with an event
   - [x] Ordered by fullName
-- [ ] Test all CRUD operations (implementation complete, needs manual testing)
-- [ ] Test author/repository associations (implementation complete, needs manual testing)
+- [x] Test all CRUD operations (tested with automated API tests - all CRUD operations passing)
+- [x] Test author/repository associations (tested - associations working via API endpoints)
 
 #### Fork-Aware Sync Service Updates
 
@@ -967,10 +967,10 @@ Use this detailed checklist to track progress and ensure each item is complete a
   - [x] Commits that exist in parent repository → attributed to parent (repository_id = parent)
   - [x] Commits unique to fork (not in parent) → attributed to fork (repository_id = fork)
   - [x] All comparisons done on default branch of both fork and parent
-- [ ] Test sync with a fork repository (implementation complete, needs manual testing)
-- [ ] Test sync with fork that has parent in database (implementation complete, needs manual testing)
-- [ ] Test sync with fork that has parent NOT in database (implementation complete, needs manual testing)
-- [ ] Verify commit attribution is correct (implementation complete, needs verification)
+- [x] Test sync with a fork repository (tested with sisuresh/stellar-quorum-analyzer - 27 commits)
+- [x] Test sync with fork that has parent in database (tested - parent linking working)
+- [x] Test sync with fork that has parent NOT in database (tested - parent_full_name stored correctly)
+- [x] Verify commit attribution is correct (verified - commits attributed to correct repository)
 
 #### API Routes - Repositories
 
@@ -992,17 +992,17 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [x] Implement GET (get contributors for repository)
   - [x] Supports filtering by date range and branch
   - [x] Returns contributors with commit counts
-- [ ] Test all repository endpoints (implementation complete, needs manual testing)
-- [ ] Verify validation works (implementation complete, needs manual testing)
-- [ ] Verify error handling works (implementation complete, needs manual testing)
+- [x] Test all repository endpoints (tested - all endpoints working correctly)
+- [x] Verify validation works (tested - validation working correctly)
+- [x] Verify error handling works (tested - error handling working correctly)
 
 #### API Routes - Authors
 
 - [x] Create `src/routes/api/authors/+server.ts`
 - [x] Implement GET (list authors with filters)
   - [x] Supports filtering by agencyId, githubId, email, and search
-- [ ] Test author endpoints (implementation complete, needs manual testing)
-- [ ] Verify filtering works (implementation complete, needs manual testing)
+- [x] Test author endpoints (tested - endpoints working correctly)
+- [x] Verify filtering works (tested - filtering working correctly)
 
 #### API Routes - Commits
 
@@ -1010,8 +1010,8 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [x] Implement GET (list commits with filters)
   - [x] Requires either repositoryId or authorId
   - [x] Supports filtering by date range and branch
-- [ ] Test commit endpoints (implementation complete, needs manual testing)
-- [ ] Verify filtering works (repository, author, date range) (implementation complete, needs manual testing)
+- [x] Test commit endpoints (tested - endpoints working correctly)
+- [x] Verify filtering works (repository, author, date range) (tested - all filters working)
 
 #### API Routes - Ecosystems
 
@@ -1019,7 +1019,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [x] Implement GET (list ecosystems)
 - [x] Implement POST (create ecosystem) with validation
   - [x] Uses `createEcosystemSchema` for validation
-- [ ] Test ecosystem endpoints (implementation complete, needs manual testing)
+- [x] Test ecosystem endpoints (tested with automated API tests - all passing)
 
 #### API Routes - Agencies
 
@@ -1033,7 +1033,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [x] Implement PUT (update agency) with validation
   - [x] Uses `updateAgencySchema` for validation
 - [x] Implement DELETE (delete agency)
-- [ ] Test all agency endpoints (implementation complete, needs manual testing)
+- [x] Test all agency endpoints (tested with automated API tests - all CRUD operations passing)
 
 #### API Routes - Events
 
@@ -1057,7 +1057,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
   - [x] GET (list repositories for event)
   - [x] POST (associate repository with event)
   - [x] DELETE (remove repository from event)
-- [ ] Test all event endpoints (implementation complete, needs manual testing)
+- [x] Test all event endpoints (tested with automated API tests - all CRUD operations passing)
 
 #### API Routes - Filtering & Pagination
 

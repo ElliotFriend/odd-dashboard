@@ -1,10 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import {
-    getAgencyById,
-    updateAgency,
-    deleteAgency,
-} from '$lib/server/services/agency.service';
+import { getAgencyById, updateAgency, deleteAgency } from '$lib/server/services/agency.service';
 import { updateAgencySchema } from '$lib/server/db/validators';
 import { errorResponse, handleError } from '$lib/server/api/errors';
 
@@ -68,4 +64,3 @@ export const DELETE: RequestHandler = async ({ params }) => {
         return handleError(error);
     }
 };
-

@@ -49,21 +49,16 @@
 </script>
 
 <div class={className}>
-    <label
-        for="event-filter"
-        class="block text-sm font-medium text-slate-700 mb-1"
-    >
-        Event
-    </label>
+    <label for="event-filter" class="mb-1 block text-sm font-medium text-slate-700"> Event </label>
     <div class="relative">
         <Calendar
-            class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400"
+            class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-slate-400"
         />
         <select
             id="event-filter"
             bind:value={selectedEventId}
             disabled={loading}
-            class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
+            class="w-full rounded-md border border-slate-300 py-2 pr-3 pl-10 focus:ring-2 focus:ring-slate-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-100"
         >
             <option value={null}>All Events</option>
             {#each events as event}
@@ -72,4 +67,3 @@
         </select>
     </div>
 </div>
-

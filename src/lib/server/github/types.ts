@@ -1,7 +1,8 @@
 import type { RestEndpointMethodTypes } from '@octokit/rest';
 
 export type GitHubRepository = RestEndpointMethodTypes['repos']['get']['response']['data'];
-export type GitHubCommit = RestEndpointMethodTypes['repos']['listCommits']['response']['data'][number];
+export type GitHubCommit =
+    RestEndpointMethodTypes['repos']['listCommits']['response']['data'][number];
 export type GitHubUser = RestEndpointMethodTypes['users']['getByUsername']['response']['data'];
 
 // Simplified types for our internal use (optional, but good for decoupling)

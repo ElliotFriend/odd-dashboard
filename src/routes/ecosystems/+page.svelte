@@ -140,7 +140,7 @@
             <p class="mt-2 text-slate-600">Manage ecosystem hierarchy</p>
         </div>
         <Button onclick={startCreate} disabled={creating || editingId !== null}>
-            <Plus class="w-4 h-4 mr-2" />
+            <Plus class="mr-2 h-4 w-4" />
             Add Ecosystem
         </Button>
     </div>
@@ -164,13 +164,16 @@
                 </CardHeader>
                 <CardContent>
                     <form
-                        onsubmit={(e) => { e.preventDefault(); saveEcosystem(); }}
+                        onsubmit={(e) => {
+                            e.preventDefault();
+                            saveEcosystem();
+                        }}
                         class="space-y-4"
                     >
                         <div>
                             <label
                                 for="create-name"
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="mb-1 block text-sm font-medium text-slate-700"
                             >
                                 Name *
                             </label>
@@ -179,21 +182,21 @@
                                 type="text"
                                 bind:value={formData.name}
                                 required
-                                class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                 placeholder="Ecosystem name"
                             />
                         </div>
                         <div>
                             <label
                                 for="create-parent"
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="mb-1 block text-sm font-medium text-slate-700"
                             >
                                 Parent Ecosystem
                             </label>
                             <select
                                 id="create-parent"
                                 bind:value={formData.parentId}
-                                class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                             >
                                 <option value={null}>None (Root ecosystem)</option>
                                 {#each ecosystems as eco}
@@ -203,11 +206,11 @@
                         </div>
                         <div class="flex gap-2">
                             <Button type="submit">
-                                <Save class="w-4 h-4 mr-2" />
+                                <Save class="mr-2 h-4 w-4" />
                                 Save
                             </Button>
                             <Button type="button" variant="outline" onclick={cancelEdit}>
-                                <X class="w-4 h-4 mr-2" />
+                                <X class="mr-2 h-4 w-4" />
                                 Cancel
                             </Button>
                         </div>
@@ -228,13 +231,16 @@
                         </CardHeader>
                         <CardContent>
                             <form
-                                onsubmit={(e) => { e.preventDefault(); saveEcosystem(); }}
+                                onsubmit={(e) => {
+                                    e.preventDefault();
+                                    saveEcosystem();
+                                }}
                                 class="space-y-4"
                             >
                                 <div>
                                     <label
                                         for="edit-name-{rootEco.id}"
-                                        class="block text-sm font-medium text-slate-700 mb-1"
+                                        class="mb-1 block text-sm font-medium text-slate-700"
                                     >
                                         Name *
                                     </label>
@@ -243,20 +249,20 @@
                                         type="text"
                                         bind:value={formData.name}
                                         required
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                        class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                     />
                                 </div>
                                 <div>
                                     <label
                                         for="edit-parent-{rootEco.id}"
-                                        class="block text-sm font-medium text-slate-700 mb-1"
+                                        class="mb-1 block text-sm font-medium text-slate-700"
                                     >
                                         Parent Ecosystem
                                     </label>
                                     <select
                                         id="edit-parent-{rootEco.id}"
                                         bind:value={formData.parentId}
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                        class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                     >
                                         <option value={null}>None (Root ecosystem)</option>
                                         {#each ecosystems.filter((e) => e.id !== rootEco.id) as eco}
@@ -266,11 +272,11 @@
                                 </div>
                                 <div class="flex gap-2">
                                     <Button type="submit">
-                                        <Save class="w-4 h-4 mr-2" />
+                                        <Save class="mr-2 h-4 w-4" />
                                         Save
                                     </Button>
                                     <Button type="button" variant="outline" onclick={cancelEdit}>
-                                        <X class="w-4 h-4 mr-2" />
+                                        <X class="mr-2 h-4 w-4" />
                                         Cancel
                                     </Button>
                                 </div>
@@ -281,7 +287,7 @@
                             <div class="flex items-start justify-between">
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2">
-                                        <FolderTree class="w-5 h-5 text-slate-500" />
+                                        <FolderTree class="h-5 w-5 text-slate-500" />
                                         <h3 class="text-lg font-semibold text-slate-900">
                                             {rootEco.name}
                                         </h3>
@@ -289,8 +295,10 @@
                                     {#if children.length > 0}
                                         <div class="mt-2 ml-7 space-y-2">
                                             {#each children as child}
-                                                <div class="flex items-center gap-2 text-sm text-slate-600">
-                                                    <ChevronRight class="w-4 h-4" />
+                                                <div
+                                                    class="flex items-center gap-2 text-sm text-slate-600"
+                                                >
+                                                    <ChevronRight class="h-4 w-4" />
                                                     <span>{child.name}</span>
                                                 </div>
                                             {/each}
@@ -301,14 +309,14 @@
                                         {formatDate(rootEco.updatedAt)}
                                     </p>
                                 </div>
-                                <div class="flex gap-2 ml-4">
+                                <div class="ml-4 flex gap-2">
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onclick={() => startEdit(rootEco)}
                                         disabled={creating || editingId !== null}
                                     >
-                                        <Edit2 class="w-4 h-4" />
+                                        <Edit2 class="h-4 w-4" />
                                     </Button>
                                     <Button
                                         variant="outline"
@@ -316,7 +324,7 @@
                                         onclick={() => deleteEcosystem(rootEco.id)}
                                         disabled={creating || editingId !== null}
                                     >
-                                        <Trash2 class="w-4 h-4" />
+                                        <Trash2 class="h-4 w-4" />
                                     </Button>
                                 </div>
                             </div>
@@ -328,11 +336,11 @@
             {#if ecosystems.length === 0}
                 <Card>
                     <CardContent>
-                        <div class="text-center py-12">
-                            <FolderTree class="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                        <div class="py-12 text-center">
+                            <FolderTree class="mx-auto mb-4 h-12 w-12 text-slate-400" />
                             <p class="text-slate-500">No ecosystems found</p>
                             <Button class="mt-4" onclick={startCreate}>
-                                <Plus class="w-4 h-4 mr-2" />
+                                <Plus class="mr-2 h-4 w-4" />
                                 Create your first ecosystem
                             </Button>
                         </div>
@@ -342,4 +350,3 @@
         </div>
     {/if}
 </div>
-

@@ -68,4 +68,3 @@ export const DELETE: RequestHandler = async ({ params }) => {
         return handleError(error);
     }
 };
-

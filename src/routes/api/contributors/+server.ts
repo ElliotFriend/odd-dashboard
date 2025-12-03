@@ -29,10 +29,7 @@ export const GET: RequestHandler = async ({ url }) => {
         }
 
         // Build conditions for filtering
-        const conditions = [
-            gte(commits.commitDate, start),
-            lte(commits.commitDate, end),
-        ];
+        const conditions = [gte(commits.commitDate, start), lte(commits.commitDate, end)];
 
         // Build query - join repositories if we need to filter by agency
         if (agencyId) {
@@ -114,4 +111,3 @@ export const GET: RequestHandler = async ({ url }) => {
         return handleError(error);
     }
 };
-

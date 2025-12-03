@@ -12,18 +12,14 @@ export interface ApiError {
 /**
  * Create a standardized error response
  */
-export function errorResponse(
-    status: number,
-    message: string,
-    details?: any
-): Response {
+export function errorResponse(status: number, message: string, details?: any): Response {
     return json(
         {
             error: getErrorName(status),
             message,
             ...(details && { details }),
         } as ApiError,
-        { status }
+        { status },
     );
 }
 
@@ -74,4 +70,3 @@ export function handleError(error: any): Response {
     console.error('API Error:', error);
     return errorResponse(500, error.message || 'Internal server error');
 }
-

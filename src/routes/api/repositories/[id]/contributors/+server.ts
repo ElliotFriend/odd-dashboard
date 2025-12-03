@@ -56,4 +56,3 @@ export const GET: RequestHandler = async ({ params, url }) => {
         return handleError(error);
     }
 };
-

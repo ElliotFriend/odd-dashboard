@@ -135,11 +135,7 @@ export async function getAuthorById(id: number) {
  * Get an author by GitHub ID
  */
 export async function getAuthorByGithubId(githubId: number) {
-    const [author] = await db
-        .select()
-        .from(authors)
-        .where(eq(authors.githubId, githubId))
-        .limit(1);
+    const [author] = await db.select().from(authors).where(eq(authors.githubId, githubId)).limit(1);
 
     return author || null;
 }
@@ -182,7 +178,7 @@ export async function getAllAuthors(options: AuthorFilterOptions = {}) {
                 ${authors.name} ILIKE ${searchPattern} OR
                 ${authors.username} ILIKE ${searchPattern} OR
                 ${authors.email} ILIKE ${searchPattern}
-            )`
+            )`,
         );
     }
 
@@ -278,4 +274,3 @@ export async function deleteAuthor(id: number) {
 
     return { success: true };
 }
-

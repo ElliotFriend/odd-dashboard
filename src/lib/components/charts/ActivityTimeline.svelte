@@ -27,15 +27,7 @@
     let chart: Chart | null = $state(null);
 
     // Register Chart.js components
-    Chart.register(
-        CategoryScale,
-        LinearScale,
-        LineElement,
-        PointElement,
-        Title,
-        Tooltip,
-        Legend
-    );
+    Chart.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend);
 
     function renderChart() {
         if (!chartContainer) return;
@@ -120,4 +112,3 @@
         <canvas bind:this={chartContainer}></canvas>
     </div>
 </div>
-

@@ -126,7 +126,7 @@
             <p class="mt-2 text-slate-600">Manage agencies and organizations</p>
         </div>
         <Button onclick={startCreate} disabled={creating || editingId !== null}>
-            <Plus class="w-4 h-4 mr-2" />
+            <Plus class="mr-2 h-4 w-4" />
             Add Agency
         </Button>
     </div>
@@ -150,13 +150,16 @@
                 </CardHeader>
                 <CardContent>
                     <form
-                        onsubmit={(e) => { e.preventDefault(); saveAgency(); }}
+                        onsubmit={(e) => {
+                            e.preventDefault();
+                            saveAgency();
+                        }}
                         class="space-y-4"
                     >
                         <div>
                             <label
                                 for="create-name"
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="mb-1 block text-sm font-medium text-slate-700"
                             >
                                 Name *
                             </label>
@@ -165,14 +168,14 @@
                                 type="text"
                                 bind:value={formData.name}
                                 required
-                                class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                 placeholder="Agency name"
                             />
                         </div>
                         <div>
                             <label
                                 for="create-description"
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="mb-1 block text-sm font-medium text-slate-700"
                             >
                                 Description
                             </label>
@@ -180,17 +183,17 @@
                                 id="create-description"
                                 bind:value={formData.description}
                                 rows="3"
-                                class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                 placeholder="Agency description"
                             ></textarea>
                         </div>
                         <div class="flex gap-2">
                             <Button type="submit">
-                                <Save class="w-4 h-4 mr-2" />
+                                <Save class="mr-2 h-4 w-4" />
                                 Save
                             </Button>
                             <Button type="button" variant="outline" onclick={cancelEdit}>
-                                <X class="w-4 h-4 mr-2" />
+                                <X class="mr-2 h-4 w-4" />
                                 Cancel
                             </Button>
                         </div>
@@ -210,13 +213,16 @@
                         </CardHeader>
                         <CardContent>
                             <form
-                                onsubmit={(e) => { e.preventDefault(); saveAgency(); }}
+                                onsubmit={(e) => {
+                                    e.preventDefault();
+                                    saveAgency();
+                                }}
                                 class="space-y-4"
                             >
                                 <div>
                                     <label
                                         for="edit-name-{agency.id}"
-                                        class="block text-sm font-medium text-slate-700 mb-1"
+                                        class="mb-1 block text-sm font-medium text-slate-700"
                                     >
                                         Name *
                                     </label>
@@ -225,13 +231,13 @@
                                         type="text"
                                         bind:value={formData.name}
                                         required
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                        class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                     />
                                 </div>
                                 <div>
                                     <label
                                         for="edit-description-{agency.id}"
-                                        class="block text-sm font-medium text-slate-700 mb-1"
+                                        class="mb-1 block text-sm font-medium text-slate-700"
                                     >
                                         Description
                                     </label>
@@ -239,16 +245,16 @@
                                         id="edit-description-{agency.id}"
                                         bind:value={formData.description}
                                         rows="3"
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                        class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                     ></textarea>
                                 </div>
                                 <div class="flex gap-2">
                                     <Button type="submit">
-                                        <Save class="w-4 h-4 mr-2" />
+                                        <Save class="mr-2 h-4 w-4" />
                                         Save
                                     </Button>
                                     <Button type="button" variant="outline" onclick={cancelEdit}>
-                                        <X class="w-4 h-4 mr-2" />
+                                        <X class="mr-2 h-4 w-4" />
                                         Cancel
                                     </Button>
                                 </div>
@@ -271,14 +277,14 @@
                                         {formatDate(agency.updatedAt)}
                                     </p>
                                 </div>
-                                <div class="flex gap-2 ml-4">
+                                <div class="ml-4 flex gap-2">
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onclick={() => startEdit(agency)}
                                         disabled={creating || editingId !== null}
                                     >
-                                        <Edit2 class="w-4 h-4" />
+                                        <Edit2 class="h-4 w-4" />
                                     </Button>
                                     <Button
                                         variant="outline"
@@ -286,7 +292,7 @@
                                         onclick={() => deleteAgency(agency.id)}
                                         disabled={creating || editingId !== null}
                                     >
-                                        <Trash2 class="w-4 h-4" />
+                                        <Trash2 class="h-4 w-4" />
                                     </Button>
                                 </div>
                             </div>
@@ -298,10 +304,10 @@
             {#if agencies.length === 0}
                 <Card>
                     <CardContent>
-                        <div class="text-center py-12">
+                        <div class="py-12 text-center">
                             <p class="text-slate-500">No agencies found</p>
                             <Button class="mt-4" onclick={startCreate}>
-                                <Plus class="w-4 h-4 mr-2" />
+                                <Plus class="mr-2 h-4 w-4" />
                                 Create your first agency
                             </Button>
                         </div>
@@ -311,4 +317,3 @@
         </div>
     {/if}
 </div>
-

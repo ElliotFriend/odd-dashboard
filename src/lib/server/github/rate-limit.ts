@@ -74,10 +74,7 @@ const DEFAULT_RETRY_CONFIG: Required<RetryConfig> = {
 /**
  * Execute a function with retry logic and exponential backoff
  */
-export async function withRetry<T>(
-    fn: () => Promise<T>,
-    config: RetryConfig = {}
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, config: RetryConfig = {}): Promise<T> {
     const retryConfig = { ...DEFAULT_RETRY_CONFIG, ...config };
     let lastError: any;
 
@@ -89,8 +86,7 @@ export async function withRetry<T>(
 
             // Check if this is a retryable error
             const statusCode = error.status || error.response?.status;
-            const isRetryable =
-                statusCode && retryConfig.retryableStatusCodes.includes(statusCode);
+            const isRetryable = statusCode && retryConfig.retryableStatusCodes.includes(statusCode);
 
             // Don't retry if we've exhausted retries or error is not retryable
             if (attempt >= retryConfig.maxRetries || !isRetryable) {
@@ -99,9 +95,8 @@ export async function withRetry<T>(
 
             // Calculate delay with exponential backoff
             const delay = Math.min(
-                retryConfig.initialDelay *
-                    Math.pow(retryConfig.backoffMultiplier, attempt),
-                retryConfig.maxDelay
+                retryConfig.initialDelay * Math.pow(retryConfig.backoffMultiplier, attempt),
+                retryConfig.maxDelay,
             );
 
             // For rate limit errors (429), check if we have reset time info
@@ -111,7 +106,7 @@ export async function withRetry<T>(
                     const resetDelay = getRateLimitResetDelay(rateLimit);
                     if (resetDelay > 0) {
                         console.log(
-                            `Rate limit hit. Waiting ${Math.ceil(resetDelay / 1000)}s until reset...`
+                            `Rate limit hit. Waiting ${Math.ceil(resetDelay / 1000)}s until reset...`,
                         );
                         await sleep(resetDelay);
                         continue;
@@ -120,7 +115,7 @@ export async function withRetry<T>(
             }
 
             console.log(
-                `Retry attempt ${attempt + 1}/${retryConfig.maxRetries} after ${delay}ms...`
+                `Retry attempt ${attempt + 1}/${retryConfig.maxRetries} after ${delay}ms...`,
             );
             await sleep(delay);
         }
@@ -213,7 +208,7 @@ export async function withRateLimitAndRetry<T>(
     options: {
         retryConfig?: RetryConfig;
         queue?: RequestQueue;
-    } = {}
+    } = {},
 ): Promise<T> {
     const queue = options.queue || getRequestQueue();
 
@@ -225,4 +220,3 @@ export async function withRateLimitAndRetry<T>(
     // Then, wrap with retry logic
     return await withRetry(queuedFn, options.retryConfig);
 }
-

@@ -40,4 +40,3 @@ export const GET: RequestHandler = async ({ url }) => {
         return handleError(error);
     }
 };
-

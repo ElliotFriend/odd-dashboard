@@ -31,7 +31,7 @@ export async function getCommits(
     branch: string = 'main',
     since?: string,
     page: number = 1,
-    per_page: number = 100
+    per_page: number = 100,
 ): Promise<GitHubCommit[]> {
     return await withRateLimitAndRetry(async () => {
         try {
@@ -82,9 +82,9 @@ export async function getUserByUsername(username: string): Promise<GitHubUser> {
 /**
  * Fetch a GitHub user by ID.
  * Note: Octokit doesn't have a direct "get by ID" method easily accessible without using the generic request or specific endpoint if available.
- * The standard way is often via `octokit.request('GET /user/:id')` or similar if the SDK supports it, 
+ * The standard way is often via `octokit.request('GET /user/:id')` or similar if the SDK supports it,
  * but `users.getById` is the method if it exists in this version.
- * Let's check if `getByUsername` is the only easy one. 
+ * Let's check if `getByUsername` is the only easy one.
  * Actually, `octokit.users.getById({ account_id })` usually exists.
  */
 export async function getUserById(accountId: number): Promise<GitHubUser> {
@@ -131,7 +131,7 @@ export async function getRepositoryById(githubId: number): Promise<GitHubReposit
 /**
  * Extract author information from a GitHub commit.
  * Handles both GitHub users and email-only commits (authors without GitHub accounts).
- * 
+ *
  * @param commit - The GitHub commit object
  * @returns Author information with github_id and username if available, or email-only if not
  */
@@ -171,14 +171,14 @@ export function extractAuthorFromCommit(commit: GitHubCommit): {
 
 /**
  * Detect if a repository has been renamed by comparing the stored full_name with the current full_name from GitHub.
- * 
+ *
  * @param storedFullName - The full_name currently stored in the database (e.g., "owner/old-name")
  * @param githubId - The GitHub repository ID (which never changes, even on rename)
  * @returns An object with `isRenamed` boolean and `newFullName` if renamed, or `null` if not renamed
  */
 export async function detectRepositoryRename(
     storedFullName: string,
-    githubId: number
+    githubId: number,
 ): Promise<{ isRenamed: boolean; newFullName: string | null; oldFullName: string }> {
     try {
         // Fetch the repository from GitHub using its ID (which never changes)
@@ -204,7 +204,7 @@ export async function detectRepositoryRename(
         // This allows the sync to continue even if rename detection fails
         console.error(
             `Error detecting rename for repository ${storedFullName} (GitHub ID: ${githubId}):`,
-            error
+            error,
         );
         return {
             isRenamed: false,

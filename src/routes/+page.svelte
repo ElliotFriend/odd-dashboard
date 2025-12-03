@@ -119,7 +119,7 @@
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <!-- Repositories Card -->
-            <div class="rounded-lg bg-white p-6 shadow-sm border border-slate-200">
+            <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-slate-600">Repositories</p>
@@ -128,39 +128,39 @@
                         </p>
                     </div>
                     <div class="rounded-full bg-blue-100 p-3">
-                        <GitBranch class="w-6 h-6 text-blue-600" />
+                        <GitBranch class="h-6 w-6 text-blue-600" />
                     </div>
                 </div>
             </div>
 
             <!-- Authors Card -->
-            <div class="rounded-lg bg-white p-6 shadow-sm border border-slate-200">
+            <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-slate-600">Contributors</p>
                         <p class="mt-2 text-3xl font-bold text-slate-900">{stats.authors}</p>
                     </div>
                     <div class="rounded-full bg-green-100 p-3">
-                        <Users class="w-6 h-6 text-green-600" />
+                        <Users class="h-6 w-6 text-green-600" />
                     </div>
                 </div>
             </div>
 
             <!-- Commits Card -->
-            <div class="rounded-lg bg-white p-6 shadow-sm border border-slate-200">
+            <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-slate-600">Commits</p>
                         <p class="mt-2 text-3xl font-bold text-slate-900">{stats.commits}</p>
                     </div>
                     <div class="rounded-full bg-purple-100 p-3">
-                        <GitCommit class="w-6 h-6 text-purple-600" />
+                        <GitCommit class="h-6 w-6 text-purple-600" />
                     </div>
                 </div>
             </div>
 
             <!-- Activity Card -->
-            <div class="rounded-lg bg-white p-6 shadow-sm border border-slate-200">
+            <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-slate-600">Activity</p>
@@ -169,7 +169,7 @@
                         </p>
                     </div>
                     <div class="rounded-full bg-orange-100 p-3">
-                        <TrendingUp class="w-6 h-6 text-orange-600" />
+                        <TrendingUp class="h-6 w-6 text-orange-600" />
                     </div>
                 </div>
             </div>
@@ -177,17 +177,17 @@
 
         <!-- Charts Section -->
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <div class="rounded-lg bg-white shadow-sm border border-slate-200 p-6">
+            <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <ContributionChart data={contributionData} />
             </div>
-            <div class="rounded-lg bg-white shadow-sm border border-slate-200 p-6">
+            <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <ActivityTimeline data={activityData} />
             </div>
         </div>
 
         <!-- Recent Activity Section -->
-        <div class="rounded-lg bg-white shadow-sm border border-slate-200">
-            <div class="px-6 py-4 border-b border-slate-200">
+        <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-200 px-6 py-4">
                 <h2 class="text-lg font-semibold text-slate-900">Recent Activity</h2>
             </div>
             <div class="p-6">

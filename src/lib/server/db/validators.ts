@@ -80,10 +80,17 @@ export const createRepositorySchema = z.object({
     parentFullName: z
         .string()
         .max(255, 'Parent full name is too long')
-        .regex(/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/, 'Parent full name must be in format "owner/repo"')
+        .regex(
+            /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/,
+            'Parent full name must be in format "owner/repo"',
+        )
         .nullable()
         .optional(),
-    defaultBranch: z.string().min(1, 'Default branch is required').max(255, 'Default branch is too long').default('main'),
+    defaultBranch: z
+        .string()
+        .min(1, 'Default branch is required')
+        .max(255, 'Default branch is too long')
+        .default('main'),
 });
 
 /**
@@ -103,10 +110,17 @@ export const updateRepositorySchema = z.object({
     parentFullName: z
         .string()
         .max(255, 'Parent full name is too long')
-        .regex(/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/, 'Parent full name must be in format "owner/repo"')
+        .regex(
+            /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/,
+            'Parent full name must be in format "owner/repo"',
+        )
         .nullable()
         .optional(),
-    defaultBranch: z.string().min(1, 'Default branch is required').max(255, 'Default branch is too long').optional(),
+    defaultBranch: z
+        .string()
+        .min(1, 'Default branch is required')
+        .max(255, 'Default branch is too long')
+        .optional(),
 });
 
 /**
@@ -126,21 +140,28 @@ export type UpdateRepositoryInput = z.infer<typeof updateRepositorySchema>;
 /**
  * Schema for creating an author
  */
-export const createAuthorSchema = z.object({
-    githubId: z.number().int().positive().nullable().optional(),
-    username: z.string().max(255, 'Username is too long').nullable().optional(),
-    name: z.string().max(255, 'Name is too long').nullable().optional(),
-    email: z.string().email('Invalid email format').max(255, 'Email is too long').nullable().optional(),
-    agencyId: z.number().int().positive().nullable().optional(),
-}).refine(
-    (data) => {
-        // At least one identifier must be provided (githubId or email)
-        return data.githubId !== null || (data.email !== null && data.email !== undefined);
-    },
-    {
-        message: 'Either githubId or email must be provided',
-    }
-);
+export const createAuthorSchema = z
+    .object({
+        githubId: z.number().int().positive().nullable().optional(),
+        username: z.string().max(255, 'Username is too long').nullable().optional(),
+        name: z.string().max(255, 'Name is too long').nullable().optional(),
+        email: z
+            .string()
+            .email('Invalid email format')
+            .max(255, 'Email is too long')
+            .nullable()
+            .optional(),
+        agencyId: z.number().int().positive().nullable().optional(),
+    })
+    .refine(
+        (data) => {
+            // At least one identifier must be provided (githubId or email)
+            return data.githubId !== null || (data.email !== null && data.email !== undefined);
+        },
+        {
+            message: 'Either githubId or email must be provided',
+        },
+    );
 
 /**
  * Schema for updating an author
@@ -149,7 +170,12 @@ export const updateAuthorSchema = z.object({
     githubId: z.number().int().positive().nullable().optional(),
     username: z.string().max(255, 'Username is too long').nullable().optional(),
     name: z.string().max(255, 'Name is too long').nullable().optional(),
-    email: z.string().email('Invalid email format').max(255, 'Email is too long').nullable().optional(),
+    email: z
+        .string()
+        .email('Invalid email format')
+        .max(255, 'Email is too long')
+        .nullable()
+        .optional(),
     agencyId: z.number().int().positive().nullable().optional(),
 });
 
@@ -189,7 +215,11 @@ export const bulkCreateCommitsSchema = z.array(createCommitSchema);
 export const updateCommitSchema = z.object({
     repositoryId: z.number().int().positive('Repository ID must be a positive integer').optional(),
     authorId: z.number().int().positive('Author ID must be a positive integer').optional(),
-    sha: z.string().min(1, 'SHA is required').max(40, 'SHA must be 40 characters or less').optional(),
+    sha: z
+        .string()
+        .min(1, 'SHA is required')
+        .max(40, 'SHA must be 40 characters or less')
+        .optional(),
     commitDate: z.coerce.date().optional(),
     branch: z.string().min(1, 'Branch is required').max(255, 'Branch name is too long').optional(),
 });
@@ -216,48 +246,52 @@ export type UpdateCommitInput = z.infer<typeof updateCommitSchema>;
 /**
  * Schema for creating an event
  */
-export const createEventSchema = z.object({
-    name: z.string().min(1, 'Name is required').max(255, 'Name is too long'),
-    description: z.string().max(2000, 'Description is too long').nullable().optional(),
-    startDate: z.coerce.date().nullable().optional(),
-    endDate: z.coerce.date().nullable().optional(),
-    agencyId: z.number().int().positive().nullable().optional(),
-}).refine(
-    (data) => {
-        // If both dates are provided, endDate must be after startDate
-        if (data.startDate && data.endDate) {
-            return data.endDate >= data.startDate;
-        }
-        return true;
-    },
-    {
-        message: 'End date must be after or equal to start date',
-        path: ['endDate'],
-    }
-);
+export const createEventSchema = z
+    .object({
+        name: z.string().min(1, 'Name is required').max(255, 'Name is too long'),
+        description: z.string().max(2000, 'Description is too long').nullable().optional(),
+        startDate: z.coerce.date().nullable().optional(),
+        endDate: z.coerce.date().nullable().optional(),
+        agencyId: z.number().int().positive().nullable().optional(),
+    })
+    .refine(
+        (data) => {
+            // If both dates are provided, endDate must be after startDate
+            if (data.startDate && data.endDate) {
+                return data.endDate >= data.startDate;
+            }
+            return true;
+        },
+        {
+            message: 'End date must be after or equal to start date',
+            path: ['endDate'],
+        },
+    );
 
 /**
  * Schema for updating an event
  */
-export const updateEventSchema = z.object({
-    name: z.string().min(1, 'Name is required').max(255, 'Name is too long').optional(),
-    description: z.string().max(2000, 'Description is too long').nullable().optional(),
-    startDate: z.coerce.date().nullable().optional(),
-    endDate: z.coerce.date().nullable().optional(),
-    agencyId: z.number().int().positive().nullable().optional(),
-}).refine(
-    (data) => {
-        // If both dates are provided, endDate must be after startDate
-        if (data.startDate && data.endDate) {
-            return data.endDate >= data.startDate;
-        }
-        return true;
-    },
-    {
-        message: 'End date must be after or equal to start date',
-        path: ['endDate'],
-    }
-);
+export const updateEventSchema = z
+    .object({
+        name: z.string().min(1, 'Name is required').max(255, 'Name is too long').optional(),
+        description: z.string().max(2000, 'Description is too long').nullable().optional(),
+        startDate: z.coerce.date().nullable().optional(),
+        endDate: z.coerce.date().nullable().optional(),
+        agencyId: z.number().int().positive().nullable().optional(),
+    })
+    .refine(
+        (data) => {
+            // If both dates are provided, endDate must be after startDate
+            if (data.startDate && data.endDate) {
+                return data.endDate >= data.startDate;
+            }
+            return true;
+        },
+        {
+            message: 'End date must be after or equal to start date',
+            path: ['endDate'],
+        },
+    );
 
 /**
  * Type inference for create event
@@ -310,5 +344,6 @@ export type AssociateRepositoryWithEventInput = z.infer<typeof associateReposito
 /**
  * Type inference for associate repository with ecosystem
  */
-export type AssociateRepositoryWithEcosystemInput = z.infer<typeof associateRepositoryWithEcosystemSchema>;
-
+export type AssociateRepositoryWithEcosystemInput = z.infer<
+    typeof associateRepositoryWithEcosystemSchema
+>;

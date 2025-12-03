@@ -26,7 +26,7 @@ export function formatDate(
         year: 'numeric',
         month: 'short',
         day: 'numeric',
-    }
+    },
 ): string {
     if (!date) {
         return 'N/A';
@@ -51,7 +51,7 @@ export function formatDateTime(
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-    }
+    },
 ): string {
     return formatDate(date, options);
 }
@@ -116,7 +116,7 @@ export function endOfDay(date: Date = new Date()): Date {
  */
 export function formatDateRange(
     startDate: Date | string | null | undefined,
-    endDate: Date | string | null | undefined
+    endDate: Date | string | null | undefined,
 ): string {
     if (!startDate && !endDate) {
         return 'No date range';
@@ -155,4 +155,3 @@ export function formatDateRange(
     // Different years, show full dates
     return `${formatDate(start)} - ${formatDate(end)}`;
 }
-

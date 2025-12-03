@@ -31,4 +31,3 @@ export const POST: RequestHandler = async ({ request }) => {
         return handleError(error);
     }
 };
-

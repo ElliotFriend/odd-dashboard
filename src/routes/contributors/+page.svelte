@@ -100,7 +100,7 @@
         <CardContent>
             <div class="space-y-4">
                 <div class="flex items-center gap-2">
-                    <Filter class="w-5 h-5 text-slate-500" />
+                    <Filter class="h-5 w-5 text-slate-500" />
                     <h2 class="text-lg font-semibold">Filters</h2>
                 </div>
 
@@ -109,7 +109,7 @@
                     <div>
                         <label
                             for="start-date"
-                            class="block text-sm font-medium text-slate-700 mb-1"
+                            class="mb-1 block text-sm font-medium text-slate-700"
                         >
                             Start Date *
                         </label>
@@ -118,16 +118,13 @@
                             type="date"
                             bind:value={startDate}
                             onchange={handleFilterChange}
-                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                         />
                     </div>
 
                     <!-- End Date -->
                     <div>
-                        <label
-                            for="end-date"
-                            class="block text-sm font-medium text-slate-700 mb-1"
-                        >
+                        <label for="end-date" class="mb-1 block text-sm font-medium text-slate-700">
                             End Date *
                         </label>
                         <input
@@ -135,23 +132,20 @@
                             type="date"
                             bind:value={endDate}
                             onchange={handleFilterChange}
-                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                         />
                     </div>
 
                     <!-- Agency Filter -->
                     <div>
-                        <label
-                            for="agency"
-                            class="block text-sm font-medium text-slate-700 mb-1"
-                        >
+                        <label for="agency" class="mb-1 block text-sm font-medium text-slate-700">
                             Agency
                         </label>
                         <select
                             id="agency"
                             bind:value={selectedAgencyId}
                             onchange={handleFilterChange}
-                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                         >
                             <option value={null}>All Agencies</option>
                             {#each agencies as agency}
@@ -179,15 +173,15 @@
         <Card>
             <CardHeader>
                 <div class="flex items-center gap-2">
-                    <Users class="w-5 h-5 text-slate-500" />
+                    <Users class="h-5 w-5 text-slate-500" />
                     <h2 class="text-lg font-semibold">Contributors</h2>
                     <span class="text-sm text-slate-500">({contributors.length})</span>
                 </div>
             </CardHeader>
             <CardContent>
                 {#if contributors.length === 0}
-                    <div class="text-center py-12">
-                        <Users class="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                    <div class="py-12 text-center">
+                        <Users class="mx-auto mb-4 h-12 w-12 text-slate-400" />
                         <p class="text-slate-500">No contributors found</p>
                         <p class="mt-2 text-sm text-slate-400">
                             Try adjusting your date range or filters
@@ -197,12 +191,14 @@
                     <div class="space-y-2">
                         {#each contributors as contributor}
                             <div
-                                class="flex items-center justify-between p-4 rounded-md bg-slate-50 hover:bg-slate-100 transition-colors"
+                                class="flex items-center justify-between rounded-md bg-slate-50 p-4 transition-colors hover:bg-slate-100"
                             >
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2">
                                         <h3 class="font-semibold text-slate-900">
-                                            {contributor.name || contributor.username || contributor.email}
+                                            {contributor.name ||
+                                                contributor.username ||
+                                                contributor.email}
                                         </h3>
                                         {#if contributor.username}
                                             <span class="text-sm text-slate-500">
@@ -211,11 +207,13 @@
                                         {/if}
                                     </div>
                                     {#if contributor.email && contributor.email !== (contributor.name || contributor.username)}
-                                        <p class="text-sm text-slate-600 mt-1">{contributor.email}</p>
+                                        <p class="mt-1 text-sm text-slate-600">
+                                            {contributor.email}
+                                        </p>
                                     {/if}
                                 </div>
-                                <div class="flex items-center gap-2 ml-4">
-                                    <GitCommit class="w-5 h-5 text-slate-500" />
+                                <div class="ml-4 flex items-center gap-2">
+                                    <GitCommit class="h-5 w-5 text-slate-500" />
                                     <span class="text-lg font-bold text-slate-900">
                                         {contributor.commitCount}
                                     </span>
@@ -231,4 +229,3 @@
         </Card>
     {/if}
 </div>
-

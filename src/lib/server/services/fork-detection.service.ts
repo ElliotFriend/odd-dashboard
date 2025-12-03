@@ -5,7 +5,7 @@ import type { GitHubRepository } from '../github/types';
 
 /**
  * Extract fork information from a GitHub repository response.
- * 
+ *
  * @param githubRepo - The GitHub repository object from the API
  * @returns Fork information including isFork flag and parent full_name
  */
@@ -24,7 +24,7 @@ export function extractForkInfo(githubRepo: GitHubRepository): {
 
 /**
  * Find a repository in the database by its full_name.
- * 
+ *
  * @param fullName - The repository full_name (e.g., "owner/repo")
  * @returns The repository ID if found, null otherwise
  */
@@ -41,14 +41,14 @@ async function findRepositoryByFullName(fullName: string): Promise<number | null
 /**
  * Link a fork repository to its parent repository if the parent exists in the database.
  * Updates the repository's parent_repository_id field.
- * 
+ *
  * @param repositoryId - The database ID of the fork repository
  * @param parentFullName - The full_name of the parent repository (e.g., "owner/parent-repo")
  * @returns The parent repository ID if linked, null if parent not found
  */
 export async function linkForkToParent(
     repositoryId: number,
-    parentFullName: string | null
+    parentFullName: string | null,
 ): Promise<number | null> {
     if (!parentFullName) {
         // No parent to link
@@ -80,14 +80,14 @@ export async function linkForkToParent(
  * This function extracts fork information from a GitHub repository response,
  * updates the repository's is_fork and parent_full_name fields, and links
  * to the parent repository if it exists in the database.
- * 
+ *
  * @param repositoryId - The database ID of the repository to update
  * @param githubRepo - The GitHub repository object from the API
  * @returns Object with fork detection results
  */
 export async function detectAndLinkFork(
     repositoryId: number,
-    githubRepo: GitHubRepository
+    githubRepo: GitHubRepository,
 ): Promise<{
     isFork: boolean;
     parentFullName: string | null;
@@ -123,4 +123,3 @@ export async function detectAndLinkFork(
         parentLinked,
     };
 }
-

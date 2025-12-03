@@ -24,42 +24,35 @@
 
 <div class="flex items-center gap-4 {className}">
     <div class="flex-1">
-        <label
-            for="start-date-picker"
-            class="block text-sm font-medium text-slate-700 mb-1"
-        >
+        <label for="start-date-picker" class="mb-1 block text-sm font-medium text-slate-700">
             Start Date
         </label>
         <div class="relative">
             <Calendar
-                class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400"
+                class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-slate-400"
             />
             <input
                 id="start-date-picker"
                 type="date"
                 bind:value={startDate}
-                class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                class="w-full rounded-md border border-slate-300 py-2 pr-3 pl-10 focus:ring-2 focus:ring-slate-500 focus:outline-none"
             />
         </div>
     </div>
     <div class="flex-1">
-        <label
-            for="end-date-picker"
-            class="block text-sm font-medium text-slate-700 mb-1"
-        >
+        <label for="end-date-picker" class="mb-1 block text-sm font-medium text-slate-700">
             End Date
         </label>
         <div class="relative">
             <Calendar
-                class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400"
+                class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-slate-400"
             />
             <input
                 id="end-date-picker"
                 type="date"
                 bind:value={endDate}
-                class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                class="w-full rounded-md border border-slate-300 py-2 pr-3 pl-10 focus:ring-2 focus:ring-slate-500 focus:outline-none"
             />
         </div>
     </div>
 </div>
-

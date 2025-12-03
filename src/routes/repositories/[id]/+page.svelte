@@ -154,7 +154,7 @@
             }
 
             const response = await fetch(
-                `/api/repositories/${repositoryId}/contributors?${params.toString()}`
+                `/api/repositories/${repositoryId}/contributors?${params.toString()}`,
             );
             if (response.ok) {
                 const data = await response.json();
@@ -211,7 +211,7 @@
 <div class="space-y-6">
     <!-- Back Button -->
     <Button variant="outline" onclick={() => goto('/repositories')}>
-        <ArrowLeft class="w-4 h-4 mr-2" />
+        <ArrowLeft class="mr-2 h-4 w-4" />
         Back to Repositories
     </Button>
 
@@ -228,11 +228,11 @@
         <div class="flex items-start justify-between">
             <div>
                 <div class="flex items-center gap-2">
-                    <GitBranch class="w-6 h-6 text-slate-500" />
+                    <GitBranch class="h-6 w-6 text-slate-500" />
                     <h1 class="text-3xl font-bold text-slate-900">{repository.fullName}</h1>
                     {#if repository.isFork}
                         <span
-                            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                            class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800"
                         >
                             Fork
                         </span>
@@ -254,9 +254,16 @@
                 {/if}
 
                 <div class="mt-2 flex flex-wrap gap-4 text-sm text-slate-600">
-                    <span>Default branch: <span class="font-medium">{repository.defaultBranch}</span></span>
+                    <span
+                        >Default branch: <span class="font-medium">{repository.defaultBranch}</span
+                        ></span
+                    >
                     {#if repository.lastSyncedAt}
-                        <span>Last synced: <span class="font-medium">{formatDateTime(repository.lastSyncedAt)}</span></span>
+                        <span
+                            >Last synced: <span class="font-medium"
+                                >{formatDateTime(repository.lastSyncedAt)}</span
+                            ></span
+                        >
                     {:else}
                         <span class="text-slate-400">Never synced</span>
                     {/if}
@@ -264,12 +271,8 @@
             </div>
 
             <div class="flex gap-2">
-                <Button
-                    variant="outline"
-                    onclick={syncRepository}
-                    disabled={syncing}
-                >
-                    <RefreshCw class="w-4 h-4 mr-2 {syncing ? 'animate-spin' : ''}" />
+                <Button variant="outline" onclick={syncRepository} disabled={syncing}>
+                    <RefreshCw class="mr-2 h-4 w-4 {syncing ? 'animate-spin' : ''}" />
                     {syncing ? 'Syncing...' : 'Sync Commits'}
                 </Button>
                 <a
@@ -278,7 +281,7 @@
                     rel="noopener noreferrer"
                 >
                     <Button variant="outline">
-                        <ExternalLink class="w-4 h-4 mr-2" />
+                        <ExternalLink class="mr-2 h-4 w-4" />
                         View on GitHub
                     </Button>
                 </a>
@@ -288,15 +291,15 @@
         <!-- Date Range Filter -->
         <Card>
             <CardContent>
-                <div class="flex items-center gap-2 mb-4">
-                    <Calendar class="w-5 h-5 text-slate-500" />
+                <div class="mb-4 flex items-center gap-2">
+                    <Calendar class="h-5 w-5 text-slate-500" />
                     <h2 class="text-lg font-semibold">Date Range Filter</h2>
                 </div>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <label
                             for="start-date"
-                            class="block text-sm font-medium text-slate-700 mb-1"
+                            class="mb-1 block text-sm font-medium text-slate-700"
                         >
                             Start Date
                         </label>
@@ -305,14 +308,11 @@
                             type="date"
                             bind:value={startDate}
                             onchange={handleDateFilterChange}
-                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                         />
                     </div>
                     <div>
-                        <label
-                            for="end-date"
-                            class="block text-sm font-medium text-slate-700 mb-1"
-                        >
+                        <label for="end-date" class="mb-1 block text-sm font-medium text-slate-700">
                             End Date
                         </label>
                         <input
@@ -320,7 +320,7 @@
                             type="date"
                             bind:value={endDate}
                             onchange={handleDateFilterChange}
-                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                         />
                     </div>
                 </div>
@@ -331,7 +331,7 @@
         <Card>
             <CardHeader>
                 <div class="flex items-center gap-2">
-                    <User class="w-5 h-5 text-slate-500" />
+                    <User class="h-5 w-5 text-slate-500" />
                     <h2 class="text-lg font-semibold">Contributors</h2>
                     <span class="text-sm text-slate-500">({contributors.length})</span>
                 </div>
@@ -343,18 +343,22 @@
                     <div class="space-y-2">
                         {#each contributors as contributor}
                             <div
-                                class="flex items-center justify-between p-3 rounded-md bg-slate-50"
+                                class="flex items-center justify-between rounded-md bg-slate-50 p-3"
                             >
                                 <div>
                                     <p class="font-medium text-slate-900">
-                                        {contributor.name || contributor.username || contributor.email}
+                                        {contributor.name ||
+                                            contributor.username ||
+                                            contributor.email}
                                     </p>
                                     {#if contributor.username}
-                                        <p class="text-sm text-slate-600">@{contributor.username}</p>
+                                        <p class="text-sm text-slate-600">
+                                            @{contributor.username}
+                                        </p>
                                     {/if}
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <GitCommit class="w-4 h-4 text-slate-500" />
+                                    <GitCommit class="h-4 w-4 text-slate-500" />
                                     <span class="font-medium text-slate-900">
                                         {contributor.commitCount}
                                     </span>
@@ -370,7 +374,7 @@
         <Card>
             <CardHeader>
                 <div class="flex items-center gap-2">
-                    <GitCommit class="w-5 h-5 text-slate-500" />
+                    <GitCommit class="h-5 w-5 text-slate-500" />
                     <h2 class="text-lg font-semibold">Commits</h2>
                     <span class="text-sm text-slate-500">({commits.length})</span>
                 </div>
@@ -383,12 +387,12 @@
                         {#each commits as commit}
                             {@const author = authors.get(commit.authorId)}
                             <div
-                                class="flex items-center justify-between p-3 rounded-md bg-slate-50"
+                                class="flex items-center justify-between rounded-md bg-slate-50 p-3"
                             >
-                                <div class="flex-1 min-w-0">
+                                <div class="min-w-0 flex-1">
                                     <div class="flex items-center gap-2">
                                         <code
-                                            class="text-sm font-mono text-slate-900 bg-white px-2 py-1 rounded border"
+                                            class="rounded border bg-white px-2 py-1 font-mono text-sm text-slate-900"
                                         >
                                             {commit.sha.substring(0, 7)}
                                         </code>
@@ -407,7 +411,7 @@
                                         </p>
                                     {/if}
                                 </div>
-                                <div class="text-sm text-slate-500 ml-4">
+                                <div class="ml-4 text-sm text-slate-500">
                                     {formatDateTime(commit.commitDate)}
                                 </div>
                             </div>
@@ -418,4 +422,3 @@
         </Card>
     {/if}
 </div>
-

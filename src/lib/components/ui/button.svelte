@@ -25,7 +25,7 @@
                 variant: 'default',
                 size: 'default',
             },
-        }
+        },
     );
 
     type ButtonProps = VariantProps<typeof buttonVariants> & {
@@ -34,21 +34,11 @@
         [key: string]: any; // Allow any HTML button attributes
     };
 
-    let {
-        variant,
-        size,
-        class: className,
-        children,
-        ...restProps
-    }: ButtonProps = $props();
+    let { variant, size, class: className, children, ...restProps }: ButtonProps = $props();
 </script>
 
-<button
-    class={cn(buttonVariants({ variant, size }), className)}
-    {...restProps}
->
+<button class={cn(buttonVariants({ variant, size }), className)} {...restProps}>
     {#if children}
         {@render children()}
     {/if}
 </button>
-

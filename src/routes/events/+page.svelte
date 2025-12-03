@@ -175,7 +175,7 @@
             <p class="mt-2 text-slate-600">Manage events like hackathons and conferences</p>
         </div>
         <Button onclick={startCreate} disabled={creating || editingId !== null}>
-            <Plus class="w-4 h-4 mr-2" />
+            <Plus class="mr-2 h-4 w-4" />
             Add Event
         </Button>
     </div>
@@ -199,13 +199,16 @@
                 </CardHeader>
                 <CardContent>
                     <form
-                        onsubmit={(e) => { e.preventDefault(); saveEvent(); }}
+                        onsubmit={(e) => {
+                            e.preventDefault();
+                            saveEvent();
+                        }}
                         class="space-y-4"
                     >
                         <div>
                             <label
                                 for="create-name"
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="mb-1 block text-sm font-medium text-slate-700"
                             >
                                 Name *
                             </label>
@@ -214,14 +217,14 @@
                                 type="text"
                                 bind:value={formData.name}
                                 required
-                                class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                 placeholder="Event name"
                             />
                         </div>
                         <div>
                             <label
                                 for="create-description"
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="mb-1 block text-sm font-medium text-slate-700"
                             >
                                 Description
                             </label>
@@ -229,7 +232,7 @@
                                 id="create-description"
                                 bind:value={formData.description}
                                 rows="3"
-                                class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                 placeholder="Event description"
                             ></textarea>
                         </div>
@@ -237,7 +240,7 @@
                             <div>
                                 <label
                                     for="create-start-date"
-                                    class="block text-sm font-medium text-slate-700 mb-1"
+                                    class="mb-1 block text-sm font-medium text-slate-700"
                                 >
                                     Start Date
                                 </label>
@@ -245,13 +248,13 @@
                                     id="create-start-date"
                                     type="date"
                                     bind:value={formData.startDate}
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                    class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                 />
                             </div>
                             <div>
                                 <label
                                     for="create-end-date"
-                                    class="block text-sm font-medium text-slate-700 mb-1"
+                                    class="mb-1 block text-sm font-medium text-slate-700"
                                 >
                                     End Date
                                 </label>
@@ -259,21 +262,21 @@
                                     id="create-end-date"
                                     type="date"
                                     bind:value={formData.endDate}
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                    class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                 />
                             </div>
                         </div>
                         <div>
                             <label
                                 for="create-agency"
-                                class="block text-sm font-medium text-slate-700 mb-1"
+                                class="mb-1 block text-sm font-medium text-slate-700"
                             >
                                 Agency
                             </label>
                             <select
                                 id="create-agency"
                                 bind:value={formData.agencyId}
-                                class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                             >
                                 <option value={null}>No agency</option>
                                 {#each agencies as agency}
@@ -283,11 +286,11 @@
                         </div>
                         <div class="flex gap-2">
                             <Button type="submit">
-                                <Save class="w-4 h-4 mr-2" />
+                                <Save class="mr-2 h-4 w-4" />
                                 Save
                             </Button>
                             <Button type="button" variant="outline" onclick={cancelEdit}>
-                                <X class="w-4 h-4 mr-2" />
+                                <X class="mr-2 h-4 w-4" />
                                 Cancel
                             </Button>
                         </div>
@@ -307,13 +310,16 @@
                         </CardHeader>
                         <CardContent>
                             <form
-                                onsubmit={(e) => { e.preventDefault(); saveEvent(); }}
+                                onsubmit={(e) => {
+                                    e.preventDefault();
+                                    saveEvent();
+                                }}
                                 class="space-y-4"
                             >
                                 <div>
                                     <label
                                         for="edit-name-{event.id}"
-                                        class="block text-sm font-medium text-slate-700 mb-1"
+                                        class="mb-1 block text-sm font-medium text-slate-700"
                                     >
                                         Name *
                                     </label>
@@ -322,13 +328,13 @@
                                         type="text"
                                         bind:value={formData.name}
                                         required
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                        class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                     />
                                 </div>
                                 <div>
                                     <label
                                         for="edit-description-{event.id}"
-                                        class="block text-sm font-medium text-slate-700 mb-1"
+                                        class="mb-1 block text-sm font-medium text-slate-700"
                                     >
                                         Description
                                     </label>
@@ -336,14 +342,14 @@
                                         id="edit-description-{event.id}"
                                         bind:value={formData.description}
                                         rows="3"
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                        class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                     ></textarea>
                                 </div>
                                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div>
                                         <label
                                             for="edit-start-date-{event.id}"
-                                            class="block text-sm font-medium text-slate-700 mb-1"
+                                            class="mb-1 block text-sm font-medium text-slate-700"
                                         >
                                             Start Date
                                         </label>
@@ -351,13 +357,13 @@
                                             id="edit-start-date-{event.id}"
                                             type="date"
                                             bind:value={formData.startDate}
-                                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                         />
                                     </div>
                                     <div>
                                         <label
                                             for="edit-end-date-{event.id}"
-                                            class="block text-sm font-medium text-slate-700 mb-1"
+                                            class="mb-1 block text-sm font-medium text-slate-700"
                                         >
                                             End Date
                                         </label>
@@ -365,21 +371,21 @@
                                             id="edit-end-date-{event.id}"
                                             type="date"
                                             bind:value={formData.endDate}
-                                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                         />
                                     </div>
                                 </div>
                                 <div>
                                     <label
                                         for="edit-agency-{event.id}"
-                                        class="block text-sm font-medium text-slate-700 mb-1"
+                                        class="mb-1 block text-sm font-medium text-slate-700"
                                     >
                                         Agency
                                     </label>
                                     <select
                                         id="edit-agency-{event.id}"
                                         bind:value={formData.agencyId}
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                        class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                                     >
                                         <option value={null}>No agency</option>
                                         {#each agencies as agency}
@@ -389,11 +395,11 @@
                                 </div>
                                 <div class="flex gap-2">
                                     <Button type="submit">
-                                        <Save class="w-4 h-4 mr-2" />
+                                        <Save class="mr-2 h-4 w-4" />
                                         Save
                                     </Button>
                                     <Button type="button" variant="outline" onclick={cancelEdit}>
-                                        <X class="w-4 h-4 mr-2" />
+                                        <X class="mr-2 h-4 w-4" />
                                         Cancel
                                     </Button>
                                 </div>
@@ -404,7 +410,7 @@
                             <div class="flex items-start justify-between">
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2">
-                                        <Calendar class="w-5 h-5 text-slate-500" />
+                                        <Calendar class="h-5 w-5 text-slate-500" />
                                         <h3 class="text-lg font-semibold text-slate-900">
                                             {event.name}
                                         </h3>
@@ -417,25 +423,29 @@
                                     <div class="mt-2 flex flex-wrap gap-4 text-sm text-slate-600">
                                         {#if event.startDate || event.endDate}
                                             <span>
-                                                <Calendar class="w-4 h-4 inline mr-1" />
+                                                <Calendar class="mr-1 inline h-4 w-4" />
                                                 {formatDateRange(event.startDate, event.endDate)}
                                             </span>
                                         {/if}
-                                        <span>Agency: <span class="font-medium">{getAgencyName(event.agencyId)}</span></span>
+                                        <span
+                                            >Agency: <span class="font-medium"
+                                                >{getAgencyName(event.agencyId)}</span
+                                            ></span
+                                        >
                                     </div>
                                     <p class="mt-2 text-xs text-slate-500">
                                         Created {formatDate(event.createdAt)} • Updated
                                         {formatDate(event.updatedAt)}
                                     </p>
                                 </div>
-                                <div class="flex gap-2 ml-4">
+                                <div class="ml-4 flex gap-2">
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onclick={() => startEdit(event)}
                                         disabled={creating || editingId !== null}
                                     >
-                                        <Edit2 class="w-4 h-4" />
+                                        <Edit2 class="h-4 w-4" />
                                     </Button>
                                     <Button
                                         variant="outline"
@@ -443,7 +453,7 @@
                                         onclick={() => deleteEvent(event.id)}
                                         disabled={creating || editingId !== null}
                                     >
-                                        <Trash2 class="w-4 h-4" />
+                                        <Trash2 class="h-4 w-4" />
                                     </Button>
                                 </div>
                             </div>
@@ -455,11 +465,11 @@
             {#if events.length === 0}
                 <Card>
                     <CardContent>
-                        <div class="text-center py-12">
-                            <Calendar class="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                        <div class="py-12 text-center">
+                            <Calendar class="mx-auto mb-4 h-12 w-12 text-slate-400" />
                             <p class="text-slate-500">No events found</p>
                             <Button class="mt-4" onclick={startCreate}>
-                                <Plus class="w-4 h-4 mr-2" />
+                                <Plus class="mr-2 h-4 w-4" />
                                 Create your first event
                             </Button>
                         </div>
@@ -469,4 +479,3 @@
         </div>
     {/if}
 </div>
-

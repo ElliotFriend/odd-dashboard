@@ -1,9 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import {
-    getCommitsByRepository,
-    getCommitsByAuthor,
-} from '$lib/server/services/commit.service';
+import { getCommitsByRepository, getCommitsByAuthor } from '$lib/server/services/commit.service';
 import { errorResponse, handleError } from '$lib/server/api/errors';
 
 /**
@@ -54,4 +51,3 @@ export const GET: RequestHandler = async ({ url }) => {
         return handleError(error);
     }
 };
-

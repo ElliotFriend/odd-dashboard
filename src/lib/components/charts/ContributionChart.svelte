@@ -100,4 +100,3 @@
         <canvas bind:this={chartContainer}></canvas>
     </div>
 </div>
-

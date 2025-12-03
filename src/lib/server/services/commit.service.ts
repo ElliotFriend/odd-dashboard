@@ -43,7 +43,7 @@ export async function createCommit(input: CreateCommitInput) {
         // Handle unique constraint violations (same SHA in same repository)
         if (error.code === '23505') {
             throw new Error(
-                `Commit with SHA ${validated.sha} already exists in repository ${validated.repositoryId}`
+                `Commit with SHA ${validated.sha} already exists in repository ${validated.repositoryId}`,
             );
         }
         throw error;
@@ -105,7 +105,7 @@ export async function getCommitById(id: number) {
  */
 export async function getCommitsByRepository(
     repositoryId: number,
-    options: CommitFilterOptions = {}
+    options: CommitFilterOptions = {},
 ) {
     const conditions = [eq(commits.repositoryId, repositoryId)];
 
@@ -248,7 +248,7 @@ export async function updateCommit(id: number, input: UpdateCommitInput) {
         // Handle unique constraint violations
         if (error.code === '23505') {
             throw new Error(
-                `Commit with SHA ${validated.sha} already exists in repository ${validated.repositoryId}`
+                `Commit with SHA ${validated.sha} already exists in repository ${validated.repositoryId}`,
             );
         }
         throw error;
@@ -269,4 +269,3 @@ export async function deleteCommit(id: number) {
 
     return { success: true };
 }
-
