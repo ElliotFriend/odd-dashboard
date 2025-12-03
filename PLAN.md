@@ -1349,10 +1349,19 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Event Associations UI
 
-- [ ] Add UI for associating authors with events in event management view
-- [ ] Add UI for associating repositories with events in event management view
-- [ ] Implement add/remove association functionality
-- [ ] Test associations work correctly
+- [x] Created event detail page at /events/[id]
+  - [x] Display event information (name, description, dates, agency)
+  - [x] Show and manage associated contributors
+  - [x] Show and manage associated repositories
+  - [x] Dropdown pickers for adding associations
+  - [x] Remove functionality with confirmation dialogs
+- [x] Updated events list page with clickable event names
+- [x] Added events section to repository detail page
+  - [x] Read-only display of associated events
+  - [x] Clickable event tags linking to event detail page
+- [x] Created API endpoint GET /api/repositories/[id]/events
+- [x] Leveraged existing backend event service methods
+- [ ] Test associations work correctly (implementation complete, needs manual testing)
 
 #### Loading States
 
