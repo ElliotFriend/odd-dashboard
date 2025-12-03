@@ -1,8 +1,10 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte';
+    import { onDestroy } from 'svelte';
     import {
         Chart,
+        LineController,
         CategoryScale,
+        Filler,
         LinearScale,
         LineElement,
         PointElement,
@@ -24,13 +26,27 @@
     let { data, class: className = '' }: ActivityTimelineProps = $props();
 
     let chartContainer: HTMLCanvasElement | null = $state(null);
-    let chart: Chart | null = $state(null);
-
-    // Register Chart.js components
-    Chart.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend);
+    let chart: Chart | null = null;
 
     function renderChart() {
         if (!chartContainer) return;
+
+        // Ensure Chart.js components are registered (including LineController!)
+        try {
+            Chart.register(
+                LineController,
+                CategoryScale,
+                Filler,
+                LinearScale,
+                LineElement,
+                PointElement,
+                Title,
+                Tooltip,
+                Legend
+            );
+        } catch (e) {
+            // Already registered, ignore error
+        }
 
         // Destroy existing chart if it exists
         if (chart) {

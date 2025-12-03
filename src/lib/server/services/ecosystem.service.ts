@@ -1,9 +1,10 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import { db } from '../db';
-import { ecosystems } from '../db/schema';
+import { ecosystems, repositoryEcosystems, repositories } from '../db/schema';
 import {
     createEcosystemSchema,
     updateEcosystemSchema,
+    associateRepositoryWithEcosystemSchema,
     type CreateEcosystemInput,
     type UpdateEcosystemInput,
 } from '../db/validators';
@@ -268,4 +269,117 @@ export async function deleteEcosystem(id: number) {
     await db.delete(ecosystems).where(eq(ecosystems.id, id));
 
     return { success: true };
+}
+
+/**
+ * Associate a repository with an ecosystem
+ */
+export async function associateRepositoryWithEcosystem(
+    repositoryId: number,
+    ecosystemId: number,
+) {
+    // Validate input
+    const validated = associateRepositoryWithEcosystemSchema.parse({ repositoryId, ecosystemId });
+
+    // Check if repository exists
+    const [repository] = await db
+        .select()
+        .from(repositories)
+        .where(eq(repositories.id, validated.repositoryId))
+        .limit(1);
+
+    if (!repository) {
+        throw new Error(`Repository with ID ${validated.repositoryId} not found`);
+    }
+
+    // Check if ecosystem exists
+    const ecosystem = await getEcosystemById(validated.ecosystemId);
+    if (!ecosystem) {
+        throw new Error(`Ecosystem with ID ${validated.ecosystemId} not found`);
+    }
+
+    try {
+        // Insert association (ignore if already exists)
+        await db.insert(repositoryEcosystems).values({
+            repositoryId: validated.repositoryId,
+            ecosystemId: validated.ecosystemId,
+        });
+
+        return { success: true };
+    } catch (error: any) {
+        // Handle duplicate key violations gracefully
+        if (error.code === '23505') {
+            // Already associated, return success
+            return { success: true };
+        }
+        throw error;
+    }
+}
+
+/**
+ * Remove repository from ecosystem
+ */
+export async function removeRepositoryFromEcosystem(repositoryId: number, ecosystemId: number) {
+    await db
+        .delete(repositoryEcosystems)
+        .where(
+            and(
+                eq(repositoryEcosystems.repositoryId, repositoryId),
+                eq(repositoryEcosystems.ecosystemId, ecosystemId),
+            ),
+        );
+
+    return { success: true };
+}
+
+/**
+ * Get all repositories for an ecosystem
+ */
+export async function getRepositoriesForEcosystem(ecosystemId: number) {
+    // Check if ecosystem exists
+    const ecosystem = await getEcosystemById(ecosystemId);
+    if (!ecosystem) {
+        throw new Error(`Ecosystem with ID ${ecosystemId} not found`);
+    }
+
+    const results = await db
+        .select({
+            id: repositories.id,
+            githubId: repositories.githubId,
+            fullName: repositories.fullName,
+            agencyId: repositories.agencyId,
+            isFork: repositories.isFork,
+            parentRepositoryId: repositories.parentRepositoryId,
+            parentFullName: repositories.parentFullName,
+            defaultBranch: repositories.defaultBranch,
+            createdAt: repositories.createdAt,
+            updatedAt: repositories.updatedAt,
+            lastSyncedAt: repositories.lastSyncedAt,
+        })
+        .from(repositories)
+        .innerJoin(repositoryEcosystems, eq(repositories.id, repositoryEcosystems.repositoryId))
+        .where(eq(repositoryEcosystems.ecosystemId, ecosystemId))
+        .orderBy(repositories.fullName);
+
+    return results;
+}
+
+/**
+ * Get all ecosystems for a repository
+ */
+export async function getEcosystemsForRepository(repositoryId: number) {
+    const results = await db
+        .select({
+            id: ecosystems.id,
+            name: ecosystems.name,
+            parentId: ecosystems.parentId,
+            createdAt: ecosystems.createdAt,
+            updatedAt: ecosystems.updatedAt,
+        })
+        .from(ecosystems)
+        .innerJoin(repositoryEcosystems, eq(ecosystems.id, repositoryEcosystems.ecosystemId))
+        .where(eq(repositoryEcosystems.repositoryId, repositoryId))
+        .orderBy(ecosystems.name);
+
+    return results;
 }

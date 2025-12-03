@@ -4,8 +4,8 @@
     import Card from '$lib/components/ui/card.svelte';
     import CardHeader from '$lib/components/ui/card-header.svelte';
     import CardContent from '$lib/components/ui/card-content.svelte';
-    import { FolderTree, Plus, Edit2, Trash2, X, Save, ChevronRight } from '@lucide/svelte';
-    import { formatDate } from '$lib/utils/date';
+    import EcosystemTree from '$lib/components/EcosystemTree.svelte';
+    import { FolderTree, Plus, X, Save } from '@lucide/svelte';
 
     interface Ecosystem {
         id: number;
@@ -114,18 +114,16 @@
         }
     }
 
+    function startCreateChild(parentId: number) {
+        creating = true;
+        editingId = null;
+        formData = { name: '', parentId };
+    }
+
     function getEcosystemName(id: number | null): string {
         if (!id) return 'None';
         const ecosystem = ecosystems.find((e) => e.id === id);
         return ecosystem?.name || 'Unknown';
-    }
-
-    function getChildren(parentId: number | null): Ecosystem[] {
-        return ecosystems.filter((e) => e.parentId === parentId);
-    }
-
-    function getRootEcosystems(): Ecosystem[] {
-        return ecosystems.filter((e) => e.parentId === null);
     }
 
     onMount(() => {
@@ -156,11 +154,13 @@
             <div class="text-slate-500">Loading ecosystems...</div>
         </div>
     {:else}
-        <!-- Create Form -->
-        {#if creating}
+        <!-- Create/Edit Form -->
+        {#if creating || editingId !== null}
             <Card>
                 <CardHeader>
-                    <h2 class="text-lg font-semibold">Create New Ecosystem</h2>
+                    <h2 class="text-lg font-semibold">
+                        {creating ? 'Create New Ecosystem' : 'Edit Ecosystem'}
+                    </h2>
                 </CardHeader>
                 <CardContent>
                     <form
@@ -171,14 +171,11 @@
                         class="space-y-4"
                     >
                         <div>
-                            <label
-                                for="create-name"
-                                class="mb-1 block text-sm font-medium text-slate-700"
-                            >
+                            <label for="form-name" class="mb-1 block text-sm font-medium text-slate-700">
                                 Name *
                             </label>
                             <input
-                                id="create-name"
+                                id="form-name"
                                 type="text"
                                 bind:value={formData.name}
                                 required
@@ -187,22 +184,24 @@
                             />
                         </div>
                         <div>
-                            <label
-                                for="create-parent"
-                                class="mb-1 block text-sm font-medium text-slate-700"
-                            >
+                            <label for="form-parent" class="mb-1 block text-sm font-medium text-slate-700">
                                 Parent Ecosystem
                             </label>
                             <select
-                                id="create-parent"
+                                id="form-parent"
                                 bind:value={formData.parentId}
                                 class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
                             >
                                 <option value={null}>None (Root ecosystem)</option>
-                                {#each ecosystems as eco}
+                                {#each ecosystems.filter((e) => e.id !== editingId) as eco}
                                     <option value={eco.id}>{eco.name}</option>
                                 {/each}
                             </select>
+                            <p class="mt-1 text-xs text-slate-500">
+                                {formData.parentId
+                                    ? `This will be a child of "${getEcosystemName(formData.parentId)}"`
+                                    : 'This will be a root-level ecosystem'}
+                            </p>
                         </div>
                         <div class="flex gap-2">
                             <Button type="submit">
@@ -220,133 +219,27 @@
         {/if}
 
         <!-- Ecosystems Tree -->
-        <div class="space-y-4">
-            {#each getRootEcosystems() as rootEco}
-                {@const children = getChildren(rootEco.id)}
-                {@const isEditing = editingId === rootEco.id}
-                <Card>
-                    {#if isEditing}
-                        <CardHeader>
-                            <h2 class="text-lg font-semibold">Edit Ecosystem</h2>
-                        </CardHeader>
-                        <CardContent>
-                            <form
-                                onsubmit={(e) => {
-                                    e.preventDefault();
-                                    saveEcosystem();
-                                }}
-                                class="space-y-4"
-                            >
-                                <div>
-                                    <label
-                                        for="edit-name-{rootEco.id}"
-                                        class="mb-1 block text-sm font-medium text-slate-700"
-                                    >
-                                        Name *
-                                    </label>
-                                    <input
-                                        id="edit-name-{rootEco.id}"
-                                        type="text"
-                                        bind:value={formData.name}
-                                        required
-                                        class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label
-                                        for="edit-parent-{rootEco.id}"
-                                        class="mb-1 block text-sm font-medium text-slate-700"
-                                    >
-                                        Parent Ecosystem
-                                    </label>
-                                    <select
-                                        id="edit-parent-{rootEco.id}"
-                                        bind:value={formData.parentId}
-                                        class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
-                                    >
-                                        <option value={null}>None (Root ecosystem)</option>
-                                        {#each ecosystems.filter((e) => e.id !== rootEco.id) as eco}
-                                            <option value={eco.id}>{eco.name}</option>
-                                        {/each}
-                                    </select>
-                                </div>
-                                <div class="flex gap-2">
-                                    <Button type="submit">
-                                        <Save class="mr-2 h-4 w-4" />
-                                        Save
-                                    </Button>
-                                    <Button type="button" variant="outline" onclick={cancelEdit}>
-                                        <X class="mr-2 h-4 w-4" />
-                                        Cancel
-                                    </Button>
-                                </div>
-                            </form>
-                        </CardContent>
-                    {:else}
-                        <CardContent>
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2">
-                                        <FolderTree class="h-5 w-5 text-slate-500" />
-                                        <h3 class="text-lg font-semibold text-slate-900">
-                                            {rootEco.name}
-                                        </h3>
-                                    </div>
-                                    {#if children.length > 0}
-                                        <div class="mt-2 ml-7 space-y-2">
-                                            {#each children as child}
-                                                <div
-                                                    class="flex items-center gap-2 text-sm text-slate-600"
-                                                >
-                                                    <ChevronRight class="h-4 w-4" />
-                                                    <span>{child.name}</span>
-                                                </div>
-                                            {/each}
-                                        </div>
-                                    {/if}
-                                    <p class="mt-2 text-xs text-slate-500">
-                                        Created {formatDate(rootEco.createdAt)} • Updated
-                                        {formatDate(rootEco.updatedAt)}
-                                    </p>
-                                </div>
-                                <div class="ml-4 flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onclick={() => startEdit(rootEco)}
-                                        disabled={creating || editingId !== null}
-                                    >
-                                        <Edit2 class="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onclick={() => deleteEcosystem(rootEco.id)}
-                                        disabled={creating || editingId !== null}
-                                    >
-                                        <Trash2 class="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </CardContent>
-                    {/if}
-                </Card>
-            {/each}
-
-            {#if ecosystems.length === 0}
-                <Card>
-                    <CardContent>
-                        <div class="py-12 text-center">
-                            <FolderTree class="mx-auto mb-4 h-12 w-12 text-slate-400" />
-                            <p class="text-slate-500">No ecosystems found</p>
-                            <Button class="mt-4" onclick={startCreate}>
-                                <Plus class="mr-2 h-4 w-4" />
-                                Create your first ecosystem
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            {/if}
-        </div>
+        <Card>
+            <CardContent>
+                {#if ecosystems.length === 0}
+                    <div class="py-12 text-center">
+                        <FolderTree class="mx-auto mb-4 h-12 w-12 text-slate-400" />
+                        <p class="text-slate-500">No ecosystems found</p>
+                        <Button class="mt-4" onclick={startCreate}>
+                            <Plus class="mr-2 h-4 w-4" />
+                            Create your first ecosystem
+                        </Button>
+                    </div>
+                {:else}
+                    <EcosystemTree
+                        {ecosystems}
+                        {editingId}
+                        onEdit={startEdit}
+                        onDelete={deleteEcosystem}
+                        onCreate={startCreateChild}
+                    />
+                {/if}
+            </CardContent>
+        </Card>
     {/if}
 </div>

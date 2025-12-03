@@ -1,9 +1,11 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte';
+    import { onDestroy } from 'svelte';
     import {
         Chart,
+        BarController,
         CategoryScale,
         LinearScale,
+        Filler,
         BarElement,
         Title,
         Tooltip,
@@ -22,13 +24,17 @@
     let { data, class: className = '' }: ContributionChartProps = $props();
 
     let chartContainer: HTMLCanvasElement | null = $state(null);
-    let chart: Chart | null = $state(null);
-
-    // Register Chart.js components
-    Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+    let chart: Chart | null = null;
 
     function renderChart() {
         if (!chartContainer) return;
+
+        // Ensure Chart.js components are registered (including BarController!)
+        try {
+            Chart.register(BarController, CategoryScale, LinearScale, Filler, BarElement, Title, Tooltip, Legend);
+        } catch (e) {
+            // Already registered, ignore error
+        }
 
         // Destroy existing chart if it exists
         if (chart) {

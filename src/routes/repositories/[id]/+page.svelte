@@ -14,6 +14,9 @@
         User,
         GitCommit,
         ArrowLeft,
+        FolderTree,
+        Plus,
+        X,
     } from '@lucide/svelte';
     import { formatDate, formatDateTime } from '$lib/utils/date';
 
@@ -57,6 +60,14 @@
         email: string;
     }
 
+    interface Ecosystem {
+        id: number;
+        name: string;
+        parentId: number | null;
+        createdAt: string;
+        updatedAt: string;
+    }
+
     let repository = $state<Repository | null>(null);
     let commits = $state<Commit[]>([]);
     let contributors = $state<Contributor[]>([]);
@@ -64,6 +75,12 @@
     let loading = $state(true);
     let syncing = $state(false);
     let error = $state<string | null>(null);
+
+    // Ecosystem management
+    let ecosystems = $state<Ecosystem[]>([]);
+    let assignedEcosystems = $state<Ecosystem[]>([]);
+    let showEcosystemPicker = $state(false);
+    let loadingEcosystems = $state(false);
 
     // Date range filter
     let startDate = $state<string>('');
@@ -200,10 +217,81 @@
         loadContributors();
     }
 
+    async function loadEcosystems() {
+        try {
+            loadingEcosystems = true;
+            // Load all ecosystems
+            const ecoResponse = await fetch('/api/ecosystems');
+            if (ecoResponse.ok) {
+                const ecoData = await ecoResponse.json();
+                ecosystems = ecoData.data || [];
+            }
+
+            // Load assigned ecosystems for this repository
+            const assignedResponse = await fetch(`/api/repositories/${repositoryId}/ecosystems`);
+            if (assignedResponse.ok) {
+                const assignedData = await assignedResponse.json();
+                assignedEcosystems = assignedData.data || [];
+            }
+        } catch (err) {
+            console.error('Error loading ecosystems:', err);
+        } finally {
+            loadingEcosystems = false;
+        }
+    }
+
+    async function addEcosystem(ecosystemId: number) {
+        try {
+            const response = await fetch(`/api/repositories/${repositoryId}/ecosystems`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ecosystemId }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to add ecosystem');
+            }
+
+            await loadEcosystems();
+            showEcosystemPicker = false;
+        } catch (err) {
+            console.error('Error adding ecosystem:', err);
+            error = 'Failed to add ecosystem';
+        }
+    }
+
+    async function removeEcosystem(ecosystemId: number) {
+        if (!confirm('Remove this ecosystem association?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/repositories/${repositoryId}/ecosystems`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ecosystemId }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to remove ecosystem');
+            }
+
+            await loadEcosystems();
+        } catch (err) {
+            console.error('Error removing ecosystem:', err);
+            error = 'Failed to remove ecosystem';
+        }
+    }
+
+    function getAvailableEcosystems(): Ecosystem[] {
+        const assignedIds = new Set(assignedEcosystems.map((e) => e.id));
+        return ecosystems.filter((e) => !assignedIds.has(e.id));
+    }
+
     onMount(async () => {
         await loadRepository();
         if (repository) {
-            await Promise.all([loadCommits(), loadContributors()]);
+            await Promise.all([loadCommits(), loadContributors(), loadEcosystems()]);
         }
     });
 </script>
@@ -287,6 +375,94 @@
                 </a>
             </div>
         </div>
+
+        <!-- Ecosystems -->
+        <Card>
+            <CardHeader>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <FolderTree class="h-5 w-5 text-slate-500" />
+                        <h2 class="text-lg font-semibold">Ecosystems</h2>
+                    </div>
+                    {#if !showEcosystemPicker}
+                        <Button
+                            size="sm"
+                            onclick={() => (showEcosystemPicker = true)}
+                            disabled={loadingEcosystems}
+                        >
+                            <Plus class="mr-2 h-4 w-4" />
+                            Add Ecosystem
+                        </Button>
+                    {/if}
+                </div>
+            </CardHeader>
+            <CardContent>
+                {#if loadingEcosystems}
+                    <div class="text-sm text-slate-500">Loading ecosystems...</div>
+                {:else if showEcosystemPicker}
+                    <div class="space-y-3">
+                        <div>
+                            <label for="ecosystem-select" class="mb-2 block text-sm font-medium">
+                                Select an ecosystem
+                            </label>
+                            <select
+                                id="ecosystem-select"
+                                class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
+                                onchange={(e) => {
+                                    const target = e.target as HTMLSelectElement;
+                                    if (target.value) {
+                                        addEcosystem(parseInt(target.value));
+                                    }
+                                }}
+                            >
+                                <option value="">Choose an ecosystem...</option>
+                                {#each getAvailableEcosystems() as ecosystem}
+                                    <option value={ecosystem.id}>{ecosystem.name}</option>
+                                {/each}
+                            </select>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onclick={() => (showEcosystemPicker = false)}
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                {:else if assignedEcosystems.length === 0}
+                    <div class="text-center py-8">
+                        <FolderTree class="mx-auto h-12 w-12 text-slate-400 mb-3" />
+                        <p class="text-sm text-slate-500">No ecosystems assigned</p>
+                        <Button
+                            size="sm"
+                            class="mt-3"
+                            onclick={() => (showEcosystemPicker = true)}
+                        >
+                            <Plus class="mr-2 h-4 w-4" />
+                            Add Ecosystem
+                        </Button>
+                    </div>
+                {:else}
+                    <div class="flex flex-wrap gap-2">
+                        {#each assignedEcosystems as ecosystem}
+                            <div
+                                class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm"
+                            >
+                                <FolderTree class="h-3 w-3 text-blue-600" />
+                                <span class="text-blue-900">{ecosystem.name}</span>
+                                <button
+                                    onclick={() => removeEcosystem(ecosystem.id)}
+                                    class="text-blue-600 hover:text-blue-800"
+                                    title="Remove ecosystem"
+                                >
+                                    <X class="h-3 w-3" />
+                                </button>
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
+            </CardContent>
+        </Card>
 
         <!-- Date Range Filter -->
         <Card>

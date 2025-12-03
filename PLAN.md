@@ -1298,6 +1298,7 @@ Use this detailed checklist to track progress and ensure each item is complete a
 - [x] Integrated charts into dashboard home page
   - [x] Charts section with responsive grid layout
   - [x] Sample data generation (placeholder for real API data)
+- [x] Fixed chart reactivity issues (removed $state from Chart.js instances to prevent infinite loops)
 - [ ] Test charts render correctly (implementation complete, needs manual testing)
 - [ ] Test charts update with filtered data (implementation complete, needs manual testing)
 
@@ -1312,11 +1313,30 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Ecosystem Hierarchy Visualization
 
-- [ ] Create `src/components/EcosystemTree.svelte`
-- [ ] Implement tree view for ecosystem hierarchy
-- [ ] Add expand/collapse functionality
-- [ ] Test hierarchy displays correctly
-- [ ] Test with nested hierarchies
+- [x] Create `src/lib/components/EcosystemTree.svelte`
+- [x] Implement tree view for ecosystem hierarchy (using Svelte 5 snippets for recursion)
+- [x] Add expand/collapse functionality
+- [x] Add inline edit, delete, and add child actions
+- [x] Integrate tree component into ecosystems page
+- [ ] Test hierarchy displays correctly (implementation complete, needs manual testing)
+- [ ] Test with nested hierarchies (implementation complete, needs manual testing)
+
+#### Repository-Ecosystem Association
+
+- [x] Add service methods in `ecosystem.service.ts`
+  - [x] `associateRepositoryWithEcosystem()`
+  - [x] `removeRepositoryFromEcosystem()`
+  - [x] `getRepositoriesForEcosystem()`
+  - [x] `getEcosystemsForRepository()`
+- [x] Create API endpoints at `/api/repositories/[id]/ecosystems`
+  - [x] GET - List ecosystems for a repository
+  - [x] POST - Add ecosystem association
+  - [x] DELETE - Remove ecosystem association
+- [x] Add UI to repository detail page
+  - [x] Ecosystems card showing assigned ecosystems
+  - [x] Add/remove ecosystem functionality
+  - [x] Tag-based display with visual indicators
+- [ ] Test repository-ecosystem associations (implementation complete, needs manual testing)
 
 #### Aggregated Statistics
 
