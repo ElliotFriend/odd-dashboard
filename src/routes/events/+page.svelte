@@ -411,9 +411,9 @@
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2">
                                         <Calendar class="h-5 w-5 text-slate-500" />
-                                        <h3 class="text-lg font-semibold text-slate-900">
+                                        <a href={`/events/${event.id}`} class="text-lg font-semibold text-blue-600 hover:underline">
                                             {event.name}
-                                        </h3>
+                                        </a>
                                     </div>
                                     {#if event.description}
                                         <p class="mt-1 text-sm text-slate-600">

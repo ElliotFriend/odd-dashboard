@@ -68,6 +68,14 @@
         updatedAt: string;
     }
 
+    interface Event {
+        id: number;
+        name: string;
+        description: string | null;
+        startDate: string | null;
+        endDate: string | null;
+    }
+
     let repository = $state<Repository | null>(null);
     let commits = $state<Commit[]>([]);
     let contributors = $state<Contributor[]>([]);
@@ -81,6 +89,10 @@
     let assignedEcosystems = $state<Ecosystem[]>([]);
     let showEcosystemPicker = $state(false);
     let loadingEcosystems = $state(false);
+
+    // Event display
+    let assignedEvents = $state<Event[]>([]);
+    let loadingEvents = $state(false);
 
     // Date range filter
     let startDate = $state<string>('');
@@ -288,10 +300,25 @@
         return ecosystems.filter((e) => !assignedIds.has(e.id));
     }
 
+    async function loadEvents() {
+        try {
+            loadingEvents = true;
+            const response = await fetch(`/api/repositories/${repositoryId}/events`);
+            if (response.ok) {
+                const data = await response.json();
+                assignedEvents = data.data || [];
+            }
+        } catch (err) {
+            console.error('Error loading events:', err);
+        } finally {
+            loadingEvents = false;
+        }
+    }
+
     onMount(async () => {
         await loadRepository();
         if (repository) {
-            await Promise.all([loadCommits(), loadContributors(), loadEcosystems()]);
+            await Promise.all([loadCommits(), loadContributors(), loadEcosystems(), loadEvents()]);
         }
     });
 </script>
@@ -458,6 +485,41 @@
                                     <X class="h-3 w-3" />
                                 </button>
                             </div>
+                        {/each}
+                    </div>
+                {/if}
+            </CardContent>
+        </Card>
+
+        <!-- Events -->
+        <Card>
+            <CardHeader>
+                <div class="flex items-center gap-2">
+                    <Calendar class="h-5 w-5 text-slate-500" />
+                    <h2 class="text-lg font-semibold">Events</h2>
+                </div>
+            </CardHeader>
+            <CardContent>
+                {#if loadingEvents}
+                    <div class="text-sm text-slate-500">Loading events...</div>
+                {:else if assignedEvents.length === 0}
+                    <div class="text-center py-6">
+                        <Calendar class="mx-auto h-10 w-10 text-slate-400 mb-2" />
+                        <p class="text-sm text-slate-500">Not associated with any events</p>
+                        <p class="text-xs text-slate-400 mt-1">
+                            Events can be managed from the event detail page
+                        </p>
+                    </div>
+                {:else}
+                    <div class="flex flex-wrap gap-2">
+                        {#each assignedEvents as event}
+                            <a
+                                href={`/events/${event.id}`}
+                                class="inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-1 text-sm hover:bg-purple-100 transition-colors"
+                            >
+                                <Calendar class="h-3 w-3 text-purple-600" />
+                                <span class="text-purple-900">{event.name}</span>
+                            </a>
                         {/each}
                     </div>
                 {/if}
