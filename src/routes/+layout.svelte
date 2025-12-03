@@ -1,12 +1,19 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
     import { page } from '$app/state';
     import { goto } from '$app/navigation';
     import './layout.css';
     import favicon from '$lib/assets/favicon.svg';
     import Button from '$lib/components/ui/button.svelte';
     import { Home, GitBranch, Users, FolderTree, Building2, Calendar } from '@lucide/svelte';
+    import { setupChartJS } from '$lib/utils/chart-setup';
 
     let { children } = $props();
+
+    // Initialize Chart.js on mount to ensure it runs client-side
+    onMount(() => {
+        setupChartJS();
+    });
 
     const navigation = [
         { name: 'Dashboard', href: '/', icon: Home },
