@@ -90,6 +90,7 @@ export const authors = pgTable(
     (table) => ({
         githubIdIdx: index('authors_github_id_idx').on(table.githubId),
         emailIdx: index('authors_email_idx').on(table.email),
+        usernameIdx: index('authors_username_idx').on(table.username),
         agencyIdIdx: index('authors_agency_id_idx').on(table.agencyId),
     }),
 );
@@ -122,6 +123,10 @@ export const commits = pgTable(
         branchIdx: index('commits_branch_idx').on(table.branch),
         repositoryCommitDateIdx: index('commits_repository_commit_date_idx').on(
             table.repositoryId,
+            table.commitDate,
+        ),
+        authorCommitDateIdx: index('commits_author_commit_date_idx').on(
+            table.authorId,
             table.commitDate,
         ),
         repositoryShaUnique: unique('commits_repository_sha_unique').on(
