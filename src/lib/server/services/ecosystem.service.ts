@@ -124,6 +124,15 @@ export async function getEcosystemById(id: number) {
 }
 
 /**
+ * Get an ecosystem by name
+ */
+export async function getEcosystemByName(name: string) {
+    const [ecosystem] = await db.select().from(ecosystems).where(eq(ecosystems.name, name)).limit(1);
+
+    return ecosystem || null;
+}
+
+/**
  * Get all ecosystems with hierarchy information
  * Returns ecosystems ordered by name, with parent-child relationships preserved
  */
