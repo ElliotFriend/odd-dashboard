@@ -1306,10 +1306,10 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Contributors Over Time Period
 
-- [ ] Implement query for contributors over time period
-- [ ] Create view/component to display this data
-- [ ] Test with various time periods
-- [ ] Verify data is accurate
+- [x] Implement query for contributors over time period
+- [x] Create view/component to display this data
+- [x] Test with various time periods
+- [x] Verify data is accurate
 
 #### Ecosystem Hierarchy Visualization
 

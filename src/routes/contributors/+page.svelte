@@ -4,8 +4,13 @@
     import Card from '$lib/components/ui/card.svelte';
     import CardHeader from '$lib/components/ui/card-header.svelte';
     import CardContent from '$lib/components/ui/card-content.svelte';
-    import { Users, Calendar, GitCommit, Filter } from '@lucide/svelte';
+    import { Users, Calendar, GitCommit, Filter, TrendingUp } from '@lucide/svelte';
     import { formatDate } from '$lib/utils/date';
+    import LoadingState from '$lib/components/LoadingState.svelte';
+    import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+    import EmptyState from '$lib/components/EmptyState.svelte';
+    import SkeletonLoader from '$lib/components/SkeletonLoader.svelte';
+    import ContributorTrends from '$lib/components/charts/ContributorTrends.svelte';
 
     interface Contributor {
         id: number;
@@ -158,36 +163,52 @@
         </CardContent>
     </Card>
 
-    {#if error}
-        <div class="rounded-md bg-red-50 p-4">
-            <div class="text-sm text-red-800">{error}</div>
-        </div>
-    {/if}
-
     {#if loading}
-        <div class="flex items-center justify-center py-12">
-            <div class="text-slate-500">Loading contributors...</div>
-        </div>
+        <LoadingState message="Loading contributors..." />
+        <SkeletonLoader variant="card" count={3} height="200px" />
+    {:else if error}
+        <ErrorAlert
+            title="Failed to load contributors"
+            message={error}
+            retry={loadContributors}
+        />
+    {:else if contributors.length === 0}
+        <EmptyState
+            title="No contributors found"
+            description="Try adjusting your date range or filters to see contributor activity."
+            icon={Users}
+        />
     {:else}
+        <!-- Contributors Chart -->
+        <Card>
+            <CardHeader>
+                <div class="flex items-center gap-2">
+                    <TrendingUp class="h-5 w-5 text-slate-500" />
+                    <h2 class="text-lg font-semibold">Top Contributors</h2>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <ContributorTrends
+                    contributors={contributors.map(c => ({
+                        name: c.name || c.username || c.email,
+                        commitCount: c.commitCount
+                    }))}
+                    title="Most Active Contributors"
+                />
+            </CardContent>
+        </Card>
+
         <!-- Contributors List -->
         <Card>
             <CardHeader>
                 <div class="flex items-center gap-2">
                     <Users class="h-5 w-5 text-slate-500" />
-                    <h2 class="text-lg font-semibold">Contributors</h2>
+                    <h2 class="text-lg font-semibold">All Contributors</h2>
                     <span class="text-sm text-slate-500">({contributors.length})</span>
                 </div>
             </CardHeader>
             <CardContent>
-                {#if contributors.length === 0}
-                    <div class="py-12 text-center">
-                        <Users class="mx-auto mb-4 h-12 w-12 text-slate-400" />
-                        <p class="text-slate-500">No contributors found</p>
-                        <p class="mt-2 text-sm text-slate-400">
-                            Try adjusting your date range or filters
-                        </p>
-                    </div>
-                {:else}
+                {#if contributors.length > 0}
                     <div class="space-y-2">
                         {#each contributors as contributor}
                             <div
