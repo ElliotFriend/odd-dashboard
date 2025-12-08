@@ -1,12 +1,16 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { handleError } from "$lib/server/api/errors";
-import { createRepository } from "$lib/server/services/repository.service";
+import {
+    createRepository,
+    getRepositoryByFullName,
+} from "$lib/server/services/repository.service";
 import {
     getEcosystemByName,
     createEcosystem,
 } from "$lib/server/services/ecosystem.service";
-import { addRepositoryToEcosystem } from "$lib/server/services/repository.service";
+import { associateRepositoryWithEcosystem } from "$lib/server/services/ecosystem.service";
+import { getRepository } from "$lib/server/github/fetchers";
 
 interface ImportLine {
     eco_name: string;
@@ -107,14 +111,29 @@ export const POST: RequestHandler = async ({ request }) => {
                     });
                 }
 
-                // Create repository (this will fetch from GitHub API)
-                const repository = await createRepository({
-                    fullName,
-                    agencyId: null,
-                });
+                // Check if repository already exists
+                let repository = await getRepositoryByFullName(fullName);
+
+                if (!repository) {
+                    // Fetch repository details from GitHub API
+                    const githubRepo = await getRepository(owner, repo);
+
+                    // Create repository with GitHub details
+                    repository = await createRepository({
+                        githubId: githubRepo.id,
+                        fullName: githubRepo.full_name,
+                        agencyId: null,
+                        isFork: githubRepo.fork,
+                        parentFullName: githubRepo.parent?.full_name || null,
+                        defaultBranch: githubRepo.default_branch || 'main',
+                    });
+                }
 
                 // Associate repository with ecosystem
-                await addRepositoryToEcosystem(repository.id, ecosystem.id);
+                await associateRepositoryWithEcosystem(
+                    repository.id,
+                    ecosystem.id,
+                );
 
                 result.success++;
             } catch (error) {
