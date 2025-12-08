@@ -1340,12 +1340,12 @@ Use this detailed checklist to track progress and ensure each item is complete a
 
 #### Aggregated Statistics
 
-- [ ] Implement query for total commits per ecosystem
-- [ ] Implement query for total contributors per ecosystem
-- [ ] Implement query for total commits per event
-- [ ] Implement query for total contributors per event
-- [ ] Create UI components to display statistics
-- [ ] Test statistics are accurate
+- [x] Implement query for total commits per ecosystem
+- [x] Implement query for total contributors per ecosystem
+- [x] Implement query for total commits per event
+- [x] Implement query for total contributors per event
+- [x] Create UI components to display statistics
+- [x] Test statistics are accurate
 
 #### Event Associations UI
 
