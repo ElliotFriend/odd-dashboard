@@ -4,8 +4,12 @@
     import Button from '$lib/components/ui/button.svelte';
     import Card from '$lib/components/ui/card.svelte';
     import CardContent from '$lib/components/ui/card-content.svelte';
-    import { GitBranch, Search, Filter, ExternalLink } from '@lucide/svelte';
+    import { GitBranch, Search, Filter, ExternalLink, Package } from '@lucide/svelte';
     import { formatDate } from '$lib/utils/date';
+    import LoadingState from '$lib/components/LoadingState.svelte';
+    import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+    import EmptyState from '$lib/components/EmptyState.svelte';
+    import SkeletonLoader from '$lib/components/SkeletonLoader.svelte';
 
     interface Repository {
         id: number;
@@ -168,16 +172,21 @@
         </CardContent>
     </Card>
 
-    {#if error}
-        <div class="rounded-md bg-red-50 p-4">
-            <div class="text-sm text-red-800">{error}</div>
-        </div>
-    {/if}
-
     {#if loading}
-        <div class="flex items-center justify-center py-12">
-            <div class="text-slate-500">Loading repositories...</div>
-        </div>
+        <LoadingState message="Loading repositories..." />
+        <SkeletonLoader variant="card" count={5} height="150px" />
+    {:else if error}
+        <ErrorAlert
+            title="Failed to load repositories"
+            message={error}
+            retry={loadRepositories}
+        />
+    {:else if repositories.length === 0}
+        <EmptyState
+            title="No repositories found"
+            description="Try adjusting your filters or add a new repository to get started."
+            icon={Package}
+        />
     {:else}
         <!-- Repositories List -->
         <div class="grid gap-4">

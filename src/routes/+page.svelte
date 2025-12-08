@@ -7,6 +7,9 @@
     import StatisticsCard from '$lib/components/StatisticsCard.svelte';
     import EcosystemStatistics from '$lib/components/EcosystemStatistics.svelte';
     import EventStatistics from '$lib/components/EventStatistics.svelte';
+    import LoadingState from '$lib/components/LoadingState.svelte';
+    import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+    import SkeletonLoader from '$lib/components/SkeletonLoader.svelte';
 
     interface DashboardStats {
         totalRepositories: number;
@@ -78,13 +81,16 @@
     </div>
 
     {#if loading}
-        <div class="flex items-center justify-center py-12">
-            <div class="text-slate-500">Loading...</div>
+        <LoadingState message="Loading dashboard statistics..." />
+        <div class="space-y-6 mt-8">
+            <SkeletonLoader variant="card" count={6} height="120px" />
         </div>
     {:else if error}
-        <div class="rounded-md bg-red-50 p-4">
-            <div class="text-sm text-red-800">{error}</div>
-        </div>
+        <ErrorAlert
+            title="Failed to load dashboard"
+            message={error}
+            retry={loadStats}
+        />
     {:else if stats}
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
