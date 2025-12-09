@@ -18,6 +18,7 @@ interface SyncStats {
     failed: number;
     skipped: number;
     totalCommitsCreated: number;
+    totalCommitsSkippedBots: number;
     totalAuthorsCreated: number;
     errors: Array<{ repositoryId: number; fullName: string; error: string }>;
 }
@@ -85,6 +86,7 @@ async function syncAllRepositories() {
             failed: 0,
             skipped: 0,
             totalCommitsCreated: 0,
+            totalCommitsSkippedBots: 0,
             totalAuthorsCreated: 0,
             errors: [],
         };
@@ -108,10 +110,11 @@ async function syncAllRepositories() {
 
                 stats.completed++;
                 stats.totalCommitsCreated += result.commitsCreated;
+                stats.totalCommitsSkippedBots += result.commitsSkippedBots;
                 stats.totalAuthorsCreated += result.authorsCreated;
 
                 console.log(`   ✅ Success (${(duration / 1000).toFixed(1)}s)`);
-                console.log(`      Commits: ${result.commitsCreated}, Authors: ${result.authorsCreated}`);
+                console.log(`      Commits: ${result.commitsCreated}, Bots skipped: ${result.commitsSkippedBots}, Authors: ${result.authorsCreated}`);
 
                 if (result.errors.length > 0) {
                     console.log(`      ⚠️  ${result.errors.length} errors during sync`);
@@ -152,6 +155,7 @@ async function syncAllRepositories() {
         console.log('');
         console.log('Data created:');
         console.log(`   Commits: ${stats.totalCommitsCreated.toLocaleString()}`);
+        console.log(`   Bot commits skipped: ${stats.totalCommitsSkippedBots.toLocaleString()}`);
         console.log(`   Authors: ${stats.totalAuthorsCreated.toLocaleString()}`);
         console.log('');
 

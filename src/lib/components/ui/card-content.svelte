@@ -9,7 +9,7 @@
     let { class: className, children }: CardContentProps = $props();
 </script>
 
-<div class={cn('p-6 pt-0', className)}>
+<div class={cn('p-6', className)}>
     {#if children}
         {@render children()}
     {/if}

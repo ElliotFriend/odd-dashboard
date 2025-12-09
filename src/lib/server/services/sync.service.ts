@@ -14,6 +14,7 @@ export interface SyncResult {
     repositoryId: number;
     commitsProcessed: number;
     commitsCreated: number;
+    commitsSkippedBots: number;
     authorsCreated: number;
     errors: string[];
 }
@@ -157,6 +158,7 @@ export async function syncRepositoryCommits(
         repositoryId,
         commitsProcessed: 0,
         commitsCreated: 0,
+        commitsSkippedBots: 0,
         authorsCreated: 0,
         errors: [],
     };
@@ -228,6 +230,12 @@ export async function syncRepositoryCommits(
 
                             // Extract author information
                             const authorInfo = extractAuthorFromCommit(commit);
+
+                            // Skip bot commits (GitHub bots have [bot] suffix)
+                            if (authorInfo.username && authorInfo.username.includes('[bot]')) {
+                                result.commitsSkippedBots++;
+                                continue;
+                            }
 
                             // Find or create author
                             const { id: authorId, wasCreated } =

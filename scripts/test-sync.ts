@@ -98,6 +98,7 @@ async function testSync() {
         console.log('📈 Sync statistics:');
         console.log(`   Commits processed: ${result.commitsProcessed}`);
         console.log(`   Commits created: ${result.commitsCreated}`);
+        console.log(`   Bot commits skipped: ${result.commitsSkippedBots}`);
         console.log(`   Authors created: ${result.authorsCreated}`);
         if (result.errors.length > 0) {
             console.log(`   Errors: ${result.errors.length}`);
