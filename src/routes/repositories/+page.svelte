@@ -4,7 +4,7 @@
     import Button from '$lib/components/ui/button.svelte';
     import Card from '$lib/components/ui/card.svelte';
     import CardContent from '$lib/components/ui/card-content.svelte';
-    import { GitBranch, Search, Filter, ExternalLink, Package, Upload, Plus } from '@lucide/svelte';
+    import { GitBranch, Search, Filter, ExternalLink, Package, Upload, Plus, RefreshCw } from '@lucide/svelte';
     import { formatDate } from '$lib/utils/date';
     import LoadingState from '$lib/components/LoadingState.svelte';
     import ErrorAlert from '$lib/components/ErrorAlert.svelte';
@@ -109,6 +109,10 @@
             <Button onclick={() => goto('/repositories/add')}>
                 <Plus class="mr-2 h-4 w-4" />
                 Add Repository
+            </Button>
+            <Button variant="outline" onclick={() => goto('/repositories/sync')}>
+                <RefreshCw class="mr-2 h-4 w-4" />
+                Batch Sync
             </Button>
             <Button variant="outline" onclick={() => goto('/repositories/bulk-import')}>
                 <Upload class="mr-2 h-4 w-4" />
