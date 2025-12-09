@@ -13,7 +13,15 @@ import { checkAndUpdateRepositoryName } from './repository-rename.service';
 import type { GitHubRepository } from '../github/types';
 
 /**
- * Filter options for getAllRepositories
+ * Filter options for getAllRepositories query
+ * @interface RepositoryFilterOptions
+ * @property {number} [agencyId] - Filter by agency ID
+ * @property {number} [ecosystemId] - Filter by ecosystem ID
+ * @property {number} [eventId] - Filter by event ID
+ * @property {boolean} [excludeForks=false] - If true, exclude fork repositories
+ * @property {string} [search] - Search term to filter by full_name (case-insensitive)
+ * @property {'commits'|'contributors'|'lastCommitDate'|'fullName'} [sortBy] - Field to sort by
+ * @property {'asc'|'desc'} [sortOrder] - Sort order
  */
 export interface RepositoryFilterOptions {
     agencyId?: number;
@@ -26,7 +34,27 @@ export interface RepositoryFilterOptions {
 }
 
 /**
- * Create a new repository
+ * Create a new repository in the database.
+ *
+ * @param {CreateRepositoryInput} input - Repository data to create
+ * @param {number} input.githubId - GitHub repository ID (required, unique)
+ * @param {string} input.fullName - Repository full name "owner/repo" (required, unique)
+ * @param {number} [input.agencyId] - Agency ID that sourced this repository
+ * @param {boolean} [input.isFork=false] - Whether this repository is a fork
+ * @param {number} [input.parentRepositoryId] - Parent repository ID if fork exists in DB
+ * @param {string} [input.parentFullName] - Parent repository full name
+ * @param {string} [input.defaultBranch='main'] - Default branch name
+ * @returns {Promise<Repository>} Created repository
+ * @throws {Error} If repository with same githubId or fullName already exists
+ * @throws {Error} If validation fails
+ *
+ * @example
+ * const repo = await createRepository({
+ *   githubId: 123456789,
+ *   fullName: 'stellar/stellar-core',
+ *   agencyId: 1,
+ *   defaultBranch: 'master'
+ * });
  */
 export async function createRepository(input: CreateRepositoryInput) {
     // Validate input
@@ -63,7 +91,16 @@ export async function createRepository(input: CreateRepositoryInput) {
 }
 
 /**
- * Get a repository by ID
+ * Get a repository by its database ID.
+ *
+ * @param {number} id - Database ID of the repository
+ * @returns {Promise<Repository|null>} Repository object or null if not found
+ *
+ * @example
+ * const repo = await getRepositoryById(1);
+ * if (repo) {
+ *   console.log(repo.fullName);
+ * }
  */
 export async function getRepositoryById(id: number) {
     const [repository] = await db
@@ -102,7 +139,38 @@ export async function getRepositoryByFullName(fullName: string) {
 }
 
 /**
- * Get all repositories with optional filtering, statistics, and sorting
+ * Get all repositories with optional filtering, statistics, and sorting.
+ *
+ * This function returns repositories with aggregated statistics including:
+ * - Commit count
+ * - Contributor count (distinct authors)
+ * - Last commit date
+ *
+ * Uses efficient SQL with LEFT JOIN LATERAL for computing statistics in a single query.
+ *
+ * @param {RepositoryFilterOptions} [options={}] - Filter and sort options
+ * @param {number} [options.agencyId] - Filter by agency ID
+ * @param {number} [options.eventId] - Filter by event ID (joins through repository_events)
+ * @param {boolean} [options.excludeForks=false] - If true, exclude fork repositories
+ * @param {string} [options.search] - Search term for repository name (case-insensitive)
+ * @param {string} [options.sortBy='fullName'] - Field to sort by
+ * @param {string} [options.sortOrder='asc'] - Sort order
+ * @returns {Promise<RepositoryWithStats[]>} Array of repositories with statistics
+ *
+ * @example
+ * // Get non-fork repositories sorted by commits
+ * const repos = await getAllRepositories({
+ *   excludeForks: true,
+ *   sortBy: 'commits',
+ *   sortOrder: 'desc'
+ * });
+ *
+ * @example
+ * // Search for repositories by name
+ * const repos = await getAllRepositories({
+ *   search: 'stellar',
+ *   agencyId: 1
+ * });
  */
 export async function getAllRepositories(options: RepositoryFilterOptions = {}) {
     const {
@@ -321,8 +389,38 @@ export async function deleteRepository(id: number) {
 }
 
 /**
- * Create or update a repository from GitHub API data
- * This is useful when syncing repositories from GitHub
+ * Create or update a repository from GitHub API data.
+ *
+ * This is the main function for syncing repository metadata from GitHub.
+ * It handles:
+ * - Creating new repositories from GitHub data
+ * - Updating existing repositories with latest GitHub data
+ * - Fork detection and parent linking
+ * - Repository rename detection
+ *
+ * The function is idempotent and can be safely called multiple times for the same repository.
+ *
+ * @param {GitHubRepository} githubRepo - Repository data from GitHub API
+ * @param {Object} [options={}] - Configuration options
+ * @param {number|null} [options.agencyId] - Agency ID to associate with repository
+ * @param {boolean} [options.detectFork=true] - If true, detect and link fork relationships
+ * @param {boolean} [options.detectRename=true] - If true, detect repository renames
+ * @returns {Promise<{repository: Repository, created: boolean}>} Repository and creation flag
+ * @throws {Error} If GitHub data is invalid or database operation fails
+ *
+ * @example
+ * // Create or update repository from GitHub
+ * const githubRepo = await getRepository('stellar', 'stellar-core');
+ * const { repository, created } = await createOrUpdateRepositoryFromGitHub(githubRepo, {
+ *   agencyId: 1,
+ *   detectFork: true,
+ *   detectRename: true
+ * });
+ * if (created) {
+ *   console.log('Created new repository:', repository.fullName);
+ * } else {
+ *   console.log('Updated existing repository:', repository.fullName);
+ * }
  */
 export async function createOrUpdateRepositoryFromGitHub(
     githubRepo: GitHubRepository,
@@ -405,7 +503,29 @@ export async function detectRenameForRepository(repositoryId: number) {
 
 /**
  * Mark a repository as missing (soft delete).
- * This is used when a repository is deleted, made private, or otherwise becomes inaccessible.
+ *
+ * This is used when a repository becomes inaccessible on GitHub due to:
+ * - Repository deletion
+ * - Made private (token doesn't have access)
+ * - Organization restrictions
+ *
+ * The repository is not deleted from the database, preserving all historical data.
+ * The `is_missing` flag is set to true, and the repository can be restored if it
+ * becomes accessible again.
+ *
+ * @param {number} repositoryId - Database ID of the repository
+ * @returns {Promise<void>}
+ * @throws {Error} If repository not found
+ *
+ * @example
+ * // Mark repository as missing during sync
+ * try {
+ *   await syncRepositoryCommits(1);
+ * } catch (error) {
+ *   if (error instanceof RepositoryNotFoundError) {
+ *     await markRepositoryAsMissing(1);
+ *   }
+ * }
  */
 export async function markRepositoryAsMissing(repositoryId: number): Promise<void> {
     const repository = await getRepositoryById(repositoryId);

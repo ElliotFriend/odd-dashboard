@@ -8,7 +8,14 @@ import { RepositoryNotFoundError } from '../github/errors';
 import type { GitHubCommit } from '../github/types';
 
 /**
- * Sync result statistics
+ * Sync result statistics returned after syncing a repository
+ * @interface SyncResult
+ * @property {number} repositoryId - The database ID of the repository that was synced
+ * @property {number} commitsProcessed - Total number of commits processed from GitHub
+ * @property {number} commitsCreated - Number of new commits created in the database
+ * @property {number} commitsSkippedBots - Number of bot commits that were skipped
+ * @property {number} authorsCreated - Number of new authors created in the database
+ * @property {string[]} errors - Array of error messages encountered during sync
  */
 export interface SyncResult {
     repositoryId: number;
@@ -23,8 +30,20 @@ export interface SyncResult {
  * Find or create an author in the database.
  * Uses github_id as primary identifier, falls back to email if no github_id.
  *
- * @param authorInfo - Author information extracted from commit
- * @returns Object with author ID and whether the author was newly created
+ * This function implements the author deduplication strategy:
+ * 1. Try to find by github_id (if available)
+ * 2. Try to find by email (case-insensitive) if no github_id
+ * 3. Create new author if no match found
+ *
+ * Also handles updating username when it changes for existing authors.
+ *
+ * @param {Object} authorInfo - Author information extracted from commit
+ * @param {string} authorInfo.name - Author's display name
+ * @param {string} authorInfo.email - Author's email address
+ * @param {number|null} authorInfo.githubId - GitHub user ID (null for email-only commits)
+ * @param {string|null} authorInfo.username - GitHub username (null for email-only commits)
+ * @returns {Promise<{id: number, wasCreated: boolean}>} Object with author ID and creation flag
+ * @throws {Error} If database operation fails
  */
 async function findOrCreateAuthor(authorInfo: {
     name: string;
@@ -96,6 +115,15 @@ async function findOrCreateAuthor(authorInfo: {
 /**
  * Get parent commit SHAs for fork comparison.
  * Caches results in memory to avoid repeated database queries.
+ *
+ * This function loads all commit SHAs from the parent repository for a given branch
+ * and caches them in a Map to avoid repeated database queries during fork sync.
+ *
+ * @param {number} parentRepositoryId - Database ID of the parent repository
+ * @param {string} branch - Branch name to get commits from
+ * @param {Map<number, Set<string>>} cache - In-memory cache for parent commit SHAs
+ * @returns {Promise<Set<string>>} Set of commit SHAs from the parent repository
+ * @throws {Error} If database query fails
  */
 async function getParentCommitShas(
     parentRepositoryId: number,
@@ -120,13 +148,38 @@ async function getParentCommitShas(
 }
 
 /**
- * Sync commits for a repository.
- * Fetches commits from GitHub and stores them in the database.
- * For forks, compares commits with parent repository to attribute correctly.
+ * Sync commits for a repository from GitHub.
  *
- * @param repositoryId - The database ID of the repository to sync
- * @param options - Sync options
- * @returns Sync result with statistics
+ * This is the main sync function that:
+ * 1. Fetches commits from GitHub API with pagination
+ * 2. Creates or finds authors in the database (with deduplication)
+ * 3. Stores commits in the database
+ * 4. For forks, syncs parent repository first and attributes commits correctly
+ * 5. Filters out bot commits automatically
+ * 6. Updates last_synced_at timestamp
+ *
+ * Fork-aware commit attribution:
+ * - When syncing a fork, parent repository is synced first
+ * - Commits are compared by SHA between fork and parent
+ * - Commits existing in parent → attributed to parent repository
+ * - Commits unique to fork → attributed to fork repository
+ * - Prevents duplicate commits across fork/parent pairs
+ *
+ * @param {number} repositoryId - The database ID of the repository to sync
+ * @param {Object} [options={}] - Sync options
+ * @param {boolean} [options.initialSync=false] - If true, fetch all commits; if false, fetch only since last_synced_at
+ * @param {number} [options.batchSize=1000] - Number of commits to process per batch
+ * @returns {Promise<SyncResult>} Sync result with detailed statistics
+ * @throws {Error} If repository not found or sync fails
+ *
+ * @example
+ * // Initial sync (fetch all commits)
+ * const result = await syncRepositoryCommits(1, { initialSync: true });
+ * console.log(`Created ${result.commitsCreated} commits, ${result.authorsCreated} authors`);
+ *
+ * @example
+ * // Incremental sync (fetch commits since last sync)
+ * const result = await syncRepositoryCommits(1);
  */
 export async function syncRepositoryCommits(
     repositoryId: number,
