@@ -9,7 +9,7 @@ import { handleError } from "$lib/server/api/errors";
  */
 export const GET: RequestHandler = async ({ params, url }) => {
     try {
-        const { id } = params;
+        const eventId = parseInt(params.id);
 
         const startDateParam = url.searchParams.get("startDate");
         const endDateParam = url.searchParams.get("endDate");
@@ -22,7 +22,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
             options.endDate = new Date(endDateParam);
         }
 
-        const statistics = await getEventStatistics(id, options);
+        const statistics = await getEventStatistics(eventId, options);
 
         return json(statistics);
     } catch (error) {

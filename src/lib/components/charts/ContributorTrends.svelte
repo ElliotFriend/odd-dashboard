@@ -14,7 +14,7 @@
 
     let { contributors, title = "Top Contributors" }: Props = $props();
 
-    let chartCanvas: HTMLCanvasElement;
+    let chartCanvas = $state<HTMLCanvasElement>();
     let chartInstance: Chart | null = null;
 
     // Get top 10 contributors

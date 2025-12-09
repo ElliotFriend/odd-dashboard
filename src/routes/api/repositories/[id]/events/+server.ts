@@ -13,7 +13,7 @@ export const GET: RequestHandler = async ({ params }) => {
     try {
         const repositoryId = parseInt(params.id);
         if (isNaN(repositoryId)) {
-            return errorResponse('Invalid repository ID', 400);
+            return errorResponse(400, 'Invalid repository ID');
         }
 
         const results = await db

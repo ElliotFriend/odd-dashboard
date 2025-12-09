@@ -1,10 +1,10 @@
 <script lang="ts">
-    import type { ComponentType } from "svelte";
+    import type { Component } from "svelte";
 
     interface Props {
         title: string;
         description?: string;
-        icon?: ComponentType;
+        icon?: Component<any>;
         action?: {
             label: string;
             onclick: () => void;

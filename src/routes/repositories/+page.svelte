@@ -427,7 +427,7 @@
                         <div class="py-12 text-center">
                             <GitBranch class="mx-auto mb-4 h-12 w-12 text-slate-400" />
                             <p class="text-slate-500">No repositories found</p>
-                            {#if searchQuery || selectedAgencyId || showForksOnly}
+                            {#if searchQuery || selectedAgencyId || excludeForksOnly}
                                 <p class="mt-2 text-sm text-slate-400">
                                     Try adjusting your filters
                                 </p>

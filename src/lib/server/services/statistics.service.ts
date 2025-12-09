@@ -16,7 +16,7 @@ import {
  * Get statistics for a specific ecosystem
  */
 export async function getEcosystemStatistics(
-    ecosystemId: string,
+    ecosystemId: number,
     options?: {
         startDate?: Date;
         endDate?: Date;
@@ -117,7 +117,7 @@ export async function getAllEcosystemsStatistics(options?: {
  * Get statistics for a specific event
  */
 export async function getEventStatistics(
-    eventId: string,
+    eventId: number,
     options?: {
         startDate?: Date;
         endDate?: Date;
@@ -217,8 +217,8 @@ export async function getAllEventsStatistics(options?: {
  * Helper function to get all descendant ecosystem IDs recursively
  */
 async function getDescendantEcosystemIds(
-    ecosystemId: string,
-): Promise<string[]> {
+    ecosystemId: number,
+): Promise<number[]> {
     const children = await db
         .select({ id: ecosystems.id })
         .from(ecosystems)

@@ -30,9 +30,9 @@
         }
     };
 
-    const variantClass = getVariantClasses(variant);
-    const heightClass = height ? `h-[${height}]` : "";
-    const widthClass = width ? `w-[${width}]` : "";
+    const variantClass = $derived(getVariantClasses(variant));
+    const heightClass = $derived(height ? `h-[${height}]` : "");
+    const widthClass = $derived(width ? `w-[${width}]` : "");
 </script>
 
 <div class="space-y-3">

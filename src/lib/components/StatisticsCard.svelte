@@ -1,12 +1,12 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import type { ComponentType } from "svelte";
+    import type { Component } from "svelte";
 
     interface Props {
         title: string;
         value: number | string;
         description?: string;
-        icon?: ComponentType;
+        icon?: Component<any>;
         loading?: boolean;
         trend?: {
             value: number;

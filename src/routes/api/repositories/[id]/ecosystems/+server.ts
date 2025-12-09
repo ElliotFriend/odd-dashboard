@@ -15,7 +15,7 @@ export const GET: RequestHandler = async ({ params }) => {
     try {
         const repositoryId = parseInt(params.id);
         if (isNaN(repositoryId)) {
-            return errorResponse('Invalid repository ID', 400);
+            return errorResponse(400, 'Invalid repository ID');
         }
 
         const ecosystems = await getEcosystemsForRepository(repositoryId);
@@ -38,14 +38,14 @@ export const POST: RequestHandler = async ({ params, request }) => {
     try {
         const repositoryId = parseInt(params.id);
         if (isNaN(repositoryId)) {
-            return errorResponse('Invalid repository ID', 400);
+            return errorResponse(400, 'Invalid repository ID');
         }
 
         const body = await request.json();
         const { ecosystemId } = body;
 
         if (!ecosystemId || isNaN(ecosystemId)) {
-            return errorResponse('ecosystemId is required and must be a number', 400);
+            return errorResponse(400, 'ecosystemId is required and must be a number');
         }
 
         await associateRepositoryWithEcosystem(repositoryId, ecosystemId);
@@ -68,14 +68,14 @@ export const DELETE: RequestHandler = async ({ params, request }) => {
     try {
         const repositoryId = parseInt(params.id);
         if (isNaN(repositoryId)) {
-            return errorResponse('Invalid repository ID', 400);
+            return errorResponse(400, 'Invalid repository ID');
         }
 
         const body = await request.json();
         const { ecosystemId } = body;
 
         if (!ecosystemId || isNaN(ecosystemId)) {
-            return errorResponse('ecosystemId is required and must be a number', 400);
+            return errorResponse(400, 'ecosystemId is required and must be a number');
         }
 
         await removeRepositoryFromEcosystem(repositoryId, ecosystemId);

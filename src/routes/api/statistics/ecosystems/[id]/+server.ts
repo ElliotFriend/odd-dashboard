@@ -9,7 +9,7 @@ import { handleError } from "$lib/server/api/errors";
  */
 export const GET: RequestHandler = async ({ params, url }) => {
     try {
-        const { id } = params;
+        const ecosystemId = parseInt(params.id);
 
         const startDateParam = url.searchParams.get("startDate");
         const endDateParam = url.searchParams.get("endDate");
@@ -25,7 +25,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
             options.endDate = new Date(endDateParam);
         }
 
-        const statistics = await getEcosystemStatistics(id, options);
+        const statistics = await getEcosystemStatistics(ecosystemId, options);
 
         return json(statistics);
     } catch (error) {
