@@ -7,6 +7,7 @@ import {
 } from "$lib/server/services/repository.service";
 import { associateRepositoryWithEvent } from "$lib/server/services/event.service";
 import { getRepository } from "$lib/server/github/fetchers";
+import { RepositoryNotFoundError } from "$lib/server/github/errors";
 import { syncRepositoryCommits } from "$lib/server/services/sync.service";
 
 interface AddRepositoryRequest {
@@ -87,17 +88,31 @@ export const POST: RequestHandler = async ({ request }) => {
                 }
 
                 // Fetch repository details from GitHub API
-                const githubRepo = await getRepository(owner, repo);
+                try {
+                    const githubRepo = await getRepository(owner, repo);
 
-                // Create repository with GitHub details
-                repository = await createRepository({
-                    githubId: githubRepo.id,
-                    fullName: githubRepo.full_name,
-                    agencyId: null,
-                    isFork: githubRepo.fork,
-                    parentFullName: githubRepo.parent?.full_name || null,
-                    defaultBranch: githubRepo.default_branch || "main",
-                });
+                    // Create repository with GitHub details
+                    repository = await createRepository({
+                        githubId: githubRepo.id,
+                        fullName: githubRepo.full_name,
+                        agencyId: null,
+                        isFork: githubRepo.fork,
+                        parentFullName: githubRepo.parent?.full_name || null,
+                        defaultBranch: githubRepo.default_branch || "main",
+                    });
+                } catch (error) {
+                    // Handle repository not found errors
+                    if (error instanceof RepositoryNotFoundError) {
+                        result.failed++;
+                        result.results.push({
+                            url,
+                            status: "failed",
+                            error: "Repository not found or is not accessible (may be deleted or private)",
+                        });
+                        continue;
+                    }
+                    throw error;
+                }
 
                 // Associate with event if provided
                 if (eventId) {

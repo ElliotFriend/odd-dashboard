@@ -308,3 +308,41 @@ export async function detectRenameForRepository(repositoryId: number) {
         repository.githubId,
     );
 }
+
+/**
+ * Mark a repository as missing (soft delete).
+ * This is used when a repository is deleted, made private, or otherwise becomes inaccessible.
+ */
+export async function markRepositoryAsMissing(repositoryId: number): Promise<void> {
+    const repository = await getRepositoryById(repositoryId);
+    if (!repository) {
+        throw new Error(`Repository with ID ${repositoryId} not found`);
+    }
+
+    await db
+        .update(repositories)
+        .set({
+            isMissing: true,
+            updatedAt: sql`NOW()`,
+        })
+        .where(eq(repositories.id, repositoryId));
+}
+
+/**
+ * Mark a repository as found (restore from missing state).
+ * This is used when a previously missing repository becomes accessible again.
+ */
+export async function markRepositoryAsFound(repositoryId: number): Promise<void> {
+    const repository = await getRepositoryById(repositoryId);
+    if (!repository) {
+        throw new Error(`Repository with ID ${repositoryId} not found`);
+    }
+
+    await db
+        .update(repositories)
+        .set({
+            isMissing: false,
+            updatedAt: sql`NOW()`,
+        })
+        .where(eq(repositories.id, repositoryId));
+}

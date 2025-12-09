@@ -59,6 +59,7 @@ export const repositories = pgTable(
         parentRepositoryId: integer('parent_repository_id'),
         parentFullName: text('parent_full_name'),
         defaultBranch: text('default_branch').notNull().default('main'),
+        isMissing: boolean('is_missing').notNull().default(false),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
         updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
         lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
@@ -69,6 +70,7 @@ export const repositories = pgTable(
             table.parentRepositoryId,
         ),
         isForkIdx: index('repositories_is_fork_idx').on(table.isFork),
+        isMissingIdx: index('repositories_is_missing_idx').on(table.isMissing),
     }),
 );
 

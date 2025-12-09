@@ -3,6 +3,8 @@ import { db } from '../db';
 import { repositories, authors, commits } from '../db/schema';
 import { getCommits, extractAuthorFromCommit } from '../github/fetchers';
 import { getCommitsByShas } from './commit.service';
+import { markRepositoryAsMissing } from './repository.service';
+import { RepositoryNotFoundError } from '../github/errors';
 import type { GitHubCommit } from '../github/types';
 
 /**
@@ -291,6 +293,15 @@ export async function syncRepositoryCommits(
                     page++;
                 }
             } catch (error: any) {
+                // Check if repository is missing (deleted, private, or inaccessible)
+                if (error instanceof RepositoryNotFoundError) {
+                    result.errors.push(
+                        `Repository not found: ${error.message}. Marking as missing.`,
+                    );
+                    await markRepositoryAsMissing(repositoryId);
+                    hasMore = false;
+                    break;
+                }
                 result.errors.push(`Error fetching commits (page ${page}): ${error.message}`);
                 hasMore = false;
             }

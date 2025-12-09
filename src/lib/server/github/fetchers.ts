@@ -1,6 +1,7 @@
 import { octokit } from './client';
 import type { GitHubRepository, GitHubCommit, GitHubUser } from './types';
 import { withRateLimitAndRetry } from './rate-limit';
+import { RepositoryNotFoundError, RepositoryNotFoundByIdError } from './errors';
 
 /**
  * Fetch a repository by its owner and name.
@@ -15,7 +16,7 @@ export async function getRepository(owner: string, repo: string): Promise<GitHub
             return data;
         } catch (error: any) {
             if (error.status === 404) {
-                throw new Error(`Repository ${owner}/${repo} not found`);
+                throw new RepositoryNotFoundError(owner, repo);
             }
             throw error;
         }
@@ -121,7 +122,7 @@ export async function getRepositoryById(githubId: number): Promise<GitHubReposit
             return data as GitHubRepository;
         } catch (error: any) {
             if (error.status === 404) {
-                throw new Error(`Repository with GitHub ID ${githubId} not found`);
+                throw new RepositoryNotFoundByIdError(githubId);
             }
             throw error;
         }

@@ -4,6 +4,7 @@ import { handleError } from "$lib/server/api/errors";
 import {
     createRepository,
     getRepositoryByFullName,
+    markRepositoryAsMissing,
 } from "$lib/server/services/repository.service";
 import {
     getEcosystemByName,
@@ -11,6 +12,7 @@ import {
 } from "$lib/server/services/ecosystem.service";
 import { associateRepositoryWithEcosystem } from "$lib/server/services/ecosystem.service";
 import { getRepository } from "$lib/server/github/fetchers";
+import { RepositoryNotFoundError } from "$lib/server/github/errors";
 
 interface ImportLine {
     eco_name: string;
@@ -115,18 +117,32 @@ export const POST: RequestHandler = async ({ request }) => {
                 let repository = await getRepositoryByFullName(fullName);
 
                 if (!repository) {
-                    // Fetch repository details from GitHub API
-                    const githubRepo = await getRepository(owner, repo);
+                    try {
+                        // Fetch repository details from GitHub API
+                        const githubRepo = await getRepository(owner, repo);
 
-                    // Create repository with GitHub details
-                    repository = await createRepository({
-                        githubId: githubRepo.id,
-                        fullName: githubRepo.full_name,
-                        agencyId: null,
-                        isFork: githubRepo.fork,
-                        parentFullName: githubRepo.parent?.full_name || null,
-                        defaultBranch: githubRepo.default_branch || 'main',
-                    });
+                        // Create repository with GitHub details
+                        repository = await createRepository({
+                            githubId: githubRepo.id,
+                            fullName: githubRepo.full_name,
+                            agencyId: null,
+                            isFork: githubRepo.fork,
+                            parentFullName: githubRepo.parent?.full_name || null,
+                            defaultBranch: githubRepo.default_branch || 'main',
+                        });
+                    } catch (error) {
+                        // Handle repository not found errors
+                        if (error instanceof RepositoryNotFoundError) {
+                            result.failed++;
+                            result.errors.push({
+                                line: lineNumber,
+                                repo_url: data.repo_url,
+                                error: `Repository not found or is not accessible (may be deleted or private)`,
+                            });
+                            continue;
+                        }
+                        throw error;
+                    }
                 }
 
                 // Associate repository with ecosystem
