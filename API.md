@@ -1123,7 +1123,7 @@ Pagination is not currently implemented but is planned for future releases. For 
 
 When filtering by date ranges, use ISO 8601 format:
 
-```
+```text
 2024-01-01T00:00:00.000Z
 ```
 

@@ -87,7 +87,7 @@ The ODD Dashboard is a SvelteKit application that provides powerful tools for tr
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/ElliotFriend/odd-dashboard
 cd odd-dashboard
 ```
 
@@ -112,7 +112,7 @@ Edit `.env` with your configuration:
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/odd_dashboard
 
 # GitHub API token
-GITHUB_TOKEN=ghp_xxxxxxxxxxxxx
+GITHUB_TOKEN=pat_xxxxxxxxxxxxx
 
 # Docker Compose environment variables (optional, defaults shown)
 POSTGRES_USER=postgres
@@ -133,7 +133,7 @@ Alternatively, use your own PostgreSQL instance and update `DATABASE_URL` accord
 ### 5. Run Database Migrations
 
 ```bash
-pnpm db:push
+pnpm db:migrate
 ```
 
 This will create all necessary tables and indexes in your database.
@@ -156,7 +156,7 @@ The application will be available at `http://localhost:5173`.
 
 ## Project Structure
 
-```
+```text
 odd-dashboard/
 ├── src/
 │   ├── lib/
@@ -231,11 +231,11 @@ pnpm docker:logs
 # Reset database (fresh start)
 pnpm docker:reset
 
-# Push schema changes to database
-pnpm db:push
-
 # Generate migrations
 pnpm db:generate
+
+# Push schema changes to database
+pnpm db:migrate
 
 # View database in Drizzle Studio
 pnpm db:studio
@@ -295,6 +295,7 @@ Authors are deduplicated using a two-tier approach:
 2. **Fallback**: Email address (case-insensitive, for non-GitHub users)
 
 When syncing commits:
+
 - If GitHub ID exists, match by GitHub ID
 - If no GitHub ID, match by email
 - If no match found, create new author
@@ -437,7 +438,7 @@ For production, ensure:
 - Indexes are in place (run migrations)
 - Regular backups are configured
 
-### Environment Variables
+### Deployment Environment
 
 Set all required environment variables in your deployment platform:
 
@@ -492,6 +493,7 @@ If commits are missing after sync:
 If you see duplicate commits between forks and parents:
 
 1. Run the fork attribution fix script:
+
    ```bash
    pnpm tsx scripts/fix-fork-attribution.ts
    ```
