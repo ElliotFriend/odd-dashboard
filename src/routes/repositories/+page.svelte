@@ -23,6 +23,9 @@
         createdAt: string;
         updatedAt: string;
         lastSyncedAt: string | null;
+        commitCount: number;
+        contributorCount: number;
+        lastCommitDate: string | null;
     }
 
     interface Agency {
@@ -30,15 +33,26 @@
         name: string;
     }
 
+    interface Event {
+        id: number;
+        name: string;
+    }
+
     let repositories = $state<Repository[]>([]);
     let agencies = $state<Agency[]>([]);
+    let events = $state<Event[]>([]);
     let loading = $state(true);
     let error = $state<string | null>(null);
 
     // Filters
     let searchQuery = $state('');
     let selectedAgencyId = $state<number | null>(null);
-    let showForksOnly = $state(false);
+    let selectedEventId = $state<number | null>(null);
+    let excludeForksOnly = $state(false);
+
+    // Sorting
+    let sortBy = $state<'commits' | 'contributors' | 'lastCommitDate' | 'fullName'>('fullName');
+    let sortOrder = $state<'asc' | 'desc'>('asc');
 
     async function loadAgencies() {
         try {
@@ -49,6 +63,18 @@
             }
         } catch (err) {
             console.error('Error loading agencies:', err);
+        }
+    }
+
+    async function loadEvents() {
+        try {
+            const response = await fetch('/api/events');
+            if (response.ok) {
+                const data = await response.json();
+                events = data.data || [];
+            }
+        } catch (err) {
+            console.error('Error loading events:', err);
         }
     }
 
@@ -64,8 +90,17 @@
             if (selectedAgencyId) {
                 params.set('agencyId', selectedAgencyId.toString());
             }
-            if (showForksOnly) {
-                params.set('isFork', 'true');
+            if (selectedEventId) {
+                params.set('eventId', selectedEventId.toString());
+            }
+            if (excludeForksOnly) {
+                params.set('excludeForks', 'true');
+            }
+            if (sortBy) {
+                params.set('sortBy', sortBy);
+            }
+            if (sortOrder) {
+                params.set('sortOrder', sortOrder);
             }
 
             const response = await fetch(`/api/repositories?${params.toString()}`);
@@ -87,14 +122,33 @@
         loadRepositories();
     }
 
+    function handleSortChange(field: typeof sortBy) {
+        if (sortBy === field) {
+            // Toggle sort order if same field
+            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+            // Set new field and default to desc for numeric fields
+            sortBy = field;
+            sortOrder = field === 'fullName' ? 'asc' : 'desc';
+        }
+        loadRepositories();
+    }
+
     function getAgencyName(agencyId: number | null): string {
         if (!agencyId) return 'No agency';
         const agency = agencies.find((a) => a.id === agencyId);
         return agency?.name || 'Unknown';
     }
 
+    function getEventName(eventId: number | null): string {
+        if (!eventId) return 'No event';
+        const event = events.find((e) => e.id === eventId);
+        return event?.name || 'Unknown';
+    }
+
     onMount(() => {
         loadAgencies();
+        loadEvents();
         loadRepositories();
     });
 </script>
@@ -130,7 +184,7 @@
                     <h2 class="text-lg font-semibold">Filters</h2>
                 </div>
 
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <!-- Search -->
                     <div>
                         <label for="search" class="mb-1 block text-sm font-medium text-slate-700">
@@ -169,16 +223,34 @@
                         </select>
                     </div>
 
-                    <!-- Fork Filter -->
+                    <!-- Event Filter -->
+                    <div>
+                        <label for="event" class="mb-1 block text-sm font-medium text-slate-700">
+                            Event
+                        </label>
+                        <select
+                            id="event"
+                            bind:value={selectedEventId}
+                            onchange={handleFilterChange}
+                            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-slate-500 focus:outline-none"
+                        >
+                            <option value={null}>All Events</option>
+                            {#each events as event}
+                                <option value={event.id}>{event.name}</option>
+                            {/each}
+                        </select>
+                    </div>
+
+                    <!-- Exclude Forks Filter -->
                     <div class="flex items-end">
                         <label class="flex cursor-pointer items-center gap-2">
                             <input
                                 type="checkbox"
-                                bind:checked={showForksOnly}
+                                bind:checked={excludeForksOnly}
                                 onchange={handleFilterChange}
                                 class="h-4 w-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
                             />
-                            <span class="text-sm font-medium text-slate-700">Forks only</span>
+                            <span class="text-sm font-medium text-slate-700">Non-forks only</span>
                         </label>
                     </div>
                 </div>
@@ -202,6 +274,57 @@
             icon={Package}
         />
     {:else}
+        <!-- Sorting Controls -->
+        <Card>
+            <CardContent>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-slate-700">Sort by:</span>
+                    <div class="flex gap-2">
+                        <button
+                            onclick={() => handleSortChange('fullName')}
+                            class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+                            class:bg-slate-900={sortBy === 'fullName'}
+                            class:text-white={sortBy === 'fullName'}
+                            class:bg-slate-100={sortBy !== 'fullName'}
+                            class:text-slate-700={sortBy !== 'fullName'}
+                        >
+                            Name {sortBy === 'fullName' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+                        </button>
+                        <button
+                            onclick={() => handleSortChange('commits')}
+                            class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+                            class:bg-slate-900={sortBy === 'commits'}
+                            class:text-white={sortBy === 'commits'}
+                            class:bg-slate-100={sortBy !== 'commits'}
+                            class:text-slate-700={sortBy !== 'commits'}
+                        >
+                            Commits {sortBy === 'commits' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+                        </button>
+                        <button
+                            onclick={() => handleSortChange('contributors')}
+                            class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+                            class:bg-slate-900={sortBy === 'contributors'}
+                            class:text-white={sortBy === 'contributors'}
+                            class:bg-slate-100={sortBy !== 'contributors'}
+                            class:text-slate-700={sortBy !== 'contributors'}
+                        >
+                            Contributors {sortBy === 'contributors' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+                        </button>
+                        <button
+                            onclick={() => handleSortChange('lastCommitDate')}
+                            class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+                            class:bg-slate-900={sortBy === 'lastCommitDate'}
+                            class:text-white={sortBy === 'lastCommitDate'}
+                            class:bg-slate-100={sortBy !== 'lastCommitDate'}
+                            class:text-slate-700={sortBy !== 'lastCommitDate'}
+                        >
+                            Last Commit {sortBy === 'lastCommitDate' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+                        </button>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+
         <!-- Repositories List -->
         <div class="grid gap-4">
             {#each repositories as repo}
@@ -241,6 +364,28 @@
                                             >{getAgencyName(repo.agencyId)}</span
                                         ></span
                                     >
+                                    <span
+                                        >Commits: <span class="font-medium"
+                                            >{repo.commitCount.toLocaleString()}</span
+                                        ></span
+                                    >
+                                    <span
+                                        >Contributors: <span class="font-medium"
+                                            >{repo.contributorCount.toLocaleString()}</span
+                                        ></span
+                                    >
+                                </div>
+
+                                <div class="mt-2 flex flex-wrap gap-4 text-xs text-slate-500">
+                                    {#if repo.lastCommitDate}
+                                        <span
+                                            >Last commit: <span class="font-medium"
+                                                >{formatDate(repo.lastCommitDate)}</span
+                                            ></span
+                                        >
+                                    {:else}
+                                        <span>No commits yet</span>
+                                    {/if}
                                     {#if repo.lastSyncedAt}
                                         <span
                                             >Last synced: <span class="font-medium"
@@ -251,11 +396,6 @@
                                         <span class="text-slate-400">Never synced</span>
                                     {/if}
                                 </div>
-
-                                <p class="mt-2 text-xs text-slate-500">
-                                    Created {formatDate(repo.createdAt)} • Updated
-                                    {formatDate(repo.updatedAt)}
-                                </p>
                             </div>
 
                             <div class="ml-4 flex gap-2">

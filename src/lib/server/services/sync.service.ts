@@ -148,6 +148,34 @@ export async function syncRepositoryCommits(
         throw new Error(`Repository with ID ${repositoryId} not found`);
     }
 
+    // If this is a fork with a parent in the database, sync the parent first
+    // This ensures parent commits are in the database before fork attribution
+    if (repository.isFork && repository.parentRepositoryId) {
+        const [parentRepo] = await db
+            .select()
+            .from(repositories)
+            .where(eq(repositories.id, repository.parentRepositoryId))
+            .limit(1);
+
+        if (parentRepo) {
+            console.log(`Fork detected: ${repository.fullName} -> ${parentRepo.fullName}`);
+            console.log(`Syncing parent repository first...`);
+
+            try {
+                // Sync parent with incremental sync (not initial sync)
+                // This ensures parent has latest commits without refetching everything
+                await syncRepositoryCommits(parentRepo.id, {
+                    initialSync: false,
+                    batchSize,
+                });
+                console.log(`Parent sync completed for ${parentRepo.fullName}`);
+            } catch (error: any) {
+                console.error(`Warning: Failed to sync parent repository: ${error.message}`);
+                // Continue with fork sync even if parent sync fails
+            }
+        }
+    }
+
     // Parse owner and repo from full_name
     const [owner, repo] = repository.fullName.split('/');
     if (!owner || !repo) {

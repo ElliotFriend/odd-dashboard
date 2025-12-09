@@ -1,6 +1,6 @@
-import { eq, and, sql, or, like } from 'drizzle-orm';
+import { eq, and, sql, or, like, desc, asc } from 'drizzle-orm';
 import { db } from '../db';
-import { repositories } from '../db/schema';
+import { repositories, commits, authors, repositoryEvents } from '../db/schema';
 import {
     createRepositorySchema,
     updateRepositorySchema,
@@ -19,8 +19,10 @@ export interface RepositoryFilterOptions {
     agencyId?: number;
     ecosystemId?: number;
     eventId?: number;
-    isFork?: boolean;
+    excludeForks?: boolean; // If true, exclude forks (inverted from isFork)
     search?: string; // Search by full_name
+    sortBy?: 'commits' | 'contributors' | 'lastCommitDate' | 'fullName';
+    sortOrder?: 'asc' | 'desc';
 }
 
 /**
@@ -100,35 +102,127 @@ export async function getRepositoryByFullName(fullName: string) {
 }
 
 /**
- * Get all repositories with optional filtering
+ * Get all repositories with optional filtering, statistics, and sorting
  */
 export async function getAllRepositories(options: RepositoryFilterOptions = {}) {
-    const conditions = [];
+    const {
+        agencyId,
+        eventId,
+        excludeForks = false,
+        search,
+        sortBy = 'fullName',
+        sortOrder = 'asc',
+    } = options;
 
-    if (options.agencyId !== undefined) {
-        conditions.push(eq(repositories.agencyId, options.agencyId));
+    // Build WHERE conditions array for SQL
+    const whereConditions: any[] = [];
+
+    if (agencyId !== undefined) {
+        whereConditions.push(sql`r.agency_id = ${agencyId}`);
     }
 
-    if (options.isFork !== undefined) {
-        conditions.push(eq(repositories.isFork, options.isFork));
+    if (excludeForks) {
+        whereConditions.push(sql`r.is_fork = false`);
     }
 
-    if (options.search) {
-        conditions.push(like(repositories.fullName, `%${options.search}%`));
+    if (search) {
+        whereConditions.push(sql`r.full_name ILIKE ${`%${search}%`}`);
     }
 
-    // Note: ecosystemId and eventId filtering would require joins with junction tables
-    // For now, we'll implement basic filtering. Full filtering can be added later.
-
-    if (conditions.length > 0) {
-        return await db
-            .select()
-            .from(repositories)
-            .where(and(...conditions))
-            .orderBy(repositories.fullName);
+    if (eventId !== undefined) {
+        whereConditions.push(sql`re.event_id = ${eventId}`);
     }
 
-    return await db.select().from(repositories).orderBy(repositories.fullName);
+    // Build WHERE clause
+    const whereClause = whereConditions.length > 0
+        ? sql` WHERE ${sql.join(whereConditions, sql` AND `)}`
+        : sql``;
+
+    // Build ORDER BY clause
+    let orderByClause;
+    switch (sortBy) {
+        case 'commits':
+            orderByClause = sortOrder === 'asc'
+                ? sql`commit_count ASC, r.full_name ASC`
+                : sql`commit_count DESC, r.full_name ASC`;
+            break;
+        case 'contributors':
+            orderByClause = sortOrder === 'asc'
+                ? sql`contributor_count ASC, r.full_name ASC`
+                : sql`contributor_count DESC, r.full_name ASC`;
+            break;
+        case 'lastCommitDate':
+            orderByClause = sortOrder === 'asc'
+                ? sql`last_commit_date ASC NULLS LAST, r.full_name ASC`
+                : sql`last_commit_date DESC NULLS LAST, r.full_name ASC`;
+            break;
+        case 'fullName':
+        default:
+            orderByClause = sortOrder === 'asc'
+                ? sql`r.full_name ASC`
+                : sql`r.full_name DESC`;
+            break;
+    }
+
+    // Build the query with statistics
+    // For event filtering, we use INNER JOIN to only show repos associated with that event
+    const eventJoin = eventId !== undefined
+        ? sql`INNER JOIN repository_events re ON r.id = re.repository_id`
+        : sql``;
+
+    const query = sql`
+        SELECT
+            r.id,
+            r.github_id,
+            r.full_name,
+            r.agency_id,
+            r.is_fork,
+            r.parent_repository_id,
+            r.parent_full_name,
+            r.default_branch,
+            r.is_missing,
+            r.created_at,
+            r.updated_at,
+            r.last_synced_at,
+            COALESCE(stats.commit_count, 0) AS commit_count,
+            COALESCE(stats.contributor_count, 0) AS contributor_count,
+            stats.last_commit_date
+        FROM repositories r
+        ${eventJoin}
+        LEFT JOIN LATERAL (
+            SELECT
+                COUNT(*)::int AS commit_count,
+                COUNT(DISTINCT c.author_id)::int AS contributor_count,
+                MAX(c.commit_date) AS last_commit_date
+            FROM commits c
+            WHERE c.repository_id = r.id
+        ) stats ON true
+        ${whereClause}
+        ORDER BY ${orderByClause}
+    `;
+
+    const result = await db.execute(query);
+
+    // @ts-ignore - rows property exists on execute result
+    const rows = result.rows || result;
+
+    return rows.map((row: any) => ({
+        id: row.id,
+        githubId: Number(row.github_id),
+        fullName: row.full_name,
+        agencyId: row.agency_id,
+        isFork: row.is_fork,
+        parentRepositoryId: row.parent_repository_id,
+        parentFullName: row.parent_full_name,
+        defaultBranch: row.default_branch,
+        isMissing: row.is_missing,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        lastSyncedAt: row.last_synced_at,
+        commitCount: row.commit_count,
+        contributorCount: row.contributor_count,
+        lastCommitDate: row.last_commit_date,
+    }));
 }
 
 /**

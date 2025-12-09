@@ -6,13 +6,16 @@ import { errorResponse, handleError } from '$lib/server/api/errors';
 
 /**
  * GET /api/repositories
- * List all repositories with optional filtering
+ * List all repositories with optional filtering, statistics, and sorting
  */
 export const GET: RequestHandler = async ({ url }) => {
     try {
         const agencyId = url.searchParams.get('agencyId');
-        const isFork = url.searchParams.get('isFork');
+        const eventId = url.searchParams.get('eventId');
+        const excludeForks = url.searchParams.get('excludeForks');
         const search = url.searchParams.get('search');
+        const sortBy = url.searchParams.get('sortBy');
+        const sortOrder = url.searchParams.get('sortOrder');
 
         const filters: any = {};
         if (agencyId) {
@@ -21,11 +24,23 @@ export const GET: RequestHandler = async ({ url }) => {
                 filters.agencyId = id;
             }
         }
-        if (isFork !== null) {
-            filters.isFork = isFork === 'true';
+        if (eventId) {
+            const id = parseInt(eventId, 10);
+            if (!isNaN(id)) {
+                filters.eventId = id;
+            }
+        }
+        if (excludeForks === 'true') {
+            filters.excludeForks = true;
         }
         if (search) {
             filters.search = search;
+        }
+        if (sortBy && ['commits', 'contributors', 'lastCommitDate', 'fullName'].includes(sortBy)) {
+            filters.sortBy = sortBy as 'commits' | 'contributors' | 'lastCommitDate' | 'fullName';
+        }
+        if (sortOrder && ['asc', 'desc'].includes(sortOrder)) {
+            filters.sortOrder = sortOrder as 'asc' | 'desc';
         }
 
         const repositories = await getAllRepositories(filters);
