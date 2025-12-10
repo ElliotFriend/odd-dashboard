@@ -314,12 +314,12 @@ export async function associateRepositoryWithEcosystem(
             ecosystemId: validated.ecosystemId,
         });
 
-        return { success: true };
+        return { success: true, alreadyAssociated: false };
     } catch (error: any) {
         // Handle duplicate key violations gracefully
         if (error.code === '23505') {
             // Already associated, return success
-            return { success: true };
+            return { success: true, alreadyAssociated: true };
         }
         throw error;
     }

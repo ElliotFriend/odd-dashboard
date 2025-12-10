@@ -24,6 +24,7 @@ interface ImportLine {
 interface ImportResult {
     success: number;
     failed: number;
+    alreadyAssociated: number;
     errors: Array<{
         line: number;
         repo_url: string;
@@ -51,6 +52,7 @@ export const POST: RequestHandler = async ({ request }) => {
         const result: ImportResult = {
             success: 0,
             failed: 0,
+            alreadyAssociated: 0,
             errors: [],
         };
 
@@ -145,11 +147,15 @@ export const POST: RequestHandler = async ({ request }) => {
                     }
                 }
 
-                // Associate repository with ecosystem
-                await associateRepositoryWithEcosystem(
+                // Associate repository with ecosystem (handles duplicates gracefully)
+                const association = await associateRepositoryWithEcosystem(
                     repository.id,
                     ecosystem.id,
                 );
+
+                if (association.alreadyAssociated) {
+                    result.alreadyAssociated++;
+                }
 
                 result.success++;
             } catch (error) {

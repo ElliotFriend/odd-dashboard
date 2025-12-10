@@ -48,11 +48,14 @@ export const POST: RequestHandler = async ({ params, request }) => {
             return errorResponse(400, 'ecosystemId is required and must be a number');
         }
 
-        await associateRepositoryWithEcosystem(repositoryId, ecosystemId);
+        const result = await associateRepositoryWithEcosystem(repositoryId, ecosystemId);
 
         return json({
             success: true,
-            message: 'Repository associated with ecosystem',
+            message: result.alreadyAssociated
+                ? 'Repository was already associated with this ecosystem'
+                : 'Repository associated with ecosystem',
+            alreadyAssociated: result.alreadyAssociated,
         });
     } catch (error) {
         return handleError(error);

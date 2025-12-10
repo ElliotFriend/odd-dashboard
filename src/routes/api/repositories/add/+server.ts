@@ -75,46 +75,40 @@ export const POST: RequestHandler = async ({ request }) => {
 
                 // Check if repository already exists
                 let repository = await getRepositoryByFullName(fullName);
+                let wasExisting = false;
 
-                if (repository) {
-                    result.skipped++;
-                    result.results.push({
-                        url,
-                        status: "skipped",
-                        repositoryId: repository.id,
-                        error: "Repository already exists",
-                    });
-                    continue;
-                }
+                if (!repository) {
+                    // Fetch repository details from GitHub API
+                    try {
+                        const githubRepo = await getRepository(owner, repo);
 
-                // Fetch repository details from GitHub API
-                try {
-                    const githubRepo = await getRepository(owner, repo);
-
-                    // Create repository with GitHub details
-                    repository = await createRepository({
-                        githubId: githubRepo.id,
-                        fullName: githubRepo.full_name,
-                        agencyId: null,
-                        isFork: githubRepo.fork,
-                        parentFullName: githubRepo.parent?.full_name || null,
-                        defaultBranch: githubRepo.default_branch || "main",
-                    });
-                } catch (error) {
-                    // Handle repository not found errors
-                    if (error instanceof RepositoryNotFoundError) {
-                        result.failed++;
-                        result.results.push({
-                            url,
-                            status: "failed",
-                            error: "Repository not found or is not accessible (may be deleted or private)",
+                        // Create repository with GitHub details
+                        repository = await createRepository({
+                            githubId: githubRepo.id,
+                            fullName: githubRepo.full_name,
+                            agencyId: null,
+                            isFork: githubRepo.fork,
+                            parentFullName: githubRepo.parent?.full_name || null,
+                            defaultBranch: githubRepo.default_branch || "main",
                         });
-                        continue;
+                    } catch (error) {
+                        // Handle repository not found errors
+                        if (error instanceof RepositoryNotFoundError) {
+                            result.failed++;
+                            result.results.push({
+                                url,
+                                status: "failed",
+                                error: "Repository not found or is not accessible (may be deleted or private)",
+                            });
+                            continue;
+                        }
+                        throw error;
                     }
-                    throw error;
+                } else {
+                    wasExisting = true;
                 }
 
-                // Associate with event if provided
+                // Associate with event if provided (handles duplicates gracefully)
                 if (eventId) {
                     await associateRepositoryWithEvent({
                         repositoryId: repository.id,
@@ -122,11 +116,13 @@ export const POST: RequestHandler = async ({ request }) => {
                     });
                 }
 
-                // Trigger immediate sync
-                await syncRepositoryCommits(repository.id, {
-                    initialSync: true,
-                    batchSize: 1000,
-                });
+                // Trigger immediate sync (skip if repository already existed)
+                if (!wasExisting) {
+                    await syncRepositoryCommits(repository.id, {
+                        initialSync: true,
+                        batchSize: 1000,
+                    });
+                }
 
                 result.success++;
                 result.results.push({
