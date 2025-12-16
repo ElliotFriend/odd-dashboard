@@ -6,7 +6,7 @@ import { errorResponse, handleError } from '$lib/server/api/errors';
 
 /**
  * GET /api/repositories
- * List all repositories with optional filtering, statistics, and sorting
+ * List all repositories with optional filtering, statistics, sorting, and pagination
  */
 export const GET: RequestHandler = async ({ url }) => {
     try {
@@ -16,6 +16,8 @@ export const GET: RequestHandler = async ({ url }) => {
         const search = url.searchParams.get('search');
         const sortBy = url.searchParams.get('sortBy');
         const sortOrder = url.searchParams.get('sortOrder');
+        const limit = url.searchParams.get('limit');
+        const offset = url.searchParams.get('offset');
 
         const filters: any = {};
         if (agencyId) {
@@ -42,9 +44,21 @@ export const GET: RequestHandler = async ({ url }) => {
         if (sortOrder && ['asc', 'desc'].includes(sortOrder)) {
             filters.sortOrder = sortOrder as 'asc' | 'desc';
         }
+        if (limit) {
+            const limitNum = parseInt(limit, 10);
+            if (!isNaN(limitNum) && limitNum > 0) {
+                filters.limit = limitNum;
+            }
+        }
+        if (offset) {
+            const offsetNum = parseInt(offset, 10);
+            if (!isNaN(offsetNum) && offsetNum >= 0) {
+                filters.offset = offsetNum;
+            }
+        }
 
-        const repositories = await getAllRepositories(filters);
-        return json({ data: repositories });
+        const result = await getAllRepositories(filters);
+        return json(result);
     } catch (error: any) {
         return handleError(error);
     }

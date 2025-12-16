@@ -22,6 +22,8 @@ import type { GitHubRepository } from '../github/types';
  * @property {string} [search] - Search term to filter by full_name (case-insensitive)
  * @property {'commits'|'contributors'|'lastCommitDate'|'fullName'} [sortBy] - Field to sort by
  * @property {'asc'|'desc'} [sortOrder] - Sort order
+ * @property {number} [limit] - Maximum number of results to return
+ * @property {number} [offset] - Number of results to skip
  */
 export interface RepositoryFilterOptions {
     agencyId?: number;
@@ -31,6 +33,8 @@ export interface RepositoryFilterOptions {
     search?: string; // Search by full_name
     sortBy?: 'commits' | 'contributors' | 'lastCommitDate' | 'fullName';
     sortOrder?: 'asc' | 'desc';
+    limit?: number;
+    offset?: number;
 }
 
 /**
@@ -139,7 +143,7 @@ export async function getRepositoryByFullName(fullName: string) {
 }
 
 /**
- * Get all repositories with optional filtering, statistics, and sorting.
+ * Get all repositories with optional filtering, statistics, sorting, and pagination.
  *
  * This function returns repositories with aggregated statistics including:
  * - Commit count
@@ -155,19 +159,23 @@ export async function getRepositoryByFullName(fullName: string) {
  * @param {string} [options.search] - Search term for repository name (case-insensitive)
  * @param {string} [options.sortBy='fullName'] - Field to sort by
  * @param {string} [options.sortOrder='asc'] - Sort order
- * @returns {Promise<RepositoryWithStats[]>} Array of repositories with statistics
+ * @param {number} [options.limit] - Maximum number of results to return
+ * @param {number} [options.offset=0] - Number of results to skip
+ * @returns {Promise<{data: RepositoryWithStats[], total: number}>} Repositories with total count
  *
  * @example
- * // Get non-fork repositories sorted by commits
- * const repos = await getAllRepositories({
+ * // Get non-fork repositories sorted by commits with pagination
+ * const result = await getAllRepositories({
  *   excludeForks: true,
  *   sortBy: 'commits',
- *   sortOrder: 'desc'
+ *   sortOrder: 'desc',
+ *   limit: 100,
+ *   offset: 0
  * });
  *
  * @example
  * // Search for repositories by name
- * const repos = await getAllRepositories({
+ * const result = await getAllRepositories({
  *   search: 'stellar',
  *   agencyId: 1
  * });
@@ -180,6 +188,8 @@ export async function getAllRepositories(options: RepositoryFilterOptions = {}) 
         search,
         sortBy = 'fullName',
         sortOrder = 'asc',
+        limit,
+        offset = 0,
     } = options;
 
     // Build WHERE conditions array for SQL
@@ -238,6 +248,24 @@ export async function getAllRepositories(options: RepositoryFilterOptions = {}) 
         ? sql`INNER JOIN repository_events re ON r.id = re.repository_id`
         : sql``;
 
+    // Get total count first
+    const countQuery = sql`
+        SELECT COUNT(*)::int as total
+        FROM repositories r
+        ${eventJoin}
+        ${whereClause}
+    `;
+
+    const countResult = await db.execute(countQuery);
+    // @ts-ignore - rows property exists on execute result
+    const totalRows = countResult.rows || countResult;
+    const total = totalRows[0]?.total || 0;
+
+    // Build pagination clause
+    const paginationClause = limit !== undefined
+        ? sql` LIMIT ${limit} OFFSET ${offset}`
+        : sql``;
+
     const query = sql`
         SELECT
             r.id,
@@ -267,6 +295,7 @@ export async function getAllRepositories(options: RepositoryFilterOptions = {}) 
         ) stats ON true
         ${whereClause}
         ORDER BY ${orderByClause}
+        ${paginationClause}
     `;
 
     const result = await db.execute(query);
@@ -274,7 +303,7 @@ export async function getAllRepositories(options: RepositoryFilterOptions = {}) 
     // @ts-ignore - rows property exists on execute result
     const rows = result.rows || result;
 
-    return rows.map((row: any) => ({
+    const data = rows.map((row: any) => ({
         id: row.id,
         githubId: Number(row.github_id),
         fullName: row.full_name,
@@ -291,6 +320,8 @@ export async function getAllRepositories(options: RepositoryFilterOptions = {}) 
         contributorCount: row.contributor_count,
         lastCommitDate: row.last_commit_date,
     }));
+
+    return { data, total };
 }
 
 /**

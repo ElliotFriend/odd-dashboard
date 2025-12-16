@@ -10,6 +10,7 @@
     import ErrorAlert from '$lib/components/ErrorAlert.svelte';
     import EmptyState from '$lib/components/EmptyState.svelte';
     import SkeletonLoader from '$lib/components/SkeletonLoader.svelte';
+    import Pagination from '$lib/components/ui/pagination.svelte';
 
     interface Repository {
         id: number;
@@ -43,6 +44,7 @@
     let events = $state<Event[]>([]);
     let loading = $state(true);
     let error = $state<string | null>(null);
+    let total = $state(0);
 
     // Filters
     let searchQuery = $state('');
@@ -53,6 +55,10 @@
     // Sorting
     let sortBy = $state<'commits' | 'contributors' | 'lastCommitDate' | 'fullName'>('fullName');
     let sortOrder = $state<'asc' | 'desc'>('asc');
+
+    // Pagination
+    let currentPage = $state(1);
+    let pageSize = $state(100);
 
     async function loadAgencies() {
         try {
@@ -102,14 +108,18 @@
             if (sortOrder) {
                 params.set('sortOrder', sortOrder);
             }
+            // Add pagination parameters
+            params.set('limit', pageSize.toString());
+            params.set('offset', ((currentPage - 1) * pageSize).toString());
 
             const response = await fetch(`/api/repositories?${params.toString()}`);
             if (!response.ok) {
                 throw new Error('Failed to load repositories');
             }
 
-            const data = await response.json();
-            repositories = data.data || [];
+            const result = await response.json();
+            repositories = result.data || [];
+            total = result.total || 0;
         } catch (err: any) {
             error = err.message || 'Failed to load repositories';
             console.error('Error loading repositories:', err);
@@ -119,6 +129,8 @@
     }
 
     function handleFilterChange() {
+        // Reset to first page when filters change
+        currentPage = 1;
         loadRepositories();
     }
 
@@ -131,6 +143,19 @@
             sortBy = field;
             sortOrder = field === 'fullName' ? 'asc' : 'desc';
         }
+        // Reset to first page when sorting changes
+        currentPage = 1;
+        loadRepositories();
+    }
+
+    function handlePageChange(page: number) {
+        currentPage = page;
+        loadRepositories();
+    }
+
+    function handlePageSizeChange(newSize: number) {
+        pageSize = newSize;
+        currentPage = 1; // Reset to first page when page size changes
         loadRepositories();
     }
 
@@ -437,5 +462,20 @@
                 </Card>
             {/if}
         </div>
+
+        <!-- Pagination -->
+        {#if total > 0}
+            <Card>
+                <CardContent>
+                    <Pagination
+                        currentPage={currentPage}
+                        pageSize={pageSize}
+                        total={total}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                    />
+                </CardContent>
+            </Card>
+        {/if}
     {/if}
 </div>
