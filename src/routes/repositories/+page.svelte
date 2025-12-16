@@ -4,7 +4,7 @@
     import Button from '$lib/components/ui/button.svelte';
     import Card from '$lib/components/ui/card.svelte';
     import CardContent from '$lib/components/ui/card-content.svelte';
-    import { GitBranch, Search, Filter, ExternalLink, Package, Upload, Plus, RefreshCw } from '@lucide/svelte';
+    import { GitBranch, Search, Funnel, ExternalLink, Package, Upload, Plus, RefreshCw } from '@lucide/svelte';
     import { formatDate } from '$lib/utils/date';
     import LoadingState from '$lib/components/LoadingState.svelte';
     import ErrorAlert from '$lib/components/ErrorAlert.svelte';
@@ -205,7 +205,7 @@
         <CardContent>
             <div class="space-y-4">
                 <div class="flex items-center gap-2">
-                    <Filter class="h-5 w-5 text-slate-500" />
+                    <Funnel class="h-5 w-5 text-slate-500" />
                     <h2 class="text-lg font-semibold">Filters</h2>
                 </div>
 

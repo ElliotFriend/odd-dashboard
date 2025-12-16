@@ -12,7 +12,7 @@
         RefreshCw,
         Calendar,
         User,
-        GitCommit,
+        GitCommitHorizontal,
         ArrowLeft,
         FolderTree,
         Plus,
@@ -596,7 +596,7 @@
                                     {/if}
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <GitCommit class="h-4 w-4 text-slate-500" />
+                                    <GitCommitHorizontal class="h-4 w-4 text-slate-500" />
                                     <span class="font-medium text-slate-900">
                                         {contributor.commitCount}
                                     </span>
@@ -612,7 +612,7 @@
         <Card>
             <CardHeader>
                 <div class="flex items-center gap-2">
-                    <GitCommit class="h-5 w-5 text-slate-500" />
+                    <GitCommitHorizontal class="h-5 w-5 text-slate-500" />
                     <h2 class="text-lg font-semibold">Commits</h2>
                     <span class="text-sm text-slate-500">({commits.length})</span>
                 </div>

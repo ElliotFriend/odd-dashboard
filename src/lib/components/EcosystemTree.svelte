@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { ChevronRight, ChevronDown, FolderTree, Edit2, Trash2, Plus } from '@lucide/svelte';
+    import { ChevronRight, ChevronDown, FolderTree, Pencil, Trash2, Plus } from '@lucide/svelte';
     import Button from '$lib/components/ui/button.svelte';
     import { formatDate } from '$lib/utils/date';
 
@@ -123,7 +123,7 @@
                         disabled={isEditingThis}
                         title="Edit ecosystem"
                     >
-                        <Edit2 class="h-4 w-4" />
+                        <Pencil class="h-4 w-4" />
                     </Button>
                 {/if}
                 {#if onDelete}

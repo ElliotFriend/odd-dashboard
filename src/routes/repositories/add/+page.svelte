@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import { onMount } from "svelte";
-    import { Plus, ArrowLeft, GitBranch, CheckCircle, XCircle, AlertCircle } from "@lucide/svelte";
+    import { Plus, ArrowLeft, GitBranch, CircleCheck, CircleX, CircleAlert } from "@lucide/svelte";
     import Card from "$lib/components/ui/card.svelte";
     import CardHeader from "$lib/components/ui/card-header.svelte";
     import CardContent from "$lib/components/ui/card-content.svelte";
@@ -256,11 +256,11 @@
             <CardHeader>
                 <div class="flex items-center gap-2">
                     {#if result.failed === 0 && result.skipped === 0}
-                        <CheckCircle class="h-5 w-5 text-green-600" />
+                        <CircleCheck class="h-5 w-5 text-green-600" />
                     {:else if result.success > 0}
-                        <AlertCircle class="h-5 w-5 text-orange-600" />
+                        <CircleAlert class="h-5 w-5 text-orange-600" />
                     {:else}
-                        <XCircle class="h-5 w-5 text-red-600" />
+                        <CircleX class="h-5 w-5 text-red-600" />
                     {/if}
                     <h2 class="text-lg font-semibold">Results</h2>
                 </div>
@@ -335,11 +335,11 @@
                                         <div class="flex-1">
                                             <div class="flex items-center gap-2">
                                                 {#if item.status === "success"}
-                                                    <CheckCircle class="h-4 w-4 text-green-600" />
+                                                    <CircleCheck class="h-4 w-4 text-green-600" />
                                                 {:else if item.status === "skipped"}
-                                                    <AlertCircle class="h-4 w-4 text-orange-600" />
+                                                    <CircleAlert class="h-4 w-4 text-orange-600" />
                                                 {:else}
-                                                    <XCircle class="h-4 w-4 text-red-600" />
+                                                    <CircleX class="h-4 w-4 text-red-600" />
                                                 {/if}
                                                 <span
                                                     class="font-medium"

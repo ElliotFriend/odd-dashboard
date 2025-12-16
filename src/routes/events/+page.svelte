@@ -4,7 +4,7 @@
     import Card from '$lib/components/ui/card.svelte';
     import CardHeader from '$lib/components/ui/card-header.svelte';
     import CardContent from '$lib/components/ui/card-content.svelte';
-    import { Calendar, Plus, Edit2, Trash2, X, Save, Users, GitBranch } from '@lucide/svelte';
+    import { Calendar, Plus, Pencil, Trash2, X, Save } from '@lucide/svelte';
     import { formatDate, formatDateRange } from '$lib/utils/date';
 
     interface Event {
@@ -445,7 +445,7 @@
                                         onclick={() => startEdit(event)}
                                         disabled={creating || editingId !== null}
                                     >
-                                        <Edit2 class="h-4 w-4" />
+                                        <Pencil class="h-4 w-4" />
                                     </Button>
                                     <Button
                                         variant="outline"

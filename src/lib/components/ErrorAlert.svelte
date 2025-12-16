@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { AlertCircle, X } from "@lucide/svelte";
+    import { CircleAlert, X } from "@lucide/svelte";
 
     interface Props {
         title?: string;
@@ -33,7 +33,7 @@
         role="alert"
     >
         <div class="flex items-start gap-3">
-            <AlertCircle class="h-5 w-5 flex-shrink-0 text-destructive" />
+            <CircleAlert class="h-5 w-5 flex-shrink-0 text-destructive" />
             <div class="flex-1">
                 <h3 class="font-semibold text-destructive">{title}</h3>
                 <p class="mt-1 text-sm text-destructive/90">{message}</p>

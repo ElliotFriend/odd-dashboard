@@ -1,6 +1,6 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
-    import { Upload, FileText, AlertCircle, CheckCircle, ArrowLeft } from "@lucide/svelte";
+    import { Upload, FileText, CircleAlert, CircleCheck, ArrowLeft } from "@lucide/svelte";
     import Card from "$lib/components/ui/card.svelte";
     import CardHeader from "$lib/components/ui/card-header.svelte";
     import CardContent from "$lib/components/ui/card-content.svelte";
@@ -223,9 +223,9 @@
             <CardHeader>
                 <div class="flex items-center gap-2">
                     {#if result.failed === 0}
-                        <CheckCircle class="h-5 w-5 text-green-600" />
+                        <CircleCheck class="h-5 w-5 text-green-600" />
                     {:else}
-                        <AlertCircle class="h-5 w-5 text-orange-600" />
+                        <CircleAlert class="h-5 w-5 text-orange-600" />
                     {/if}
                     <h2 class="text-lg font-semibold">Import Results</h2>
                 </div>

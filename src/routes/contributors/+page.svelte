@@ -4,7 +4,7 @@
     import Card from '$lib/components/ui/card.svelte';
     import CardHeader from '$lib/components/ui/card-header.svelte';
     import CardContent from '$lib/components/ui/card-content.svelte';
-    import { Users, Calendar, GitCommit, Filter, TrendingUp } from '@lucide/svelte';
+    import { Users, Calendar, GitCommitHorizontal, Funnel, TrendingUp } from '@lucide/svelte';
     import { formatDate } from '$lib/utils/date';
     import LoadingState from '$lib/components/LoadingState.svelte';
     import ErrorAlert from '$lib/components/ErrorAlert.svelte';
@@ -105,7 +105,7 @@
         <CardContent>
             <div class="space-y-4">
                 <div class="flex items-center gap-2">
-                    <Filter class="h-5 w-5 text-slate-500" />
+                    <Funnel class="h-5 w-5 text-slate-500" />
                     <h2 class="text-lg font-semibold">Filters</h2>
                 </div>
 
@@ -234,7 +234,7 @@
                                     {/if}
                                 </div>
                                 <div class="ml-4 flex items-center gap-2">
-                                    <GitCommit class="h-5 w-5 text-slate-500" />
+                                    <GitCommitHorizontal class="h-5 w-5 text-slate-500" />
                                     <span class="text-lg font-bold text-slate-900">
                                         {contributor.commitCount}
                                     </span>

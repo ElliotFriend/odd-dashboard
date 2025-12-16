@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { GitBranch, Users, GitCommit, Package, Calendar, Building } from '@lucide/svelte';
+    import { GitBranch, Users, GitCommitHorizontal, Package, Calendar, Building } from '@lucide/svelte';
     import { formatDate } from '$lib/utils/date';
     import ContributionChart from '$lib/components/charts/ContributionChart.svelte';
     import ActivityTimeline from '$lib/components/charts/ActivityTimeline.svelte';
@@ -112,7 +112,7 @@
                 title="Commits"
                 value={stats.totalCommits}
                 description="Total commits recorded"
-                icon={GitCommit}
+                icon={GitCommitHorizontal}
             />
 
             <StatisticsCard
