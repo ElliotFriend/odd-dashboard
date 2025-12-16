@@ -24,7 +24,8 @@
         "db:seed": "tsx scripts/seed-ecosystems.ts",
         "db:wipe": "tsx scripts/wipe-database.ts",
         "db:reset": "tsx scripts/reset-database.ts",
-        "db:link-forks": "tsx scripts/link-fork-parents.ts"
+        "db:link-forks": "tsx scripts/link-fork-parents.ts",
+        "db:sync-parents": "tsx scripts/sync-parent-repositories.ts"
     },
     "devDependencies": {
         "@sveltejs/adapter-auto": "^7.0.0",
