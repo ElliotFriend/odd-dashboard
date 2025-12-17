@@ -24,6 +24,10 @@
         name: '',
         description: '',
     });
+    let repoUrls = $state('');
+    let savingRepos = $state(false);
+    let repoSuccessMessage = $state<string | null>(null);
+    let repoError = $state<string | null>(null);
 
     async function loadAgencies() {
         try {
@@ -62,6 +66,49 @@
         editingId = null;
         creating = false;
         formData = { name: '', description: '' };
+        repoUrls = '';
+        repoSuccessMessage = null;
+        repoError = null;
+    }
+
+    async function associateRepositories() {
+        if (!editingId) return;
+
+        try {
+            savingRepos = true;
+            repoError = null;
+            repoSuccessMessage = null;
+
+            // Parse URLs from textarea (one per line, trim whitespace)
+            const urls = repoUrls
+                .split('\n')
+                .map((u) => u.trim())
+                .filter((u) => u.length > 0);
+
+            const response = await fetch(`/api/agencies/${editingId}/repositories`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ urls }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to associate repositories');
+            }
+
+            const data = await response.json();
+            repoSuccessMessage = `Successfully processed ${urls.length} URL(s). Associated: ${data.associated}, Created: ${data.created}, Errors: ${data.errors}`;
+
+            // Clear the textarea after successful save
+            repoUrls = '';
+        } catch (err: any) {
+            repoError = err.message || 'Failed to associate repositories';
+            console.error('Error associating repositories:', err);
+        } finally {
+            savingRepos = false;
+        }
     }
 
     async function saveAgency() {
@@ -259,6 +306,57 @@
                                     </Button>
                                 </div>
                             </form>
+
+                            <!-- Bulk Repository Association -->
+                            <div class="mt-6 border-t border-slate-200 pt-6">
+                                <h3 class="mb-4 text-base font-semibold text-slate-900">
+                                    Associate Repositories
+                                </h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label
+                                            for="repo-urls-{agency.id}"
+                                            class="mb-2 block text-sm font-medium text-slate-700"
+                                        >
+                                            Repository URLs (one per line)
+                                        </label>
+                                        <textarea
+                                            id="repo-urls-{agency.id}"
+                                            bind:value={repoUrls}
+                                            rows={10}
+                                            placeholder="https://github.com/owner/repo1
+https://github.com/owner/repo2
+https://github.com/owner/repo3"
+                                            class="w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                        />
+                                        <p class="mt-2 text-sm text-slate-500">
+                                            Paste GitHub repository URLs. Each repository will be fetched from GitHub and associated with this agency.
+                                        </p>
+                                    </div>
+
+                                    {#if repoSuccessMessage}
+                                        <div class="rounded-md bg-green-50 p-4">
+                                            <p class="text-sm font-medium text-green-800">{repoSuccessMessage}</p>
+                                        </div>
+                                    {/if}
+
+                                    {#if repoError}
+                                        <div class="rounded-md bg-red-50 p-4">
+                                            <p class="text-sm font-medium text-red-800">{repoError}</p>
+                                        </div>
+                                    {/if}
+
+                                    <Button onclick={associateRepositories} disabled={savingRepos || !repoUrls.trim()}>
+                                        {#if savingRepos}
+                                            <Save class="mr-2 h-4 w-4 animate-spin" />
+                                            Processing...
+                                        {:else}
+                                            <Save class="mr-2 h-4 w-4" />
+                                            Associate Repositories
+                                        {/if}
+                                    </Button>
+                                </div>
+                            </div>
                         </CardContent>
                     {:else}
                         <CardContent>
