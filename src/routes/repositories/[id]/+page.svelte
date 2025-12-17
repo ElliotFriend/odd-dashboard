@@ -17,6 +17,7 @@
         FolderTree,
         Plus,
         X,
+        Trash2,
     } from '@lucide/svelte';
     import { formatDate, formatDateTime } from '$lib/utils/date';
 
@@ -82,6 +83,7 @@
     let authors = $state<Map<number, Author>>(new Map());
     let loading = $state(true);
     let syncing = $state(false);
+    let deleting = $state(false);
     let error = $state<string | null>(null);
 
     // Ecosystem management
@@ -315,6 +317,38 @@
         }
     }
 
+    async function deleteRepositoryHandler() {
+        if (!repository) return;
+
+        const confirmed = confirm(
+            `Are you sure you want to delete "${repository.fullName}"? This will permanently delete the repository and all its commits. This action cannot be undone.`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            deleting = true;
+            error = null;
+
+            const response = await fetch(`/api/repositories/${repositoryId}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to delete repository');
+            }
+
+            // Redirect to repositories list after successful deletion
+            goto('/repositories');
+        } catch (err: any) {
+            error = err.message || 'Failed to delete repository';
+            console.error('Error deleting repository:', err);
+        } finally {
+            deleting = false;
+        }
+    }
+
     onMount(async () => {
         await loadRepository();
         if (repository) {
@@ -386,7 +420,7 @@
             </div>
 
             <div class="flex gap-2">
-                <Button variant="outline" onclick={syncRepository} disabled={syncing}>
+                <Button variant="outline" onclick={syncRepository} disabled={syncing || deleting}>
                     <RefreshCw class="mr-2 h-4 w-4 {syncing ? 'animate-spin' : ''}" />
                     {syncing ? 'Syncing...' : 'Sync Commits'}
                 </Button>
@@ -400,6 +434,15 @@
                         View on GitHub
                     </Button>
                 </a>
+                <Button
+                    variant="outline"
+                    onclick={deleteRepositoryHandler}
+                    disabled={syncing || deleting}
+                    class="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                    <Trash2 class="mr-2 h-4 w-4" />
+                    {deleting ? 'Deleting...' : 'Delete'}
+                </Button>
             </div>
         </div>
 
