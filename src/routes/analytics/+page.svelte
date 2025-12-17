@@ -10,6 +10,7 @@
 
     interface TopAuthorByCommits {
         authorId: number;
+        username: string | null;
         name: string;
         email: string;
         commitCount: number;
@@ -17,6 +18,7 @@
 
     interface TopAuthorByRepos {
         authorId: number;
+        username: string | null;
         name: string;
         email: string;
         repoCount: number;
@@ -247,7 +249,7 @@
                                                 href="/contributors/{author.authorId}"
                                                 class="font-medium text-slate-900 hover:text-slate-600"
                                             >
-                                                {author.name}
+                                                {author.username || author.name}
                                             </a>
                                             <p class="text-xs text-slate-500">{author.email}</p>
                                         </div>
@@ -286,7 +288,7 @@
                                                 href="/contributors/{author.authorId}"
                                                 class="font-medium text-slate-900 hover:text-slate-600"
                                             >
-                                                {author.name}
+                                                {author.username || author.name}
                                             </a>
                                             <p class="text-xs text-slate-500">{author.email}</p>
                                         </div>

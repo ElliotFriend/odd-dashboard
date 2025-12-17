@@ -9,6 +9,7 @@ export interface DateRange {
 
 export interface TopAuthorByCommits {
     authorId: number;
+    username: string | null;
     name: string;
     email: string;
     commitCount: number;
@@ -16,6 +17,7 @@ export interface TopAuthorByCommits {
 
 export interface TopAuthorByRepos {
     authorId: number;
+    username: string | null;
     name: string;
     email: string;
     repoCount: number;
@@ -58,6 +60,7 @@ export async function getAnalytics(
     const topAuthorsByCommitsQuery = sql`
         SELECT
             a.id as author_id,
+            a.username,
             a.name,
             a.email,
             COUNT(c.id)::int as commit_count
@@ -68,7 +71,7 @@ export async function getAnalytics(
           AND c.commit_date <= ${endDate}::timestamp
           ${sdfEmployeeFilter}
           ${agencyFilter}
-        GROUP BY a.id, a.name, a.email
+        GROUP BY a.id, a.username, a.name, a.email
         ORDER BY commit_count DESC
         LIMIT ${limit}
     `;
@@ -78,6 +81,7 @@ export async function getAnalytics(
     const topAuthorsByCommitsRows = topAuthorsByCommitsResult.rows || topAuthorsByCommitsResult;
     const topAuthorsByCommits = topAuthorsByCommitsRows.map((row: any) => ({
         authorId: row.author_id,
+        username: row.username,
         name: row.name,
         email: row.email,
         commitCount: row.commit_count,
@@ -87,6 +91,7 @@ export async function getAnalytics(
     const topAuthorsByReposQuery = sql`
         SELECT
             a.id as author_id,
+            a.username,
             a.name,
             a.email,
             COUNT(DISTINCT c.repository_id)::int as repo_count
@@ -97,7 +102,7 @@ export async function getAnalytics(
           AND c.commit_date <= ${endDate}::timestamp
           ${sdfEmployeeFilter}
           ${agencyFilter}
-        GROUP BY a.id, a.name, a.email
+        GROUP BY a.id, a.username, a.name, a.email
         ORDER BY repo_count DESC
         LIMIT ${limit}
     `;
@@ -107,6 +112,7 @@ export async function getAnalytics(
     const topAuthorsByReposRows = topAuthorsByReposResult.rows || topAuthorsByReposResult;
     const topAuthorsByRepos = topAuthorsByReposRows.map((row: any) => ({
         authorId: row.author_id,
+        username: row.username,
         name: row.name,
         email: row.email,
         repoCount: row.repo_count,
