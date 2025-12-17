@@ -5,7 +5,7 @@
     import './layout.css';
     import favicon from '$lib/assets/favicon.svg';
     import Button from '$lib/components/ui/button.svelte';
-    import { House, GitBranch, Users, FolderTree, Building2, Calendar } from '@lucide/svelte';
+    import { House, GitBranch, Users, FolderTree, Building2, Calendar, TrendingUp } from '@lucide/svelte';
     import { setupChartJS } from '$lib/utils/chart-setup';
 
     let { children } = $props();
@@ -17,6 +17,7 @@
 
     const navigation = [
         { name: 'Dashboard', href: '/', icon: House },
+        { name: 'Analytics', href: '/analytics', icon: TrendingUp },
         { name: 'Repositories', href: '/repositories', icon: GitBranch },
         { name: 'Contributors', href: '/contributors', icon: Users },
         { name: 'Ecosystems', href: '/ecosystems', icon: FolderTree },
