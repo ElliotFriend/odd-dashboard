@@ -56,6 +56,7 @@
     let startDate = $state(thirtyDaysAgo);
     let endDate = $state(today);
     let limit = $state(25); // Default to top 25
+    let includeSdfEmployees = $state(false); // Default to excluding SDF employees
 
     const limitOptions = [10, 25, 50, 100];
 
@@ -67,7 +68,8 @@
             const params = new URLSearchParams({
                 startDate,
                 endDate,
-                limit: limit.toString()
+                limit: limit.toString(),
+                includeSdfEmployees: includeSdfEmployees.toString()
             });
 
             const response = await fetch(`/api/analytics?${params.toString()}`);
@@ -150,6 +152,18 @@
                             <option value={option}>{option}</option>
                         {/each}
                     </select>
+                </div>
+                <div class="flex items-center gap-2 pb-2">
+                    <input
+                        id="include-sdf"
+                        type="checkbox"
+                        bind:checked={includeSdfEmployees}
+                        onchange={loadAnalytics}
+                        class="h-4 w-4 rounded border-slate-300 text-slate-600 focus:ring-2 focus:ring-slate-500"
+                    />
+                    <label for="include-sdf" class="text-sm font-medium text-slate-700">
+                        Include SDF Employees
+                    </label>
                 </div>
                 <Button onclick={loadAnalytics} variant="outline">
                     <TrendingUp class="mr-2 h-4 w-4" />

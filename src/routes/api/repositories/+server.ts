@@ -18,6 +18,7 @@ export const GET: RequestHandler = async ({ url }) => {
         const sortOrder = url.searchParams.get('sortOrder');
         const limit = url.searchParams.get('limit');
         const offset = url.searchParams.get('offset');
+        const includeSdfEmployees = url.searchParams.get('includeSdfEmployees');
 
         const filters: any = {};
         if (agencyId) {
@@ -55,6 +56,9 @@ export const GET: RequestHandler = async ({ url }) => {
             if (!isNaN(offsetNum) && offsetNum >= 0) {
                 filters.offset = offsetNum;
             }
+        }
+        if (includeSdfEmployees === 'true') {
+            filters.includeSdfEmployees = true;
         }
 
         const result = await getAllRepositories(filters);

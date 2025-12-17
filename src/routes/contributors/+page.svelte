@@ -35,6 +35,7 @@
     let startDate = $state<string>('');
     let endDate = $state<string>('');
     let selectedAgencyId = $state<number | null>(null);
+    let includeSdfEmployees = $state(false); // Default to excluding SDF employees
 
     async function loadAgencies() {
         try {
@@ -67,6 +68,9 @@
             params.set('endDate', endDate);
             if (selectedAgencyId) {
                 params.set('agencyId', selectedAgencyId.toString());
+            }
+            if (includeSdfEmployees) {
+                params.set('includeSdfEmployees', 'true');
             }
 
             const response = await fetch(`/api/contributors?${params.toString()}`);
@@ -158,6 +162,20 @@
                             {/each}
                         </select>
                     </div>
+                </div>
+
+                <!-- SDF Employees Filter -->
+                <div class="mt-4 flex items-center gap-2">
+                    <input
+                        id="include-sdf"
+                        type="checkbox"
+                        bind:checked={includeSdfEmployees}
+                        onchange={handleFilterChange}
+                        class="h-4 w-4 rounded border-slate-300 text-slate-600 focus:ring-2 focus:ring-slate-500"
+                    />
+                    <label for="include-sdf" class="text-sm font-medium text-slate-700">
+                        Include SDF Employees
+                    </label>
                 </div>
             </div>
         </CardContent>

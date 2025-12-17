@@ -47,8 +47,11 @@ export interface AnalyticsData {
 export async function getAnalytics(
     startDate: string,
     endDate: string,
-    limit: number = 10
+    limit: number = 10,
+    includeSdfEmployees: boolean = false
 ): Promise<AnalyticsData> {
+    const sdfEmployeeFilter = includeSdfEmployees ? sql`` : sql`AND a.is_sdf_employee = false`;
+
     // Top authors by number of commits
     const topAuthorsByCommitsQuery = sql`
         SELECT
@@ -60,6 +63,7 @@ export async function getAnalytics(
         INNER JOIN commits c ON a.id = c.author_id
         WHERE c.commit_date >= ${startDate}::timestamp
           AND c.commit_date <= ${endDate}::timestamp
+          ${sdfEmployeeFilter}
         GROUP BY a.id, a.name, a.email
         ORDER BY commit_count DESC
         LIMIT ${limit}
@@ -86,6 +90,7 @@ export async function getAnalytics(
         INNER JOIN commits c ON a.id = c.author_id
         WHERE c.commit_date >= ${startDate}::timestamp
           AND c.commit_date <= ${endDate}::timestamp
+          ${sdfEmployeeFilter}
         GROUP BY a.id, a.name, a.email
         ORDER BY repo_count DESC
         LIMIT ${limit}
@@ -101,7 +106,7 @@ export async function getAnalytics(
         repoCount: row.repo_count,
     }));
 
-    // Top repositories by number of commits
+    // Top repositories by number of commits (excluding SDF employees)
     const topReposByCommitsQuery = sql`
         SELECT
             r.id as repository_id,
@@ -109,8 +114,10 @@ export async function getAnalytics(
             COUNT(c.id)::int as commit_count
         FROM repositories r
         INNER JOIN commits c ON r.id = c.repository_id
+        INNER JOIN authors a ON c.author_id = a.id
         WHERE c.commit_date >= ${startDate}::timestamp
           AND c.commit_date <= ${endDate}::timestamp
+          ${sdfEmployeeFilter}
         GROUP BY r.id, r.full_name
         ORDER BY commit_count DESC
         LIMIT ${limit}
@@ -125,7 +132,7 @@ export async function getAnalytics(
         commitCount: row.commit_count,
     }));
 
-    // Top repositories by number of unique authors
+    // Top repositories by number of unique authors (excluding SDF employees)
     const topReposByAuthorsQuery = sql`
         SELECT
             r.id as repository_id,
@@ -133,8 +140,10 @@ export async function getAnalytics(
             COUNT(DISTINCT c.author_id)::int as author_count
         FROM repositories r
         INNER JOIN commits c ON r.id = c.repository_id
+        INNER JOIN authors a ON c.author_id = a.id
         WHERE c.commit_date >= ${startDate}::timestamp
           AND c.commit_date <= ${endDate}::timestamp
+          ${sdfEmployeeFilter}
         GROUP BY r.id, r.full_name
         ORDER BY author_count DESC
         LIMIT ${limit}

@@ -51,6 +51,7 @@
     let selectedAgencyId = $state<number | null>(null);
     let selectedEventId = $state<number | null>(null);
     let excludeForksOnly = $state(false);
+    let includeSdfEmployees = $state(false); // Default to excluding SDF employees
 
     // Sorting
     let sortBy = $state<'commits' | 'contributors' | 'lastCommitDate' | 'fullName'>('fullName');
@@ -101,6 +102,9 @@
             }
             if (excludeForksOnly) {
                 params.set('excludeForks', 'true');
+            }
+            if (includeSdfEmployees) {
+                params.set('includeSdfEmployees', 'true');
             }
             if (sortBy) {
                 params.set('sortBy', sortBy);
@@ -266,8 +270,8 @@
                         </select>
                     </div>
 
-                    <!-- Exclude Forks Filter -->
-                    <div class="flex items-end">
+                    <!-- Checkboxes -->
+                    <div class="flex flex-col items-start justify-end gap-2">
                         <label class="flex cursor-pointer items-center gap-2">
                             <input
                                 type="checkbox"
@@ -276,6 +280,15 @@
                                 class="h-4 w-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
                             />
                             <span class="text-sm font-medium text-slate-700">Non-forks only</span>
+                        </label>
+                        <label class="flex cursor-pointer items-center gap-2">
+                            <input
+                                type="checkbox"
+                                bind:checked={includeSdfEmployees}
+                                onchange={handleFilterChange}
+                                class="h-4 w-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
+                            />
+                            <span class="text-sm font-medium text-slate-700">Include SDF Employees</span>
                         </label>
                     </div>
                 </div>

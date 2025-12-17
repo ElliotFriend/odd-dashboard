@@ -16,6 +16,7 @@ export const GET: RequestHandler = async ({ url }) => {
         const ecosystemId = url.searchParams.get('ecosystemId');
         const agencyId = url.searchParams.get('agencyId');
         const eventId = url.searchParams.get('eventId');
+        const includeSdfEmployees = url.searchParams.get('includeSdfEmployees');
 
         if (!startDate || !endDate) {
             return errorResponse(400, 'startDate and endDate are required');
@@ -27,6 +28,8 @@ export const GET: RequestHandler = async ({ url }) => {
         if (isNaN(start.getTime()) || isNaN(end.getTime())) {
             return errorResponse(400, 'Invalid date format');
         }
+
+        const includeSdf = includeSdfEmployees === 'true';
 
         // Build conditions for filtering
         const conditions = [gte(commits.commitDate, start), lte(commits.commitDate, end)];
@@ -42,7 +45,14 @@ export const GET: RequestHandler = async ({ url }) => {
                     })
                     .from(commits)
                     .innerJoin(repositories, eq(commits.repositoryId, repositories.id))
-                    .where(and(...conditions, eq(repositories.agencyId, agId)))
+                    .innerJoin(authors, eq(commits.authorId, authors.id))
+                    .where(
+                        and(
+                            ...conditions,
+                            eq(repositories.agencyId, agId),
+                            includeSdf ? undefined : eq(authors.isSdfEmployee, false)
+                        )
+                    )
                     .groupBy(commits.authorId);
 
                 // Get author details
@@ -77,7 +87,13 @@ export const GET: RequestHandler = async ({ url }) => {
                 commitCount: sql<number>`COUNT(DISTINCT ${commits.id})`,
             })
             .from(commits)
-            .where(and(...conditions))
+            .innerJoin(authors, eq(commits.authorId, authors.id))
+            .where(
+                and(
+                    ...conditions,
+                    includeSdf ? undefined : eq(authors.isSdfEmployee, false)
+                )
+            )
             .groupBy(commits.authorId);
 
         // Note: ecosystemId and eventId filtering would require additional joins

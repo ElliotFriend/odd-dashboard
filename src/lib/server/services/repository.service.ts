@@ -24,6 +24,7 @@ import type { GitHubRepository } from '../github/types';
  * @property {'asc'|'desc'} [sortOrder] - Sort order
  * @property {number} [limit] - Maximum number of results to return
  * @property {number} [offset] - Number of results to skip
+ * @property {boolean} [includeSdfEmployees=false] - If true, include commits from SDF employees in stats
  */
 export interface RepositoryFilterOptions {
     agencyId?: number;
@@ -35,6 +36,7 @@ export interface RepositoryFilterOptions {
     sortOrder?: 'asc' | 'desc';
     limit?: number;
     offset?: number;
+    includeSdfEmployees?: boolean;
 }
 
 /**
@@ -190,6 +192,7 @@ export async function getAllRepositories(options: RepositoryFilterOptions = {}) 
         sortOrder = 'asc',
         limit,
         offset = 0,
+        includeSdfEmployees = false,
     } = options;
 
     // Build WHERE conditions array for SQL
@@ -266,6 +269,11 @@ export async function getAllRepositories(options: RepositoryFilterOptions = {}) 
         ? sql` LIMIT ${limit} OFFSET ${offset}`
         : sql``;
 
+    // Build SDF employee filter for stats
+    const sdfEmployeeStatsFilter = includeSdfEmployees
+        ? sql``
+        : sql`AND NOT EXISTS (SELECT 1 FROM authors a WHERE a.id = c.author_id AND a.is_sdf_employee = true)`;
+
     const query = sql`
         SELECT
             r.id,
@@ -292,6 +300,7 @@ export async function getAllRepositories(options: RepositoryFilterOptions = {}) 
                 MAX(c.commit_date) AS last_commit_date
             FROM commits c
             WHERE c.repository_id = r.id
+            ${sdfEmployeeStatsFilter}
         ) stats ON true
         ${whereClause}
         ORDER BY ${orderByClause}

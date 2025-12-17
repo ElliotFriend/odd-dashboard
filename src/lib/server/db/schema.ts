@@ -86,6 +86,7 @@ export const authors = pgTable(
         agencyId: integer('agency_id').references(() => agencies.id, {
             onDelete: 'set null',
         }),
+        isSdfEmployee: boolean('is_sdf_employee').notNull().default(false),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
         updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     },
@@ -94,6 +95,7 @@ export const authors = pgTable(
         emailIdx: index('authors_email_idx').on(table.email),
         usernameIdx: index('authors_username_idx').on(table.username),
         agencyIdIdx: index('authors_agency_id_idx').on(table.agencyId),
+        isSdfEmployeeIdx: index('authors_is_sdf_employee_idx').on(table.isSdfEmployee),
     }),
 );
 
