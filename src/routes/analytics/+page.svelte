@@ -6,7 +6,7 @@
     import Button from '$lib/components/ui/button.svelte';
     import LoadingState from '$lib/components/LoadingState.svelte';
     import ErrorAlert from '$lib/components/ErrorAlert.svelte';
-    import { TrendingUp, GitCommit, Users, FolderGit2 } from '@lucide/svelte';
+    import { TrendingUp, GitCommit, Users, FolderGit2, Table, LayoutGrid } from '@lucide/svelte';
 
     interface TopAuthorByCommits {
         authorId: number;
@@ -66,6 +66,7 @@
     let limit = $state(25); // Default to top 25
     let includeSdfEmployees = $state(false); // Default to excluding SDF employees
     let selectedAgencyId = $state<number | null>(null); // Default to all agencies
+    let viewMode = $state<'cards' | 'table'>('cards'); // Toggle between card and table view
 
     const limitOptions = [10, 25, 50, 100];
 
@@ -134,6 +135,24 @@
         <div>
             <h1 class="text-3xl font-bold text-slate-900">Analytics</h1>
             <p class="mt-2 text-slate-600">Top contributors and repositories by activity</p>
+        </div>
+        <div class="flex gap-2">
+            <Button
+                variant={viewMode === 'cards' ? 'default' : 'outline'}
+                size="sm"
+                onclick={() => viewMode = 'cards'}
+            >
+                <LayoutGrid class="mr-2 h-4 w-4" />
+                Cards
+            </Button>
+            <Button
+                variant={viewMode === 'table' ? 'default' : 'outline'}
+                size="sm"
+                onclick={() => viewMode = 'table'}
+            >
+                <Table class="mr-2 h-4 w-4" />
+                Table
+            </Button>
         </div>
     </div>
 
@@ -236,6 +255,44 @@
                 <CardContent>
                     {#if analytics.topAuthorsByCommits.length === 0}
                         <p class="py-8 text-center text-slate-500">No data for this period</p>
+                    {:else if viewMode === 'table'}
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-slate-200">
+                                        <th class="pb-3 text-left text-sm font-medium text-slate-700">#</th>
+                                        <th class="pb-3 text-left text-sm font-medium text-slate-700">Author</th>
+                                        <th class="pb-3 text-right text-sm font-medium text-slate-700">Commits</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {#each analytics.topAuthorsByCommits as author, index (author.authorId)}
+                                        <tr class="border-b border-slate-100 last:border-0">
+                                            <td class="py-3 text-sm text-slate-600">{index + 1}</td>
+                                            <td class="py-3">
+                                                {#if author.username}
+                                                    <a
+                                                        href="https://github.com/{author.username}"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="text-sm font-medium text-slate-900 hover:text-slate-600 hover:underline"
+                                                    >
+                                                        https://github.com/{author.username}
+                                                    </a>
+                                                {:else}
+                                                    <span class="text-sm font-medium text-slate-600">
+                                                        {author.name}
+                                                    </span>
+                                                {/if}
+                                            </td>
+                                            <td class="py-3 text-right text-sm font-semibold text-slate-900">
+                                                {author.commitCount.toLocaleString()}
+                                            </td>
+                                        </tr>
+                                    {/each}
+                                </tbody>
+                            </table>
+                        </div>
                     {:else}
                         <div class="space-y-3">
                             {#each analytics.topAuthorsByCommits as author, index (author.authorId)}
@@ -275,6 +332,44 @@
                 <CardContent>
                     {#if analytics.topAuthorsByRepos.length === 0}
                         <p class="py-8 text-center text-slate-500">No data for this period</p>
+                    {:else if viewMode === 'table'}
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-slate-200">
+                                        <th class="pb-3 text-left text-sm font-medium text-slate-700">#</th>
+                                        <th class="pb-3 text-left text-sm font-medium text-slate-700">Author</th>
+                                        <th class="pb-3 text-right text-sm font-medium text-slate-700">Repositories</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {#each analytics.topAuthorsByRepos as author, index (author.authorId)}
+                                        <tr class="border-b border-slate-100 last:border-0">
+                                            <td class="py-3 text-sm text-slate-600">{index + 1}</td>
+                                            <td class="py-3">
+                                                {#if author.username}
+                                                    <a
+                                                        href="https://github.com/{author.username}"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="text-sm font-medium text-slate-900 hover:text-slate-600 hover:underline"
+                                                    >
+                                                        https://github.com/{author.username}
+                                                    </a>
+                                                {:else}
+                                                    <span class="text-sm font-medium text-slate-600">
+                                                        {author.name}
+                                                    </span>
+                                                {/if}
+                                            </td>
+                                            <td class="py-3 text-right text-sm font-semibold text-slate-900">
+                                                {author.repoCount}
+                                            </td>
+                                        </tr>
+                                    {/each}
+                                </tbody>
+                            </table>
+                        </div>
                     {:else}
                         <div class="space-y-3">
                             {#each analytics.topAuthorsByRepos as author, index (author.authorId)}
@@ -314,6 +409,38 @@
                 <CardContent>
                     {#if analytics.topReposByCommits.length === 0}
                         <p class="py-8 text-center text-slate-500">No data for this period</p>
+                    {:else if viewMode === 'table'}
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-slate-200">
+                                        <th class="pb-3 text-left text-sm font-medium text-slate-700">#</th>
+                                        <th class="pb-3 text-left text-sm font-medium text-slate-700">Repository</th>
+                                        <th class="pb-3 text-right text-sm font-medium text-slate-700">Commits</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {#each analytics.topReposByCommits as repo, index (repo.repositoryId)}
+                                        <tr class="border-b border-slate-100 last:border-0">
+                                            <td class="py-3 text-sm text-slate-600">{index + 1}</td>
+                                            <td class="py-3">
+                                                <a
+                                                    href="https://github.com/{repo.fullName}"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    class="text-sm font-medium text-slate-900 hover:text-slate-600 hover:underline"
+                                                >
+                                                    https://github.com/{repo.fullName}
+                                                </a>
+                                            </td>
+                                            <td class="py-3 text-right text-sm font-semibold text-slate-900">
+                                                {repo.commitCount.toLocaleString()}
+                                            </td>
+                                        </tr>
+                                    {/each}
+                                </tbody>
+                            </table>
+                        </div>
                     {:else}
                         <div class="space-y-3">
                             {#each analytics.topReposByCommits as repo, index (repo.repositoryId)}
@@ -350,6 +477,38 @@
                 <CardContent>
                     {#if analytics.topReposByAuthors.length === 0}
                         <p class="py-8 text-center text-slate-500">No data for this period</p>
+                    {:else if viewMode === 'table'}
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-slate-200">
+                                        <th class="pb-3 text-left text-sm font-medium text-slate-700">#</th>
+                                        <th class="pb-3 text-left text-sm font-medium text-slate-700">Repository</th>
+                                        <th class="pb-3 text-right text-sm font-medium text-slate-700">Contributors</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {#each analytics.topReposByAuthors as repo, index (repo.repositoryId)}
+                                        <tr class="border-b border-slate-100 last:border-0">
+                                            <td class="py-3 text-sm text-slate-600">{index + 1}</td>
+                                            <td class="py-3">
+                                                <a
+                                                    href="https://github.com/{repo.fullName}"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    class="text-sm font-medium text-slate-900 hover:text-slate-600 hover:underline"
+                                                >
+                                                    https://github.com/{repo.fullName}
+                                                </a>
+                                            </td>
+                                            <td class="py-3 text-right text-sm font-semibold text-slate-900">
+                                                {repo.authorCount}
+                                            </td>
+                                        </tr>
+                                    {/each}
+                                </tbody>
+                            </table>
+                        </div>
                     {:else}
                         <div class="space-y-3">
                             {#each analytics.topReposByAuthors as repo, index (repo.repositoryId)}
