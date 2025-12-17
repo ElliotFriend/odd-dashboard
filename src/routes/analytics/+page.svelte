@@ -55,6 +55,9 @@
 
     let startDate = $state(thirtyDaysAgo);
     let endDate = $state(today);
+    let limit = $state(25); // Default to top 25
+
+    const limitOptions = [10, 25, 50, 100];
 
     async function loadAnalytics() {
         try {
@@ -64,7 +67,7 @@
             const params = new URLSearchParams({
                 startDate,
                 endDate,
-                limit: '10'
+                limit: limit.toString()
             });
 
             const response = await fetch(`/api/analytics?${params.toString()}`);
@@ -82,6 +85,10 @@
     }
 
     function handleDateChange() {
+        loadAnalytics();
+    }
+
+    function handleLimitChange() {
         loadAnalytics();
     }
 
@@ -129,6 +136,21 @@
                         class="rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-500"
                     />
                 </div>
+                <div>
+                    <label for="limit" class="mb-1 block text-sm font-medium text-slate-700">
+                        Top
+                    </label>
+                    <select
+                        id="limit"
+                        bind:value={limit}
+                        onchange={handleLimitChange}
+                        class="rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-500"
+                    >
+                        {#each limitOptions as option (option)}
+                            <option value={option}>{option}</option>
+                        {/each}
+                    </select>
+                </div>
                 <Button onclick={loadAnalytics} variant="outline">
                     <TrendingUp class="mr-2 h-4 w-4" />
                     Refresh
@@ -156,7 +178,7 @@
                         <p class="py-8 text-center text-slate-500">No data for this period</p>
                     {:else}
                         <div class="space-y-3">
-                            {#each analytics.topAuthorsByCommits as author, index}
+                            {#each analytics.topAuthorsByCommits as author, index (author.authorId)}
                                 <div class="flex items-center justify-between border-b border-slate-100 pb-3 last:border-0">
                                     <div class="flex items-center gap-3">
                                         <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">
@@ -190,7 +212,7 @@
                         <p class="py-8 text-center text-slate-500">No data for this period</p>
                     {:else}
                         <div class="space-y-3">
-                            {#each analytics.topAuthorsByRepos as author, index}
+                            {#each analytics.topAuthorsByRepos as author, index (author.authorId)}
                                 <div class="flex items-center justify-between border-b border-slate-100 pb-3 last:border-0">
                                     <div class="flex items-center gap-3">
                                         <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">
@@ -224,7 +246,7 @@
                         <p class="py-8 text-center text-slate-500">No data for this period</p>
                     {:else}
                         <div class="space-y-3">
-                            {#each analytics.topReposByCommits as repo, index}
+                            {#each analytics.topReposByCommits as repo, index (repo.repositoryId)}
                                 <div class="flex items-center justify-between border-b border-slate-100 pb-3 last:border-0">
                                     <div class="flex items-center gap-3">
                                         <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">
@@ -260,7 +282,7 @@
                         <p class="py-8 text-center text-slate-500">No data for this period</p>
                     {:else}
                         <div class="space-y-3">
-                            {#each analytics.topReposByAuthors as repo, index}
+                            {#each analytics.topReposByAuthors as repo, index (repo.repositoryId)}
                                 <div class="flex items-center justify-between border-b border-slate-100 pb-3 last:border-0">
                                     <div class="flex items-center gap-3">
                                         <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">
