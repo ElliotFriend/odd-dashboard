@@ -45,9 +45,15 @@
         topReposByAuthors: TopRepoByAuthors[];
     }
 
+    interface Agency {
+        id: number;
+        name: string;
+    }
+
     let loading = $state(true);
     let error = $state<string | null>(null);
     let analytics = $state<AnalyticsData | null>(null);
+    let agencies = $state<Agency[]>([]);
 
     // Date range state - default to last 30 days
     const today = new Date().toISOString().split('T')[0];
@@ -57,8 +63,21 @@
     let endDate = $state(today);
     let limit = $state(25); // Default to top 25
     let includeSdfEmployees = $state(false); // Default to excluding SDF employees
+    let selectedAgencyId = $state<number | null>(null); // Default to all agencies
 
     const limitOptions = [10, 25, 50, 100];
+
+    async function loadAgencies() {
+        try {
+            const response = await fetch('/api/agencies');
+            if (response.ok) {
+                const data = await response.json();
+                agencies = data.data || [];
+            }
+        } catch (err) {
+            console.error('Error loading agencies:', err);
+        }
+    }
 
     async function loadAnalytics() {
         try {
@@ -71,6 +90,10 @@
                 limit: limit.toString(),
                 includeSdfEmployees: includeSdfEmployees.toString()
             });
+
+            if (selectedAgencyId) {
+                params.set('agencyId', selectedAgencyId.toString());
+            }
 
             const response = await fetch(`/api/analytics?${params.toString()}`);
             if (!response.ok) {
@@ -94,8 +117,13 @@
         loadAnalytics();
     }
 
-    onMount(() => {
+    function handleAgencyChange() {
         loadAnalytics();
+    }
+
+    onMount(async () => {
+        await loadAgencies();
+        await loadAnalytics();
     });
 </script>
 
@@ -137,6 +165,22 @@
                         max={today}
                         class="rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-500"
                     />
+                </div>
+                <div>
+                    <label for="agency" class="mb-1 block text-sm font-medium text-slate-700">
+                        Agency
+                    </label>
+                    <select
+                        id="agency"
+                        bind:value={selectedAgencyId}
+                        onchange={handleAgencyChange}
+                        class="rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-500"
+                    >
+                        <option value={null}>All Agencies</option>
+                        {#each agencies as agency (agency.id)}
+                            <option value={agency.id}>{agency.name}</option>
+                        {/each}
+                    </select>
                 </div>
                 <div>
                     <label for="limit" class="mb-1 block text-sm font-medium text-slate-700">

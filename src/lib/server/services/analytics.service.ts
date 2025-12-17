@@ -48,9 +48,11 @@ export async function getAnalytics(
     startDate: string,
     endDate: string,
     limit: number = 10,
-    includeSdfEmployees: boolean = false
+    includeSdfEmployees: boolean = false,
+    agencyId?: number
 ): Promise<AnalyticsData> {
     const sdfEmployeeFilter = includeSdfEmployees ? sql`` : sql`AND a.is_sdf_employee = false`;
+    const agencyFilter = agencyId !== undefined ? sql`AND r.agency_id = ${agencyId}` : sql``;
 
     // Top authors by number of commits
     const topAuthorsByCommitsQuery = sql`
@@ -61,9 +63,11 @@ export async function getAnalytics(
             COUNT(c.id)::int as commit_count
         FROM authors a
         INNER JOIN commits c ON a.id = c.author_id
+        INNER JOIN repositories r ON c.repository_id = r.id
         WHERE c.commit_date >= ${startDate}::timestamp
           AND c.commit_date <= ${endDate}::timestamp
           ${sdfEmployeeFilter}
+          ${agencyFilter}
         GROUP BY a.id, a.name, a.email
         ORDER BY commit_count DESC
         LIMIT ${limit}
@@ -88,9 +92,11 @@ export async function getAnalytics(
             COUNT(DISTINCT c.repository_id)::int as repo_count
         FROM authors a
         INNER JOIN commits c ON a.id = c.author_id
+        INNER JOIN repositories r ON c.repository_id = r.id
         WHERE c.commit_date >= ${startDate}::timestamp
           AND c.commit_date <= ${endDate}::timestamp
           ${sdfEmployeeFilter}
+          ${agencyFilter}
         GROUP BY a.id, a.name, a.email
         ORDER BY repo_count DESC
         LIMIT ${limit}
@@ -118,6 +124,7 @@ export async function getAnalytics(
         WHERE c.commit_date >= ${startDate}::timestamp
           AND c.commit_date <= ${endDate}::timestamp
           ${sdfEmployeeFilter}
+          ${agencyFilter}
         GROUP BY r.id, r.full_name
         ORDER BY commit_count DESC
         LIMIT ${limit}
@@ -144,6 +151,7 @@ export async function getAnalytics(
         WHERE c.commit_date >= ${startDate}::timestamp
           AND c.commit_date <= ${endDate}::timestamp
           ${sdfEmployeeFilter}
+          ${agencyFilter}
         GROUP BY r.id, r.full_name
         ORDER BY author_count DESC
         LIMIT ${limit}
