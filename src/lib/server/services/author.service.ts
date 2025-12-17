@@ -1,6 +1,6 @@
-import { eq, sql, and, like } from 'drizzle-orm';
+import { eq, sql, and, like, gte, lte } from 'drizzle-orm';
 import { db } from '../db';
-import { authors } from '../db/schema';
+import { authors, commits, repositories } from '../db/schema';
 import {
     createAuthorSchema,
     updateAuthorSchema,
@@ -273,4 +273,102 @@ export async function deleteAuthor(id: number) {
     await db.delete(authors).where(eq(authors.id, id));
 
     return { success: true };
+}
+
+/**
+ * Repository contribution for an author
+ */
+export interface AuthorRepositoryContribution {
+    repositoryId: number;
+    fullName: string;
+    commitCount: number;
+}
+
+/**
+ * Author details with statistics over a date range
+ */
+export interface AuthorDetails {
+    author: {
+        id: number;
+        githubId: number | null;
+        username: string | null;
+        name: string | null;
+        email: string | null;
+        agencyId: number | null;
+    };
+    statistics: {
+        totalCommits: number;
+        totalRepositories: number;
+        dateRange: {
+            startDate: string;
+            endDate: string;
+        };
+    };
+    repositories: AuthorRepositoryContribution[];
+}
+
+/**
+ * Get author details with statistics over a date range
+ */
+export async function getAuthorDetails(
+    authorId: number,
+    startDate: string,
+    endDate: string
+): Promise<AuthorDetails | null> {
+    // Get author
+    const author = await getAuthorById(authorId);
+    if (!author) {
+        return null;
+    }
+
+    // Get repositories the author has committed to with commit counts
+    const repoContributions = await db
+        .select({
+            repositoryId: repositories.id,
+            fullName: repositories.fullName,
+            commitCount: sql<number>`COUNT(${commits.id})::int`,
+        })
+        .from(commits)
+        .innerJoin(repositories, eq(commits.repositoryId, repositories.id))
+        .where(
+            and(
+                eq(commits.authorId, authorId),
+                gte(commits.commitDate, sql`${startDate}::timestamp`),
+                lte(commits.commitDate, sql`${endDate}::timestamp`)
+            )
+        )
+        .groupBy(repositories.id, repositories.fullName)
+        .orderBy(sql`commit_count DESC`);
+
+    // Get total stats
+    const [stats] = await db
+        .select({
+            totalCommits: sql<number>`COUNT(${commits.id})::int`,
+            totalRepositories: sql<number>`COUNT(DISTINCT ${commits.repositoryId})::int`,
+        })
+        .from(commits)
+        .where(
+            and(
+                eq(commits.authorId, authorId),
+                gte(commits.commitDate, sql`${startDate}::timestamp`),
+                lte(commits.commitDate, sql`${endDate}::timestamp`)
+            )
+        );
+
+    return {
+        author,
+        statistics: {
+            totalCommits: stats?.totalCommits || 0,
+            totalRepositories: stats?.totalRepositories || 0,
+            dateRange: {
+                startDate,
+                endDate,
+            },
+        },
+        repositories: repoContributions.map((r) => ({
+            repositoryId: r.repositoryId,
+            fullName: r.fullName,
+            commitCount: r.commitCount,
+        })),
+    };
 }

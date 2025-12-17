@@ -185,7 +185,12 @@
                                             {index + 1}
                                         </span>
                                         <div>
-                                            <p class="font-medium text-slate-900">{author.name}</p>
+                                            <a
+                                                href="/contributors/{author.authorId}"
+                                                class="font-medium text-slate-900 hover:text-slate-600"
+                                            >
+                                                {author.name}
+                                            </a>
                                             <p class="text-xs text-slate-500">{author.email}</p>
                                         </div>
                                     </div>
@@ -219,7 +224,12 @@
                                             {index + 1}
                                         </span>
                                         <div>
-                                            <p class="font-medium text-slate-900">{author.name}</p>
+                                            <a
+                                                href="/contributors/{author.authorId}"
+                                                class="font-medium text-slate-900 hover:text-slate-600"
+                                            >
+                                                {author.name}
+                                            </a>
                                             <p class="text-xs text-slate-500">{author.email}</p>
                                         </div>
                                     </div>

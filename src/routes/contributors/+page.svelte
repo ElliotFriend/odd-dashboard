@@ -216,11 +216,14 @@
                             >
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2">
-                                        <h3 class="font-semibold text-slate-900">
+                                        <a
+                                            href="/contributors/{contributor.id}"
+                                            class="font-semibold text-slate-900 hover:text-slate-600"
+                                        >
                                             {contributor.name ||
                                                 contributor.username ||
                                                 contributor.email}
-                                        </h3>
+                                        </a>
                                         {#if contributor.username}
                                             <span class="text-sm text-slate-500">
                                                 @{contributor.username}
