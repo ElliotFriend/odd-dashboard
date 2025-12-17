@@ -322,53 +322,54 @@ export async function getAuthorDetails(
     }
 
     // Get repositories the author has committed to with commit counts
-    const repoContributions = await db
-        .select({
-            repositoryId: repositories.id,
-            fullName: repositories.fullName,
-            commitCount: sql<number>`COUNT(${commits.id})::int`,
-        })
-        .from(commits)
-        .innerJoin(repositories, eq(commits.repositoryId, repositories.id))
-        .where(
-            and(
-                eq(commits.authorId, authorId),
-                gte(commits.commitDate, sql`${startDate}::timestamp`),
-                lte(commits.commitDate, sql`${endDate}::timestamp`)
-            )
-        )
-        .groupBy(repositories.id, repositories.fullName)
-        .orderBy(sql`commit_count DESC`);
+    const repoContributionsQuery = sql`
+        SELECT
+            r.id as repository_id,
+            r.full_name,
+            COUNT(c.id)::int as commit_count
+        FROM commits c
+        INNER JOIN repositories r ON c.repository_id = r.id
+        WHERE c.author_id = ${authorId}
+          AND c.commit_date >= ${startDate}::timestamp
+          AND c.commit_date <= ${endDate}::timestamp
+        GROUP BY r.id, r.full_name
+        ORDER BY commit_count DESC
+    `;
+
+    const repoContributionsResult = await db.execute(repoContributionsQuery);
+    // @ts-ignore
+    const repoContributionsRows = repoContributionsResult.rows || repoContributionsResult;
 
     // Get total stats
-    const [stats] = await db
-        .select({
-            totalCommits: sql<number>`COUNT(${commits.id})::int`,
-            totalRepositories: sql<number>`COUNT(DISTINCT ${commits.repositoryId})::int`,
-        })
-        .from(commits)
-        .where(
-            and(
-                eq(commits.authorId, authorId),
-                gte(commits.commitDate, sql`${startDate}::timestamp`),
-                lte(commits.commitDate, sql`${endDate}::timestamp`)
-            )
-        );
+    const statsQuery = sql`
+        SELECT
+            COUNT(c.id)::int as total_commits,
+            COUNT(DISTINCT c.repository_id)::int as total_repositories
+        FROM commits c
+        WHERE c.author_id = ${authorId}
+          AND c.commit_date >= ${startDate}::timestamp
+          AND c.commit_date <= ${endDate}::timestamp
+    `;
+
+    const statsResult = await db.execute(statsQuery);
+    // @ts-ignore
+    const statsRows = statsResult.rows || statsResult;
+    const stats = statsRows[0];
 
     return {
         author,
         statistics: {
-            totalCommits: stats?.totalCommits || 0,
-            totalRepositories: stats?.totalRepositories || 0,
+            totalCommits: stats?.total_commits || 0,
+            totalRepositories: stats?.total_repositories || 0,
             dateRange: {
                 startDate,
                 endDate,
             },
         },
-        repositories: repoContributions.map((r) => ({
-            repositoryId: r.repositoryId,
-            fullName: r.fullName,
-            commitCount: r.commitCount,
+        repositories: repoContributionsRows.map((r: any) => ({
+            repositoryId: r.repository_id,
+            fullName: r.full_name,
+            commitCount: r.commit_count,
         })),
     };
 }
