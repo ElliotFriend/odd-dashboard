@@ -68,6 +68,13 @@
   const bars = $derived<ChartBars | null>(mau ? { name: 'daily active', color: 'var(--amber)',
     data: mau.daily.map((d) => ({ day: d.day, value: d.daily_active_devs })) } : null);
 
+  // Start of the current 28-day MAD window: 28 days before the parquet horizon.
+  // Computed in UTC so it never drifts by timezone.
+  const minusDays = (day: string, n: number): string =>
+    new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)) - n * 86400000)
+      .toISOString().slice(0, 10);
+  const windowStart = $derived(mau?.meta?.parquet_horizon ? minusDays(mau.meta.parquet_horizon, 28) : null);
+
   // recurring-base estimate: median daily-active over the window (de-surged signal)
   const recurringBase = $derived.by(() => {
     if (!mau?.daily?.length) return null;
@@ -172,7 +179,7 @@
       </div>
     {/if}
     {#if mau}
-      <Chart {lines} {bars} {events} horizon={mau.meta?.parquet_horizon} />
+      <Chart {lines} {bars} {events} {windowStart} horizon={mau.meta?.parquet_horizon} />
     {:else}<div class="loading">loading…</div>{/if}
   </section>
 

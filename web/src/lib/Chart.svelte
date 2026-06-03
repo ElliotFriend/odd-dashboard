@@ -8,9 +8,10 @@
     bars?: ChartBars | null;
     height?: number;
     horizon?: string | null;
+    windowStart?: string | null;
     events?: TimelineEvent[];
   }
-  let { lines = [], bars = null, height = 340, horizon = null, events = [] }: Props = $props();
+  let { lines = [], bars = null, height = 340, horizon = null, windowStart = null, events = [] }: Props = $props();
 
   const PAD = { l: 52, r: 16, t: 16, b: 28 };
   let W = $state<number>(900);
@@ -118,6 +119,12 @@
         <path d={path(l.data, xy.x, xy.y)} fill="none" stroke={l.color} stroke-width="2"
               stroke-dasharray={l.dash || 'none'} stroke-linejoin="round" />
       {/each}
+
+      {#if windowStart}
+        <line x1={xAt(windowStart)} x2={xAt(windowStart)} y1={PAD.t} y2={height - PAD.b}
+              stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3" opacity="0.6" />
+        <text x={xAt(windowStart) + 4} y={height - PAD.b - 4} text-anchor="start" font-size="9" fill="var(--muted)" font-family="var(--mono)">28-day window →</text>
+      {/if}
 
       {#if horizon}
         <line x1={xy.x(horizon)} x2={xy.x(horizon)} y1={PAD.t} y2={height - PAD.b}
