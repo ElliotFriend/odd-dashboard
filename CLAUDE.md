@@ -103,8 +103,13 @@ geography) for all-time or trailing windows, and explain movements in the
 - Shared data shapes: `web/src/lib/types.ts`. Display helpers: `web/src/lib/format.ts`.
 - Components live in `web/src/lib/components/`: `Chart`, `StatCards`, `WhatMoved`,
   `MauChart`, `RepoLeaderboard`, `DevLeaderboard`. Header + footer live in `+layout.svelte`.
-- `DevLeaderboard` (devs by commits / active-days / repos-touched over 28/60/90d) links
-  `@login → github.com/login`; fed by `getDevAggregates()` (top 200 by 90d commits).
+- `DevLeaderboard` (devs by commits / active-days / repos-touched over 28/60/90d); fed by
+  `getDevAggregates()` (top 200 by 90d commits).
+- Drill-down routes (server-loaded): `/dev/[login]` lists every repo a dev committed to;
+  `/repo/[...slug]` lists every dev who committed to a repo (slug = owner/repo). They
+  cross-link, and leaderboard names link INTO them (the detail pages carry the GitHub ↗
+  links). Queries: `getDevDetail`/`getRepoDetail` over all-time `repo_day`. Repo-page dev
+  identities depend on the `developers` table (resolved devs only; others show `dev #id`).
 - `Chart.svelte` is dependency-free SVG. Marquee view = 28d-windowed MAD line with
   faint DAILY-active bars behind it, so roll-offs read as roll-offs, not cliffs.
 - Repo leaderboard rows link to the repo's GitHub URL (`RepoRow.url`, opens new tab).
@@ -145,7 +150,9 @@ GrantFox is unrelated to it.
 ## Gotchas
 - `repo_developer_activities` counts a dev on EVERY repo they touch — summing per-repo
   `devs` over-counts people on multiple repos. Fine for ranking, not a partition.
-- `start`/`end` are reserved words in DuckDB — alias as `min_day`/`max_day`.
+- `start`/`end`/`days`/`name` are reserved/special words in DuckDB — quote them as
+  aliases (`AS "days"`, `AS "name"`) or rename (`min_day`/`max_day`). Bit us on the
+  drill-down queries (`svelte-check` won't catch SQL-string errors — only runtime will).
 - Reading the extract via the **Python** duckdb client needs `pytz` (+ `numpy`/`pandas`
   for `.fetchdf()`) to materialize the `meta.extracted_at` TIMESTAMPTZ — they're in the
   uv `dev` group, so `uv run python` has them; CI runs `uv run --no-dev` (duckdb only).

@@ -137,6 +137,28 @@ export interface DiagnoseResponse {
   window: number;
 }
 
+// ---- drill-down detail pages (/dev/[login], /repo/[...slug]) ----
+
+/** One repo a developer has committed to (all-time). */
+export interface DevRepoRow {
+  repo: string; url: string; commits: number; days: number; last_active: string;
+}
+export interface DevDetail {
+  login: string;
+  name: string | null;
+  repos: DevRepoRow[];
+}
+
+/** One developer who has committed to a repo (all-time). */
+export interface RepoDevRow {
+  dev: number; name: string | null; login: string | null;
+  commits: number; days: number; last_active: string;
+}
+export interface RepoDetail {
+  repo: string; url: string;
+  devs: RepoDevRow[];
+}
+
 // ---- /api/events ----
 
 /** A curated timeline event (bounty program, hackathon, …) to annotate the chart.
