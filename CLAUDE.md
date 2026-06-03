@@ -50,13 +50,26 @@ geography) for all-time or trailing windows, and explain movements in the
 - `diagnose` — daily-vs-windowed table, surge auto-detection, cohort exit schedule,
   and "repos active in a window but silent since" anti-join.
 - `snapshot-api` — upsert developerreport.com MAU series into the extract (idempotent).
+- `events add|list|rm` — manage curated timeline events (bounty programs, hackathons)
+  in `events.json`. e.g. `events add --title "Drips Wave 5" --partner Drips
+  --start 2026-05-26 --end 2026-06-02 [--description ... --url ...]`.
+
+## Timeline events (chart annotations)
+- Source of truth is a **version-controlled `events.json` at the repo root** — NOT the
+  DuckDB extract — so hand-curated annotations survive a from-scratch rebuild and stay
+  git-diffable. Shape: `{title, partner, start, end, description?, url?}` (dates yyyy-mm-dd).
+- The app reads it via `web/src/lib/server/events.ts` (`EVENTS_FILE` env, default
+  `../events.json`) and serves `/api/events`. The chart draws a translucent band per
+  event spanning start→end, colored by partner (`web/src/lib/colors.ts::partnerColor`).
+- Seeded with the 5 Drips Waves (Jan–Jun 2026); Wave 4 (Apr 22–29) is the confirmed surge
+  behind the May MAU roll-off.
 
 ## The dashboard (SvelteKit, Svelte 5 runes, TypeScript) — lives in `web/`
 - `web/src/lib/server/db.ts` opens the extract READ_ONLY (so a scheduled `extract`
   won't lock it). BigInt/Date values are normalized there.
 - Shared data shapes live in `web/src/lib/types.ts` (chart series + `/api/*` payloads);
   endpoints type their `query<T>(...)` rows against them.
-- Routes: `/api/mau`, `/api/repos`, `/api/diagnose`. Page: `web/src/routes/+page.svelte`.
+- Routes: `/api/mau`, `/api/repos`, `/api/diagnose`, `/api/events`. Page: `web/src/routes/+page.svelte`.
 - `Chart.svelte` is dependency-free SVG. Marquee view = 28d-windowed MAD line with
   faint DAILY-active bars behind it, so roll-offs read as roll-offs, not cliffs.
 - Run: `cd web && STELLAR_DB=../stellar_extract.duckdb pnpm dev` (JS via pnpm; Python

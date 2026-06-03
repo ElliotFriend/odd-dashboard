@@ -16,6 +16,9 @@ built on Electric Capital's **Open Dev Data** (ODD) parquet dataset.
     cohort exit schedule, repos that drove a period then went silent).
   - `snapshot-api` — append the live developerreport.com MAU series so you
     capture recent points *before* the public parquet catches up (it trails ~7d).
+  - `events add|list|rm` — manage curated timeline events (bounty programs,
+    hackathons) in a version-controlled `events.json`; the dashboard overlays
+    them on the chart as partner-colored bands.
 - **SvelteKit app** (in [`./web`](./web)) — reads `stellar_extract.duckdb` server-side
   and renders the MAU-vs-daily overlay, single/multi split, commit totals, and a
   repo leaderboard.
@@ -47,6 +50,22 @@ STELLAR_DB=../stellar_extract.duckdb pnpm dev     # http://localhost:5173
 
 The extract is built at the repo root; the app reads it via `STELLAR_DB`
 (`../stellar_extract.duckdb` from inside `./web`). Set `STELLAR_DB` to point elsewhere.
+
+## Annotate the chart with events
+
+Programs and hackathons are stored in a version-controlled `events.json` at the repo
+root (so they survive extract rebuilds). Seed includes the 5 Drips Waves.
+
+```bash
+uv run python stellar_odd.py events list
+uv run python stellar_odd.py events add \
+    --title "Drips Wave 6" --partner Drips \
+    --start 2026-06-23 --end 2026-06-30 \
+    --description "Monthly Stellar bounty sprint" \
+    --url https://www.drips.network/wave/stellar
+```
+
+The dashboard reads these and draws a partner-colored band over each event's date range.
 
 ## Investigate a MAU move (e.g. the May 2026 drop)
 

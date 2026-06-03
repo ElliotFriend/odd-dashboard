@@ -1,14 +1,16 @@
 <script lang="ts">
   // Props: lines = [{name,color,data:[{day,value}],dash?}], bars = {name,color,data:[{day,value}]}|null
-  import type { ChartLine, ChartBars, ChartPoint } from '$lib/types';
+  import type { ChartLine, ChartBars, ChartPoint, TimelineEvent } from '$lib/types';
+  import { partnerColor } from '$lib/colors';
 
   interface Props {
     lines?: ChartLine[];
     bars?: ChartBars | null;
     height?: number;
     horizon?: string | null;
+    events?: TimelineEvent[];
   }
-  let { lines = [], bars = null, height = 340, horizon = null }: Props = $props();
+  let { lines = [], bars = null, height = 340, horizon = null, events = [] }: Props = $props();
 
   const PAD = { l: 52, r: 16, t: 16, b: 28 };
   let W = $state<number>(900);
@@ -29,6 +31,38 @@
     const y = (v: number) => PAD.t + innerH - (v / ymax) * innerH;
     return { x, y, ymax, innerW, innerH, days };
   });
+
+  // Map any ISO day to an x aligned with the index-based scale, clamped to the
+  // plot's day range; interpolate by calendar date between bracketing days when
+  // the exact day isn't in the set.
+  function xAt(day: string): number {
+    if (!xy) return PAD.l;
+    const { days, x } = xy;
+    const first = days[0], last = days[days.length - 1];
+    if (day <= first) return x(first);
+    if (day >= last) return x(last);
+    let i = 1;
+    while (i < days.length && days[i] < day) i++;
+    const before = days[i - 1], after = days[i];
+    const span = Date.parse(after) - Date.parse(before) || 1;
+    const t = (Date.parse(day) - Date.parse(before)) / span;
+    return x(before) + t * (x(after) - x(before));
+  }
+
+  // Event bands clipped to the visible window.
+  const bands = $derived.by(() => {
+    if (!xy || !events.length) return [];
+    const first = xy.days[0], last = xy.days[xy.days.length - 1];
+    return events
+      .filter((e) => e.end >= first && e.start <= last)
+      .map((e) => {
+        const left = xAt(e.start), right = xAt(e.end);
+        return { event: e, left, width: Math.max(2, right - left), color: partnerColor(e.partner) };
+      });
+  });
+
+  const eventsOn = (day: string): TimelineEvent[] =>
+    events.filter((e) => e.start <= day && day <= e.end);
 
   function path(data: ChartPoint[], x: (day: string) => number, y: (value: number) => number) {
     return data.map((d, i) => `${i ? 'L' : 'M'}${x(d.day).toFixed(1)},${y(d.value).toFixed(1)}`).join(' ');
@@ -51,6 +85,15 @@
   <svg viewBox={`0 0 ${W} ${height}`} role="img" aria-label="time series chart"
        onmousemove={onMove} onmouseleave={() => (hover = null)}>
     {#if xy}
+      {#each bands as b}
+        <rect class="band" x={b.left} y={PAD.t} width={b.width} height={height - PAD.t - PAD.b}
+              fill={b.color} opacity="0.10" />
+        <line class="band" x1={b.left} x2={b.left} y1={PAD.t} y2={height - PAD.b}
+              stroke={b.color} stroke-width="1" opacity="0.45" />
+        <text class="band" x={b.left + 4} y={PAD.t + 9} font-size="9" fill={b.color}
+              font-family="var(--mono)">{b.event.title}</text>
+      {/each}
+
       {#each ticks as t, i}
         <line x1={PAD.l} x2={W - PAD.r} y1={xy.y(t)} y2={xy.y(t)} stroke="var(--grid)" stroke-width="1" />
         <text x={PAD.l - 8} y={xy.y(t) + 3} text-anchor="end" font-size="10" fill="var(--faint)" font-family="var(--mono)">{t.toLocaleString()}</text>
@@ -102,6 +145,9 @@
       {#if bars}{#each bars.data.filter((d) => d.day === hover) as d}
         <div class="tip-row"><span style={`color:${bars.color};opacity:.5`}>▮</span> {bars.name}<b class="tnum">{d.value.toLocaleString()}</b></div>
       {/each}{/if}
+      {#each eventsOn(hover) as e}
+        <div class="tip-row"><span style={`color:${partnerColor(e.partner)}`}>▮</span> {e.title}<b>{e.partner}</b></div>
+      {/each}
     </div>
   {/if}
 </div>
@@ -114,4 +160,5 @@
   .tip-day{color:var(--muted);margin-bottom:4px;letter-spacing:.06em}
   .tip-row{display:flex;gap:6px;align-items:baseline}
   .tip-row b{margin-left:auto}
+  .band{pointer-events:none}
 </style>

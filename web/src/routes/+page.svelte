@@ -2,8 +2,9 @@
   import Chart from '$lib/Chart.svelte';
   import type {
     MauResponse, ReposResponse, DiagnoseResponse,
-    ChartLine, ChartBars
+    ChartLine, ChartBars, TimelineEvent, EventsResponse
   } from '$lib/types';
+  import { partnerColor } from '$lib/colors';
 
   let days = $state<number>(120);
   let repoWindow = $state<number>(28);
@@ -11,13 +12,16 @@
   let mau = $state<MauResponse | null>(null);
   let repos = $state<ReposResponse | null>(null);
   let diag = $state<DiagnoseResponse | null>(null);
+  let events = $state<TimelineEvent[]>([]);
 
   async function loadMau() { mau = await (await fetch(`/api/mau?days=${days}`)).json() as MauResponse; }
   async function loadRepos() { repos = await (await fetch(`/api/repos?days=${repoWindow}&by=${repoBy}`)).json() as ReposResponse; }
   async function loadDiag() { diag = await (await fetch(`/api/diagnose?days=${days}`)).json() as DiagnoseResponse; }
+  async function loadEvents() { events = ((await (await fetch('/api/events')).json()) as EventsResponse).events; }
   $effect(() => { loadMau(); });
   $effect(() => { loadRepos(); });
   $effect(() => { loadDiag(); });
+  $effect(() => { loadEvents(); });
 
   const fmt = (n: number | null | undefined) => (n == null ? '—' : Number(n).toLocaleString());
   const latest = <T, K extends keyof T>(arr: T[] | undefined | null, key: K): T[K] | null =>
@@ -159,8 +163,16 @@
     </div>
     <p class="note">The bold line is the 28-day rolling MAD (what Developer Report plots). Faint bars are <em>daily</em> active devs.
       When the windowed line falls while the daily bars hold steady, you're seeing a past surge roll off the back of the window — not an exodus.</p>
+    {#if events.length}
+      <div class="evlegend">
+        <span class="mono-label">programs</span>
+        {#each [...new Set(events.map((e) => e.partner))] as p}
+          <span class="evkey"><i style={`background:${partnerColor(p)}`}></i>{p}</span>
+        {/each}
+      </div>
+    {/if}
     {#if mau}
-      <Chart {lines} {bars} horizon={mau.meta?.parquet_horizon} />
+      <Chart {lines} {bars} {events} horizon={mau.meta?.parquet_horizon} />
     {:else}<div class="loading">loading…</div>{/if}
   </section>
 
@@ -231,4 +243,7 @@
   .hint{color:var(--muted);font-size:11px;line-height:1.5;margin:10px 0 0}
   .hint em{color:var(--ink);font-style:normal}
   .pill{display:inline-block;margin-top:10px;padding:3px 9px;border:1px solid;border-radius:999px;font-size:11px}
+  .evlegend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:0 0 12px}
+  .evkey{display:inline-flex;gap:5px;align-items:center;font-size:12px;color:var(--muted)}
+  .evkey i{width:10px;height:10px;border-radius:2px;display:inline-block;opacity:.85}
 </style>

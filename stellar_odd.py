@@ -28,7 +28,7 @@ Attribution (CC BY 4.0): "Open Dev Data by Electric Capital",
 https://github.com/electric-capital/open-dev-data , CC BY 4.0.
 """
 from __future__ import annotations
-import argparse, json, time, urllib.request
+import argparse, datetime as dt, json, os, time, urllib.request
 from urllib.parse import urljoin
 import duckdb
 
@@ -292,6 +292,73 @@ def cmd_snapshot_api(args):
     print(f"Upserted {n} API points into {args.db} (table mau_api_history).")
 
 
+# --------------------------------------------------------------------------- events (events.json)
+# Curated timeline events (bounty programs, hackathons, ...) that annotate the chart.
+# Source of truth is a version-controlled events.json (NOT the DuckDB extract), so
+# these hand-curated annotations survive a from-scratch rebuild and stay git-diffable.
+def _events_path(args) -> str:
+    return args.file or os.path.join(os.path.dirname(os.path.abspath(__file__)), "events.json")
+
+
+def _events_load(path: str) -> list[dict]:
+    if not os.path.exists(path):
+        return []
+    with open(path) as f:
+        data = json.load(f)
+    return data if isinstance(data, list) else []
+
+
+def _events_save(path: str, events: list[dict]):
+    events.sort(key=lambda e: e.get("start", ""))
+    with open(path, "w") as f:
+        json.dump(events, f, indent=2, ensure_ascii=False)  # keep literal UTF-8 (readable diffs)
+        f.write("\n")
+
+
+def cmd_events(args):
+    path = _events_path(args)
+    events = _events_load(path)
+
+    if args.action == "list":
+        if not events:
+            print("(no events)"); return
+        for e in events:
+            print(f"  {e.get('start')}..{e.get('end')}  [{e.get('partner','')}]  {e.get('title')}")
+        return
+
+    if args.action == "add":
+        for req in ("title", "start", "end"):
+            if not getattr(args, req):
+                raise SystemExit(f"--{req} is required for `events add`")
+        for d in (args.start, args.end):
+            try:
+                dt.date.fromisoformat(d)
+            except ValueError:
+                raise SystemExit(f"bad date {d!r}; use YYYY-MM-DD")
+        if args.end < args.start:
+            raise SystemExit(f"--end ({args.end}) is before --start ({args.start})")
+        # idempotent on (title, start): replace an existing match rather than duplicate
+        events = [e for e in events if not (e.get("title") == args.title and e.get("start") == args.start)]
+        ev = {"title": args.title, "partner": args.partner or "", "start": args.start, "end": args.end}
+        if args.description:
+            ev["description"] = args.description
+        if args.url:
+            ev["url"] = args.url
+        events.append(ev)
+        _events_save(path, events)
+        print(f"Added: {args.title} ({args.start}..{args.end}) -> {path}")
+        return
+
+    if args.action == "rm":
+        if not args.title:
+            raise SystemExit("--title is required for `events rm`")
+        before = len(events)
+        events = [e for e in events if e.get("title") != args.title]
+        _events_save(path, events)
+        print(f"Removed {before - len(events)} event(s) titled {args.title!r}")
+        return
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -304,6 +371,13 @@ def main():
     d.add_argument("--surge-to", default=None); d.add_argument("--limit", type=int, default=25)
     d.set_defaults(func=cmd_diagnose)
     s = sub.add_parser("snapshot-api"); s.add_argument("--db", default=DEFAULT_OUT); s.set_defaults(func=cmd_snapshot_api)
+    ev = sub.add_parser("events", help="manage timeline events in events.json (add/list/rm)")
+    ev.add_argument("action", choices=["add", "list", "rm"])
+    ev.add_argument("--file", default=None, help="events.json path (default: alongside this script)")
+    ev.add_argument("--title"); ev.add_argument("--partner")
+    ev.add_argument("--start", help="YYYY-MM-DD (inclusive)"); ev.add_argument("--end", help="YYYY-MM-DD (inclusive)")
+    ev.add_argument("--description", default=""); ev.add_argument("--url", default="")
+    ev.set_defaults(func=cmd_events)
     args = ap.parse_args(); args.func(args)
 
 

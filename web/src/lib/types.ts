@@ -112,3 +112,20 @@ export interface DiagnoseResponse {
   surgeDays: SurgeDay[];
   window: number;
 }
+
+// ---- /api/events ----
+
+/** A curated timeline event (bounty program, hackathon, …) to annotate the chart.
+ *  Source of truth is the version-controlled events.json at the repo root. */
+export interface TimelineEvent {
+  title: string;
+  partner: string;
+  start: string; // yyyy-mm-dd (inclusive)
+  end: string;   // yyyy-mm-dd (inclusive)
+  description?: string;
+  url?: string;
+}
+
+export interface EventsResponse {
+  events: TimelineEvent[];
+}
