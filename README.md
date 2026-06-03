@@ -14,8 +14,9 @@ built on Electric Capital's **Open Dev Data** (ODD) parquet dataset.
   - `extract` — build/refresh the extract.
   - `diagnose` — explain MAU movements (daily-vs-windowed, surge detection,
     cohort exit schedule, repos that drove a period then went silent).
-  - `snapshot-api` — append the live developerreport.com MAU series so you
-    capture recent points *before* the public parquet catches up (it trails ~7d).
+  - `snapshot-api` — append developerreport.com's live (weekly) MAU series for
+    cross-checking. Note: it's only ~1 day fresher than the parquet — both are
+    ~7 days behind today — so it does NOT fill the recent ~7-day gap.
   - `events add|list|rm` — manage curated timeline events (bounty programs,
     hackathons) in a version-controlled `events.json`; the dashboard overlays
     them on the chart as partner-colored bands.
@@ -30,7 +31,10 @@ built on Electric Capital's **Open Dev Data** (ODD) parquet dataset.
 - `eco_mads.num_commits` is **also 28-day windowed**.
 - Contribution ranks (`full_time/part_time/one_time_devs`) use an **84-day** window.
 - Tenure (`devs_0_1y/1_2y/2y_plus`) is by first blockchain commit.
-- The public parquet trails the live API by ~7 days — hence `snapshot-api`.
+- **Freshness:** the public parquet and developerreport.com's live (weekly) API
+  are BOTH ~7 days behind today, and only ~1 day apart from each other (verified
+  2026-06-03: parquet horizon May 26, API latest May 27). So neither source covers
+  the most recent ~7 days — `snapshot-api` is a cross-check, not a gap-filler.
 
 ## Quick start
 

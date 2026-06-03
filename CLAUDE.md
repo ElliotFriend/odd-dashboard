@@ -21,9 +21,14 @@ geography) for all-time or trailing windows, and explain movements in the
 - The full dataset is ~47 GB (commits.parquet alone ~20 GB). We do NOT download it.
   DuckDB `httpfs` reads remote parquet via HTTP range requests; we filter to
   Stellar's `ecosystem_id` and write only Stellar rows into `stellar_extract.duckdb`.
-- ~7-day publish lag: the public parquet trails developerreport.com's live API by
-  about a week. `snapshot-api` captures the fresher API points so recent troughs
-  aren't missed.
+- Freshness (verified 2026-06-03, NOT the earlier assumption): the public parquet
+  AND developerreport.com's live (weekly) API are BOTH ~7 days behind today, and
+  only ~1 day apart from each other (parquet horizon May 26, API latest May 27).
+  So `snapshot-api` buys ~1 day, NOT 7 — it's a cross-check, not a gap-filler. The
+  most recent ~7 days are uncovered by any ODD/API source; a git-clone "nowcast"
+  (harvest commits from the ecosystems_repos roster, resolve emails→canonical via
+  the `commits` table) is what would fill that blind spot — kept strictly separate
+  from ODD tables.
 
 ## Confirmed schema (verified against the June 2026 snapshot + the ODD architecture page)
 - `ecosystems(id, name, ...)` — Stellar is `name = 'Stellar'`; join key is `id`.
