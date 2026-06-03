@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import type { RepoAgg } from '$lib/types';
     import { fmt } from '$lib/format';
 
@@ -61,7 +62,7 @@
             {#each rows as r, i (r.repo)}
                 <tr
                     ><td class="faint">{i + 1}</td>
-                    <td><a href={`/repo/${r.repo}`}>{r.repo}</a></td>
+                    <td><a href={resolve(`/repo/${r.repo}`)}>{r.repo}</a></td>
                     <td class="r tnum">{fmt(r.devs)}</td><td class="r tnum">{fmt(r.commits)}</td>
                     <td class="r faint">{r.last_active_day}</td></tr
                 >

@@ -8,6 +8,10 @@ import globals from 'globals';
 import ts from 'typescript-eslint';
 import svelteConfig from './svelte.config.js';
 
+// Use this app's own web/.gitignore (co-located): includeIgnoreFile has no basePath,
+// so its patterns anchor to THIS dir. Pointing up at the repo-root .gitignore loads it
+// but the root's `web/`-prefixed entries (web/.svelte-kit, web/build) wouldn't match
+// from here — so build artifacts live in web/.gitignore with unprefixed patterns.
 const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
 
 export default defineConfig(

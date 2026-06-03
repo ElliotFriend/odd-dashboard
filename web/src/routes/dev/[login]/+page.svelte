@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import type { PageData } from './$types';
     import { fmt } from '$lib/format';
 
@@ -29,7 +30,7 @@
     );
 </script>
 
-<a href="/" class="back">← dashboard</a>
+<a href={resolve('/')} class="back">← dashboard</a>
 
 <h1>
     @{data.dev.login}{#if showName}<span class="faint">{data.dev.name}</span>{/if}
@@ -65,8 +66,13 @@
                 <tr>
                     <td class="faint">{i + 1}</td>
                     <td>
-                        <a href={`/repo/${r.repo}`}>{r.repo}</a>
-                        <a class="ext" href={r.url} target="_blank" rel="noreferrer noopener">↗</a>
+                        <a href={resolve(`/repo/${r.repo}`)}>{r.repo}</a>
+                        <a
+                            class="ext"
+                            href={r.url}
+                            target="_blank"
+                            rel="external noreferrer noopener">↗</a
+                        >
                     </td>
                     <td class="r tnum">{fmt(r.commits)}</td>
                     <td class="r tnum">{fmt(r.active)}</td>

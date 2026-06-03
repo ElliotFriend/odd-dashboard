@@ -5,6 +5,7 @@
     import RepoLeaderboard from '$lib/components/RepoLeaderboard.svelte';
     import DevLeaderboard from '$lib/components/DevLeaderboard.svelte';
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import type { PageData } from './$types';
     let { data }: { data: PageData } = $props();
     let days = $state(120);
@@ -19,7 +20,10 @@
         days = d;
         const wantAll = d >= 100000;
         if (wantAll !== data.full)
-            goto(wantAll ? '?range=all' : '?', { noScroll: true, keepFocus: true });
+            goto(wantAll ? resolve('/?range=all') : resolve('/'), {
+                noScroll: true,
+                keepFocus: true,
+            });
     }
 </script>
 

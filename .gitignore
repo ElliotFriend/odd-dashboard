@@ -16,7 +16,5 @@ __pycache__/
 # scratch — large downloaded data (e.g. GH Archive hourly dumps), never commit
 scratch/
 
-# js (SvelteKit app in /web)
+# js — node_modules anywhere; SvelteKit build artifacts are in web/.gitignore
 node_modules
-web/.svelte-kit
-web/build

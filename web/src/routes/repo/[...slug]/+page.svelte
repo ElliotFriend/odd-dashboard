@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import type { PageData } from './$types';
     import { fmt } from '$lib/format';
 
@@ -26,11 +27,13 @@
     const total = $derived(rows.reduce((s, r) => s + r.commits, 0));
 </script>
 
-<a href="/" class="back">← dashboard</a>
+<a href={resolve('/')} class="back">← dashboard</a>
 
 <h1>
     {data.repo.repo}
-    <a class="ext" href={data.repo.url} target="_blank" rel="noreferrer noopener">GitHub ↗</a>
+    <a class="ext" href={data.repo.url} target="_blank" rel="external noreferrer noopener"
+        >GitHub ↗</a
+    >
 </h1>
 
 <p class="mono-label">{rows.length} developers · {fmt(total)} commits</p>
@@ -57,7 +60,7 @@
                     <td class="faint">{i + 1}</td>
                     <td>
                         {#if d.login}
-                            <a href={`/dev/${d.login}`}>@{d.login}</a>
+                            <a href={resolve(`/dev/${d.login}`)}>@{d.login}</a>
                             {#if d.name && d.name.toLowerCase() !== d.login.toLowerCase()}<span
                                     class="faint">{d.name}</span
                                 >{/if}
