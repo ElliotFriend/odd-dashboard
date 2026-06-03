@@ -66,7 +66,7 @@
                 <tr>
                     <td class="faint">{i + 1}</td>
                     <td>
-                        <a href={resolve(`/repo/${r.repo}`)}>{r.repo}</a>
+                        <a href={resolve('/repo/[...slug]', { slug: r.repo })}>{r.repo}</a>
                         <a
                             class="ext"
                             href={r.url}

@@ -60,7 +60,7 @@
                     <td class="faint">{i + 1}</td>
                     <td>
                         {#if d.login}
-                            <a href={resolve(`/dev/${d.login}`)}>@{d.login}</a>
+                            <a href={resolve('/dev/[login]', { login: d.login })}>@{d.login}</a>
                             {#if d.name && d.name.toLowerCase() !== d.login.toLowerCase()}<span
                                     class="faint">{d.name}</span
                                 >{/if}
