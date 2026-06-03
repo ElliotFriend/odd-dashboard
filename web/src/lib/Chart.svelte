@@ -64,6 +64,13 @@
   const eventsOn = (day: string): TimelineEvent[] =>
     events.filter((e) => e.start <= day && day <= e.end);
 
+  // Short weekday for an ISO day, computed in UTC so it never drifts by timezone.
+  const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  function weekday(day: string): string {
+    const [y, m, d] = day.split('-').map(Number);
+    return WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  }
+
   function path(data: ChartPoint[], x: (day: string) => number, y: (value: number) => number) {
     return data.map((d, i) => `${i ? 'L' : 'M'}${x(d.day).toFixed(1)},${y(d.value).toFixed(1)}`).join(' ');
   }
@@ -115,7 +122,7 @@
       {#if horizon}
         <line x1={xy.x(horizon)} x2={xy.x(horizon)} y1={PAD.t} y2={height - PAD.b}
               stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3" opacity="0.6" />
-        <text x={xy.x(horizon) - 4} y={PAD.t + 10} text-anchor="end" font-size="9" fill="var(--muted)" font-family="var(--mono)">parquet horizon</text>
+        <text x={xy.x(horizon) - 4} y={height - PAD.b - 4} text-anchor="end" font-size="9" fill="var(--muted)" font-family="var(--mono)">parquet horizon</text>
       {/if}
 
       <!-- x labels: first, middle, last -->
@@ -136,7 +143,7 @@
 
   {#if hover && xy}
     <div class="tip" style={`left:${Math.min(xy.x(hover) + 10, W - 150)}px`}>
-      <div class="tip-day">{hover}</div>
+      <div class="tip-day">{hover} {weekday(hover)}</div>
       {#each lines as l}
         {#each l.data.filter((d) => d.day === hover) as d}
           <div class="tip-row"><span style={`color:${l.color}`}>●</span> {l.name}<b class="tnum">{d.value.toLocaleString()}</b></div>
