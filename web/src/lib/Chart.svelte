@@ -1,0 +1,117 @@
+<script lang="ts">
+  // Props: lines = [{name,color,data:[{day,value}],dash?}], bars = {name,color,data:[{day,value}]}|null
+  import type { ChartLine, ChartBars, ChartPoint } from '$lib/types';
+
+  interface Props {
+    lines?: ChartLine[];
+    bars?: ChartBars | null;
+    height?: number;
+    horizon?: string | null;
+  }
+  let { lines = [], bars = null, height = 340, horizon = null }: Props = $props();
+
+  const PAD = { l: 52, r: 16, t: 16, b: 28 };
+  let W = $state<number>(900);
+
+  const allDays = $derived([...new Set([
+    ...lines.flatMap((l) => l.data.map((d) => d.day)),
+    ...(bars ? bars.data.map((d) => d.day) : [])
+  ])].sort());
+
+  const xy = $derived.by(() => {
+    const days = allDays;
+    if (!days.length) return null;
+    const xi = new Map(days.map((d, i) => [d, i]));
+    const innerW = W - PAD.l - PAD.r, innerH = height - PAD.t - PAD.b;
+    const x = (d: string) => PAD.l + (days.length < 2 ? innerW / 2 : ((xi.get(d) ?? 0) / (days.length - 1)) * innerW);
+    const vals = [...lines.flatMap((l) => l.data.map((d) => d.value)), ...(bars ? bars.data.map((d) => d.value) : [])];
+    const ymax = Math.max(1, ...vals) * 1.08;
+    const y = (v: number) => PAD.t + innerH - (v / ymax) * innerH;
+    return { x, y, ymax, innerW, innerH, days };
+  });
+
+  function path(data: ChartPoint[], x: (day: string) => number, y: (value: number) => number) {
+    return data.map((d, i) => `${i ? 'L' : 'M'}${x(d.day).toFixed(1)},${y(d.value).toFixed(1)}`).join(' ');
+  }
+  const ticks = $derived(xy ? [0, .25, .5, .75, 1].map((f) => Math.round(xy.ymax * f)) : []);
+
+  // hover
+  let hover = $state<string | null>(null);
+  function onMove(e: MouseEvent & { currentTarget: EventTarget & SVGSVGElement }) {
+    if (!xy) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    let best: string | null = null, bd = 1e9;
+    for (const d of xy.days) { const dist = Math.abs(xy.x(d) - px); if (dist < bd) { bd = dist; best = d; } }
+    hover = best;
+  }
+</script>
+
+<div class="chart" bind:clientWidth={W}>
+  <svg viewBox={`0 0 ${W} ${height}`} role="img" aria-label="time series chart"
+       onmousemove={onMove} onmouseleave={() => (hover = null)}>
+    {#if xy}
+      {#each ticks as t, i}
+        <line x1={PAD.l} x2={W - PAD.r} y1={xy.y(t)} y2={xy.y(t)} stroke="var(--grid)" stroke-width="1" />
+        <text x={PAD.l - 8} y={xy.y(t) + 3} text-anchor="end" font-size="10" fill="var(--faint)" font-family="var(--mono)">{t.toLocaleString()}</text>
+      {/each}
+
+      {#if bars}
+        {#each bars.data as d}
+          <rect x={xy.x(d.day) - Math.max(1, xy.innerW / xy.days.length / 2)} y={xy.y(d.value)}
+                width={Math.max(1.2, xy.innerW / xy.days.length * 0.7)} height={xy.y(0) - xy.y(d.value)}
+                fill={bars.color} opacity="0.28" />
+        {/each}
+      {/if}
+
+      {#each lines as l}
+        <path d={path(l.data, xy.x, xy.y)} fill="none" stroke={l.color} stroke-width="2"
+              stroke-dasharray={l.dash || 'none'} stroke-linejoin="round" />
+      {/each}
+
+      {#if horizon}
+        <line x1={xy.x(horizon)} x2={xy.x(horizon)} y1={PAD.t} y2={height - PAD.b}
+              stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3" opacity="0.6" />
+        <text x={xy.x(horizon) - 4} y={PAD.t + 10} text-anchor="end" font-size="9" fill="var(--muted)" font-family="var(--mono)">parquet horizon</text>
+      {/if}
+
+      <!-- x labels: first, middle, last -->
+      {#each [xy.days[0], xy.days[Math.floor(xy.days.length/2)], xy.days[xy.days.length-1]] as d}
+        <text x={xy.x(d)} y={height - 8} text-anchor="middle" font-size="10" fill="var(--faint)" font-family="var(--mono)">{d?.slice(5)}</text>
+      {/each}
+
+      {#if hover}
+        <line x1={xy.x(hover)} x2={xy.x(hover)} y1={PAD.t} y2={height - PAD.b} stroke="var(--amber)" stroke-width="1" opacity="0.5" />
+        {#each lines as l}
+          {#each l.data.filter((d) => d.day === hover) as d}
+            <circle cx={xy.x(d.day)} cy={xy.y(d.value)} r="3.5" fill={l.color} stroke="var(--bg)" stroke-width="1.5" />
+          {/each}
+        {/each}
+      {/if}
+    {/if}
+  </svg>
+
+  {#if hover && xy}
+    <div class="tip" style={`left:${Math.min(xy.x(hover) + 10, W - 150)}px`}>
+      <div class="tip-day">{hover}</div>
+      {#each lines as l}
+        {#each l.data.filter((d) => d.day === hover) as d}
+          <div class="tip-row"><span style={`color:${l.color}`}>●</span> {l.name}<b class="tnum">{d.value.toLocaleString()}</b></div>
+        {/each}
+      {/each}
+      {#if bars}{#each bars.data.filter((d) => d.day === hover) as d}
+        <div class="tip-row"><span style={`color:${bars.color};opacity:.5`}>▮</span> {bars.name}<b class="tnum">{d.value.toLocaleString()}</b></div>
+      {/each}{/if}
+    </div>
+  {/if}
+</div>
+
+<style>
+  .chart{position:relative;width:100%}
+  svg{width:100%;display:block}
+  .tip{position:absolute;top:8px;background:#0c111b;border:1px solid var(--line);border-radius:8px;
+       padding:8px 10px;font-size:11px;pointer-events:none;min-width:130px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .tip-day{color:var(--muted);margin-bottom:4px;letter-spacing:.06em}
+  .tip-row{display:flex;gap:6px;align-items:baseline}
+  .tip-row b{margin-left:auto}
+</style>

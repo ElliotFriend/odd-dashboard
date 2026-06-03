@@ -1,0 +1,12 @@
+# python (root)
+.venv
+__pycache__/
+
+# data extract (built artifact, lives at repo root)
+*.duckdb
+*.duckdb.wal
+
+# js (SvelteKit app in /web)
+node_modules
+web/.svelte-kit
+web/build

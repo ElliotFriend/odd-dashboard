@@ -1,0 +1,21 @@
+:root{
+  --bg:#0a0d14; --bg-soft:#10151f; --panel:#121826; --line:#1e2738;
+  --ink:#e8edf6; --muted:#8a94a8; --faint:#566077;
+  --amber:#f6c454; --amber-soft:#caa24a; --cyan:#5fd4d0; --rose:#e8788a;
+  --grid:#172033;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  --display:'Fraunces',Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono)}
+body{
+  background-image:radial-gradient(1200px 600px at 80% -10%, rgba(246,196,84,.06), transparent 60%),
+                   radial-gradient(900px 500px at -10% 110%, rgba(95,212,208,.05), transparent 60%);
+  background-attachment:fixed;
+}
+a{color:var(--amber);text-decoration:none}
+h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:.2px;margin:0}
+.mono-label{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.panel{background:linear-gradient(180deg,var(--panel),var(--bg-soft));border:1px solid var(--line);border-radius:14px}
+.tnum{font-variant-numeric:tabular-nums}
+button{font-family:var(--mono);cursor:pointer}

@@ -1,0 +1,18 @@
+name: refresh-stellar-extract
+on:
+  schedule:
+    - cron: '10 14 * * *'    # daily extract
+    - cron: '0 13 * * 1'     # weekly API snapshot (Mondays)
+  workflow_dispatch: {}
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true }
+      # uv reads .python-version and syncs the locked deps (duckdb) before running.
+      - run: uv run python stellar_odd.py extract --out ./stellar_extract.duckdb
+      - run: uv run python stellar_odd.py snapshot-api --db ./stellar_extract.duckdb
+      - uses: actions/upload-artifact@v4
+        with: { name: stellar_extract, path: stellar_extract.duckdb }
