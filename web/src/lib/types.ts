@@ -83,6 +83,18 @@ export interface ReposResponse {
   order: 'devs' | 'commits';
 }
 
+/** Per-developer commits / active-days / repos-touched across the 28/60/90-day windows,
+ *  with GitHub identity (from the `developers` table). The leaderboard picks a window +
+ *  sort client-side. `login` is null when it couldn't be resolved. */
+export interface DevAgg {
+  dev: number;
+  name: string | null;
+  login: string | null;
+  c28: number; a28: number; r28: number;
+  c60: number; a60: number; r60: number;
+  c90: number; a90: number; r90: number;
+}
+
 /** Per-repo devs+commits across the 28/60/90-day windows (loaded once; the leaderboard
  *  picks a window + sort client-side). */
 export interface RepoAgg {

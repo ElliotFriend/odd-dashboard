@@ -20,6 +20,10 @@ built on Electric Capital's **Open Dev Data** (ODD) parquet dataset.
   - `events add|list|rm` — manage curated timeline events (bounty programs,
     hackathons) in a version-controlled `events.json`; the dashboard overlays
     them on the chart as partner-colored bands.
+  - `resolve-devs` — build a `developers` table mapping canonical developer ids
+    to GitHub names + logins (free from commit noreply emails; the rest via the
+    GitHub GraphQL API when `GITHUB_TOKEN` is set). Powers the developer
+    leaderboard. Run with `uv run --env-file .env python stellar_odd.py resolve-devs`.
 - **SvelteKit app** (in [`./web`](./web)) — reads `stellar_extract.duckdb` server-side
   and renders the MAU-vs-daily overlay, single/multi split, commit totals, and a
   repo leaderboard.

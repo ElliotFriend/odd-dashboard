@@ -4,7 +4,7 @@ import { query, meta } from '$lib/server/db';
 import { loadEvents } from '$lib/server/events';
 import type {
   WindowedRow, DailyRow, ApiRow, MauResponse,
-  RepoRow, ReposResponse, RepoAgg, CohortRow, Intensity, SurgeDay, DiagnoseResponse
+  RepoRow, ReposResponse, RepoAgg, DevAgg, CohortRow, Intensity, SurgeDay, DiagnoseResponse
 } from '$lib/types';
 
 /** 28-day windowed MAD series + daily overlay + fresher API points + provenance. */
@@ -78,6 +78,42 @@ export async function getRepoAggregates(): Promise<RepoAgg[]> {
     SELECT rp."${urlCol}" AS url, rp."${nameCol}" AS repo, w.last_active_day,
            w.d28, w.c28, w.d60, w.c60, w.d90, w.c90
     FROM w LEFT JOIN repos rp ON rp."${idCol}" = w.repo_id`);
+}
+
+/** Top developers (active in 90d, non-bot) with commits/active-days/repos-touched per
+ *  28/60/90-day window, joined to the `developers` identity table (name + GitHub login).
+ *  Returns [] if `developers` hasn't been built yet (`stellar_odd.py resolve-devs`). */
+export async function getDevAggregates(): Promise<DevAgg[]> {
+  try {
+    return await query<DevAgg>(`
+      WITH hd AS (SELECT max(day) m FROM dev_day),
+      hr AS (SELECT max(day) m FROM repo_day),
+      dd AS (
+        SELECT dev,
+          COALESCE(SUM(num_commits) FILTER (WHERE day > (SELECT m FROM hd)-28), 0) c28,
+          COUNT(DISTINCT day)       FILTER (WHERE day > (SELECT m FROM hd)-28)    a28,
+          COALESCE(SUM(num_commits) FILTER (WHERE day > (SELECT m FROM hd)-60), 0) c60,
+          COUNT(DISTINCT day)       FILTER (WHERE day > (SELECT m FROM hd)-60)    a60,
+          COALESCE(SUM(num_commits) FILTER (WHERE day > (SELECT m FROM hd)-90), 0) c90,
+          COUNT(DISTINCT day)       FILTER (WHERE day > (SELECT m FROM hd)-90)    a90
+        FROM dev_day WHERE day > (SELECT m FROM hd)-90 GROUP BY dev),
+      rr AS (
+        SELECT dev,
+          COUNT(DISTINCT repo_id) FILTER (WHERE day > (SELECT m FROM hr)-28) r28,
+          COUNT(DISTINCT repo_id) FILTER (WHERE day > (SELECT m FROM hr)-60) r60,
+          COUNT(DISTINCT repo_id) FILTER (WHERE day > (SELECT m FROM hr)-90) r90
+        FROM repo_day WHERE day > (SELECT m FROM hr)-90 GROUP BY dev)
+      SELECT dv.canonical_developer_id AS dev, dv.name, dv.login,
+             dd.c28, dd.a28, COALESCE(rr.r28, 0) r28,
+             dd.c60, dd.a60, COALESCE(rr.r60, 0) r60,
+             dd.c90, dd.a90, COALESCE(rr.r90, 0) r90
+      FROM dd
+      JOIN developers dv ON dv.canonical_developer_id = dd.dev AND NOT dv.is_bot
+      LEFT JOIN rr ON rr.dev = dd.dev
+      ORDER BY dd.c90 DESC LIMIT 200`);
+  } catch {
+    return []; // developers table not built yet
+  }
 }
 
 /** "What moved the metric": rolling cohort split, contributor intensity, daily surges. */

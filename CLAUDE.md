@@ -58,6 +58,21 @@ geography) for all-time or trailing windows, and explain movements in the
 - `events add|list|rm` — manage curated timeline events (bounty programs, hackathons)
   in `events.json`. e.g. `events add --title "Drips Wave 5" --partner Drips
   --start 2026-05-26 --end 2026-06-02 [--description ... --url ...]`.
+- `resolve-devs [--window 90]` — build the `developers` table (canonical_developer_id →
+  display name, GitHub login, node id, is_bot) for devs active in the last N days. Names +
+  ~44% of logins are free from the `commits` table (noreply emails encode the login); the
+  rest resolve from the GitHub GraphQL node ids (`canonical_developers.primary_github_user_id`)
+  IF `$GITHUB_TOKEN` is set. Run `uv run --env-file .env python stellar_odd.py resolve-devs`
+  (token lives in gitignored `.env`). Separate from `extract` (slower commits scan + API);
+  powers the developer leaderboard. ~87% login coverage on the current snapshot.
+
+## Developer identity / the developers table
+- `dev` columns everywhere are `canonical_developer_id` (internal), NOT a GitHub login.
+  The `developers` table (built by `resolve-devs`) is the only place that maps it to a
+  name + login. `getDevAggregates()` LEFT JOINs it (filters `is_bot`); returns `[]` if the
+  table is absent, so the dashboard degrades to an empty-state note.
+- GOTCHA: after `resolve-devs`, **restart the dashboard** — `db.ts` caches a READ_ONLY
+  connection that won't see the newly-created table until it reconnects.
 
 ## Timeline events (chart annotations)
 - Source of truth is a **version-controlled `events.json` at the repo root** — NOT the
@@ -87,7 +102,9 @@ geography) for all-time or trailing windows, and explain movements in the
   use; the page uses `load`, not fetch.
 - Shared data shapes: `web/src/lib/types.ts`. Display helpers: `web/src/lib/format.ts`.
 - Components live in `web/src/lib/components/`: `Chart`, `StatCards`, `WhatMoved`,
-  `MauChart`, `RepoLeaderboard`. Header + footer live in `+layout.svelte`.
+  `MauChart`, `RepoLeaderboard`, `DevLeaderboard`. Header + footer live in `+layout.svelte`.
+- `DevLeaderboard` (devs by commits / active-days / repos-touched over 28/60/90d) links
+  `@login → github.com/login`; fed by `getDevAggregates()` (top 200 by 90d commits).
 - `Chart.svelte` is dependency-free SVG. Marquee view = 28d-windowed MAD line with
   faint DAILY-active bars behind it, so roll-offs read as roll-offs, not cliffs.
 - Repo leaderboard rows link to the repo's GitHub URL (`RepoRow.url`, opens new tab).

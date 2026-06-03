@@ -359,6 +359,85 @@ def cmd_events(args):
         return
 
 
+# --------------------------------------------------------------------------- resolve-devs
+# Build a `developers` table in the extract: canonical_developer_id -> display name,
+# GitHub login, node id, is_bot. Names + ~half the logins come free from the commits
+# table (noreply emails encode the login). The rest are resolved from the GitHub GraphQL
+# node ids (canonical_developers.primary_github_user_id) IF $GITHUB_TOKEN is set.
+# Kept separate from `extract` (it's a slower commits scan + API) — run occasionally.
+GITHUB_GQL = "https://api.github.com/graphql"
+
+
+def _gh_resolve_logins(node_ids: list[str], token: str) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for i in range(0, len(node_ids), 100):
+        batch = node_ids[i:i + 100]
+        body = json.dumps({"query": "{ nodes(ids: %s) { ... on User { id login } } }" % json.dumps(batch)})
+        req = urllib.request.Request(GITHUB_GQL, data=body.encode(), headers={
+            "Authorization": f"bearer {token}", "Content-Type": "application/json",
+            "User-Agent": "stellar-odd/1.0"})
+        try:
+            data = json.loads(urllib.request.urlopen(req, timeout=60).read().decode())
+        except Exception as ex:
+            print(f"  GraphQL batch {i//100} failed: {ex}"); continue
+        for n in (data.get("data", {}).get("nodes") or []):
+            if n and n.get("login"):
+                out[n["id"]] = n["login"]
+    return out
+
+
+def cmd_resolve_devs(args):
+    version, table_url = load_manifest()
+    con = connect(args.db)  # opens the extract read/write
+    print(f"snapshot {version}")
+
+    devs = [r[0] for r in con.execute(
+        f"SELECT DISTINCT dev FROM dev_day WHERE day > (SELECT max(day) FROM dev_day) - {args.window}").fetchall()]
+    print(f"resolving identity for {len(devs):,} devs active in the last {args.window}d")
+    idlist = ",".join(str(d) for d in devs)
+
+    # names + noreply logins + bot flag, from the commits table (one filtered scan)
+    cu = table_url["commits"]
+    con.execute(f"""CREATE OR REPLACE TEMP TABLE ci AS
+      WITH x AS (SELECT canonical_developer_id cid, commit_author_name nm,
+                        lower(commit_author_email) em, count(*) n, bool_or(is_bot <> 0) b
+                 FROM read_parquet('{cu}') WHERE canonical_developer_id IN ({idlist}) GROUP BY 1,2,3)
+      SELECT cid, arg_max(nm, n) AS name,
+             max(CASE WHEN em LIKE '%@users.noreply.github.com'
+                 THEN regexp_replace(regexp_replace(em, '@users.noreply.github.com$', ''), '^[0-9]+\\+', '')
+                 END) AS login,
+             bool_or(b) AS is_bot
+      FROM x GROUP BY cid""")
+
+    # GitHub node ids (for the GraphQL fallback)
+    cd = table_url["canonical_developers"]
+    con.execute(f"""CREATE OR REPLACE TABLE developers AS
+      SELECT ci.cid AS canonical_developer_id, ci.name, ci.login, cdv.node_id, ci.is_bot
+      FROM ci LEFT JOIN (SELECT id cid, primary_github_user_id node_id
+                         FROM read_parquet('{cd}') WHERE id IN ({idlist})) cdv ON cdv.cid = ci.cid""")
+
+    free = con.execute("SELECT COUNT(*) FROM developers WHERE login IS NOT NULL").fetchone()[0]
+    print(f"  noreply-derived logins: {free}/{len(devs)}")
+
+    token = os.environ.get("GITHUB_TOKEN")
+    missing = con.execute(
+        "SELECT canonical_developer_id, node_id FROM developers WHERE login IS NULL AND node_id IS NOT NULL").fetchall()
+    if token and missing:
+        print(f"  resolving {len(missing)} more via GitHub GraphQL…")
+        resolved = _gh_resolve_logins([m[1] for m in missing], token)
+        for cid, node in missing:
+            if resolved.get(node):
+                con.execute("UPDATE developers SET login = ? WHERE canonical_developer_id = ?", [resolved[node], cid])
+        print(f"  GraphQL resolved {sum(1 for _, n in missing if resolved.get(n))}/{len(missing)}")
+    elif missing:
+        print(f"  {len(missing)} devs unresolved (no noreply login). Set GITHUB_TOKEN to fill via GraphQL.")
+
+    total, withlogin = con.execute(
+        "SELECT COUNT(*), COUNT(login) FROM developers").fetchone()
+    con.close()
+    print(f"developers table: {total} rows, {withlogin} with a GitHub login.")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -378,6 +457,10 @@ def main():
     ev.add_argument("--start", help="YYYY-MM-DD (inclusive)"); ev.add_argument("--end", help="YYYY-MM-DD (inclusive)")
     ev.add_argument("--description", default=""); ev.add_argument("--url", default="")
     ev.set_defaults(func=cmd_events)
+    rd = sub.add_parser("resolve-devs", help="build the developers table (names + GitHub logins)")
+    rd.add_argument("--db", default=DEFAULT_OUT)
+    rd.add_argument("--window", type=int, default=90, help="resolve devs active in the last N days")
+    rd.set_defaults(func=cmd_resolve_devs)
     args = ap.parse_args(); args.func(args)
 
 

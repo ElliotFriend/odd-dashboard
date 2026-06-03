@@ -2,7 +2,7 @@
 // is loaded at full extent ONCE; view state (chart range, repo window/sort) lives in
 // the page as plain $state and slices/sorts this data client-side — so toggling a
 // control is instant and never re-runs the load or touches the URL.
-import { getMau, getDiagnose, getRepoAggregates, loadEvents } from '$lib/server/queries';
+import { getMau, getDiagnose, getRepoAggregates, getDevAggregates, loadEvents } from '$lib/server/queries';
 import type { PageServerLoad } from './$types';
 
 // 28 days before the parquet horizon = start of the current MAD window (UTC, no drift).
@@ -20,10 +20,11 @@ export const load: PageServerLoad = async ({ url, parent }) => {
   const mau = await getMau(full ? 100000 : 365);
   const diag = await getDiagnose(400);       // cohort/surge range (capped regardless)
   const repos = await getRepoAggregates();   // 28/60/90-day windows; leaderboard derives
+  const devs = await getDevAggregates();     // top devs w/ identity; [] until resolve-devs
   const events = await loadEvents();
 
   const { meta } = await parent();
   const windowStart = meta?.parquet_horizon ? minusDays(meta.parquet_horizon, 28) : null;
 
-  return { mau, diag, repos, events, windowStart, full };
+  return { mau, diag, repos, devs, events, windowStart, full };
 };
