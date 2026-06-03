@@ -2,9 +2,20 @@
   import type { PageData } from './$types';
   import { fmt } from '$lib/format';
 
+  import type { DevRepoRow } from '$lib/types';
+
   let { data }: { data: PageData } = $props();
 
-  const total = $derived(data.dev.repos.reduce((s, r) => s + r.commits, 0));
+  let win = $state<28 | 60 | 90 | 'all'>('all');
+
+  const pick = (r: DevRepoRow) => win === 'all' ? { commits: r.c_all, active: r.a_all }
+    : win === 28 ? { commits: r.c28, active: r.a28 }
+    : win === 60 ? { commits: r.c60, active: r.a60 } : { commits: r.c90, active: r.a90 };
+
+  const rows = $derived(
+    data.dev.repos.map((r) => ({ ...r, ...pick(r) })).filter((r) => r.commits > 0).sort((a, b) => b.commits - a.commits)
+  );
+  const total = $derived(rows.reduce((s, r) => s + r.commits, 0));
   const showName = $derived(
     data.dev.name != null && data.dev.name.toLowerCase() !== data.dev.login.toLowerCase()
   );
@@ -17,15 +28,20 @@
   <a class="ext" href={`https://github.com/${data.dev.login}`} target="_blank" rel="noreferrer noopener">GitHub ↗</a>
 </h1>
 
-<p class="mono-label">{data.dev.repos.length} repos · {fmt(total)} commits</p>
+<p class="mono-label">{rows.length} repos · {fmt(total)} commits</p>
 
 <section class="panel chartwrap">
+  <div class="toggle">
+    {#each [28, 60, 90] as const as w (w)}<button class:active={win === w} onclick={() => (win = w)}>{w}d</button>{/each}
+    <span class="div"></span>
+    <button class:active={win === 'all'} onclick={() => (win = 'all')}>all</button>
+  </div>
   <table>
     <thead>
       <tr><th>#</th><th>repo</th><th class="r">commits</th><th class="r">active days</th><th class="r">last active</th></tr>
     </thead>
     <tbody>
-      {#each data.dev.repos as r, i (r.repo)}
+      {#each rows as r, i (r.repo)}
         <tr>
           <td class="faint">{i + 1}</td>
           <td>
@@ -33,7 +49,7 @@
             <a class="ext" href={r.url} target="_blank" rel="noreferrer noopener">↗</a>
           </td>
           <td class="r tnum">{fmt(r.commits)}</td>
-          <td class="r tnum">{fmt(r.days)}</td>
+          <td class="r tnum">{fmt(r.active)}</td>
           <td class="r faint">{r.last_active}</td>
         </tr>
       {/each}

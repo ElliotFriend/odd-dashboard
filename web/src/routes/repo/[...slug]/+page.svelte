@@ -2,9 +2,20 @@
   import type { PageData } from './$types';
   import { fmt } from '$lib/format';
 
+  import type { RepoDevRow } from '$lib/types';
+
   let { data }: { data: PageData } = $props();
 
-  const total = $derived(data.repo.devs.reduce((s, d) => s + d.commits, 0));
+  let win = $state<28 | 60 | 90 | 'all'>('all');
+
+  const pick = (r: RepoDevRow) => win === 'all' ? { commits: r.c_all, active: r.a_all }
+    : win === 28 ? { commits: r.c28, active: r.a28 }
+    : win === 60 ? { commits: r.c60, active: r.a60 } : { commits: r.c90, active: r.a90 };
+
+  const rows = $derived(
+    data.repo.devs.map((r) => ({ ...r, ...pick(r) })).filter((r) => r.commits > 0).sort((a, b) => b.commits - a.commits)
+  );
+  const total = $derived(rows.reduce((s, r) => s + r.commits, 0));
 </script>
 
 <a href="/" class="back">← dashboard</a>
@@ -14,15 +25,20 @@
   <a class="ext" href={data.repo.url} target="_blank" rel="noreferrer noopener">GitHub ↗</a>
 </h1>
 
-<p class="mono-label">{data.repo.devs.length} developers · {fmt(total)} commits</p>
+<p class="mono-label">{rows.length} developers · {fmt(total)} commits</p>
 
 <section class="panel chartwrap">
+  <div class="toggle">
+    {#each [28, 60, 90] as const as w (w)}<button class:active={win === w} onclick={() => (win = w)}>{w}d</button>{/each}
+    <span class="div"></span>
+    <button class:active={win === 'all'} onclick={() => (win = 'all')}>all</button>
+  </div>
   <table>
     <thead>
       <tr><th>#</th><th>developer</th><th class="r">commits</th><th class="r">active days</th><th class="r">last active</th></tr>
     </thead>
     <tbody>
-      {#each data.repo.devs as d, i (d.dev)}
+      {#each rows as d, i (d.dev)}
         <tr>
           <td class="faint">{i + 1}</td>
           <td>
@@ -35,7 +51,7 @@
             {/if}
           </td>
           <td class="r tnum">{fmt(d.commits)}</td>
-          <td class="r tnum">{fmt(d.days)}</td>
+          <td class="r tnum">{fmt(d.active)}</td>
           <td class="r faint">{d.last_active}</td>
         </tr>
       {/each}

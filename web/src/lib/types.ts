@@ -139,9 +139,19 @@ export interface DiagnoseResponse {
 
 // ---- drill-down detail pages (/dev/[login], /repo/[...slug]) ----
 
-/** One repo a developer has committed to (all-time). */
-export interface DevRepoRow {
-  repo: string; url: string; commits: number; days: number; last_active: string;
+/** Per-window (28/60/90d) + all-time commits & active-days. The detail pages pick a
+ *  window client-side; a row with 0 commits in the chosen window is filtered out. */
+export interface WindowMetrics {
+  c28: number; a28: number;
+  c60: number; a60: number;
+  c90: number; a90: number;
+  c_all: number; a_all: number;
+  last_active: string;
+}
+
+/** One repo a developer has committed to. */
+export interface DevRepoRow extends WindowMetrics {
+  repo: string; url: string;
 }
 export interface DevDetail {
   login: string;
@@ -149,10 +159,9 @@ export interface DevDetail {
   repos: DevRepoRow[];
 }
 
-/** One developer who has committed to a repo (all-time). */
-export interface RepoDevRow {
+/** One developer who has committed to a repo. */
+export interface RepoDevRow extends WindowMetrics {
   dev: number; name: string | null; login: string | null;
-  commits: number; days: number; last_active: string;
 }
 export interface RepoDetail {
   repo: string; url: string;

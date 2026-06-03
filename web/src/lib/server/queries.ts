@@ -167,7 +167,20 @@ export async function getDiagnose(days: number): Promise<DiagnoseResponse> {
   return { cohort, intensity, surgeDays, window: W };
 }
 
-/** Drill-down: every repo a developer (by GitHub login) has committed to, all-time. */
+// commits + active-days per 28/60/90-day window and all-time, for a repo_day GROUP BY.
+// `rd.day > X` filters; aliases avoid DuckDB reserved words. Caller wraps with `WITH h`.
+const WINDOW_COLS = `
+  COALESCE(SUM(rd.num_commits) FILTER (WHERE rd.day > (SELECT m FROM h) - 28), 0) AS c28,
+  COUNT(DISTINCT rd.day)       FILTER (WHERE rd.day > (SELECT m FROM h) - 28)      AS a28,
+  COALESCE(SUM(rd.num_commits) FILTER (WHERE rd.day > (SELECT m FROM h) - 60), 0) AS c60,
+  COUNT(DISTINCT rd.day)       FILTER (WHERE rd.day > (SELECT m FROM h) - 60)      AS a60,
+  COALESCE(SUM(rd.num_commits) FILTER (WHERE rd.day > (SELECT m FROM h) - 90), 0) AS c90,
+  COUNT(DISTINCT rd.day)       FILTER (WHERE rd.day > (SELECT m FROM h) - 90)      AS a90,
+  SUM(rd.num_commits) AS c_all, COUNT(DISTINCT rd.day) AS a_all,
+  max(rd.day) AS last_active`;
+
+/** Drill-down: every repo a developer (by GitHub login) committed to, with per-window
+ *  (28/60/90d + all-time) commits/active-days so the page can filter client-side. */
 export async function getDevDetail(login: string): Promise<DevDetail | null> {
   if (!(await hasDevelopers())) return null;
   const dev = (await query<{ cid: number; name: string | null; login: string }>(
@@ -175,10 +188,10 @@ export async function getDevDetail(login: string): Promise<DevDetail | null> {
   if (!dev) return null;
   const c = await repoCols();
   const repos = await query<DevRepoRow>(
-    `SELECT rp."${c.name}" AS repo, rp."${c.url}" AS url,
-            SUM(rd.num_commits) AS commits, COUNT(DISTINCT rd.day) AS "days", max(rd.day) AS last_active
+    `WITH h AS (SELECT max(day) m FROM repo_day)
+     SELECT rp."${c.name}" AS repo, rp."${c.url}" AS url, ${WINDOW_COLS}
      FROM repo_day rd JOIN repos rp ON rp."${c.id}" = rd.repo_id
-     WHERE rd.dev = ? GROUP BY 1, 2 ORDER BY commits DESC LIMIT 200`, [dev.cid]);
+     WHERE rd.dev = ? GROUP BY 1, 2 ORDER BY c_all DESC LIMIT 200`, [dev.cid]);
   return { login: dev.login, name: dev.name, repos };
 }
 
@@ -194,10 +207,10 @@ export async function getRepoDetail(slug: string): Promise<RepoDetail | null> {
   const nameExpr = hasDev ? 'any_value(dv.name)' : 'NULL';
   const loginExpr = hasDev ? 'any_value(dv.login)' : 'NULL';
   const devs = await query<RepoDevRow>(
-    `SELECT rd.dev, ${nameExpr} AS "name", ${loginExpr} AS "login",
-            SUM(rd.num_commits) AS commits, COUNT(DISTINCT rd.day) AS "days", max(rd.day) AS last_active
+    `WITH h AS (SELECT max(day) m FROM repo_day)
+     SELECT rd.dev, ${nameExpr} AS "name", ${loginExpr} AS "login", ${WINDOW_COLS}
      FROM repo_day rd ${idJoin}
-     WHERE rd.repo_id = ? GROUP BY rd.dev ORDER BY commits DESC LIMIT 200`, [repo.id]);
+     WHERE rd.repo_id = ? GROUP BY rd.dev ORDER BY c_all DESC LIMIT 200`, [repo.id]);
   return { repo: repo.repo, url: repo.url, devs };
 }
 
