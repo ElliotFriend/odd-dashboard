@@ -14,12 +14,22 @@ async function conn(): Promise<DuckDBConnection> {
   return _conn;
 }
 
-// Normalize DuckDB values: BigInt -> Number, Date -> ISO yyyy-mm-dd.
+// Normalize DuckDB values into JSON-serializable JS:
+//   BigInt                              -> Number
+//   Date                                -> 'yyyy-mm-dd'
+//   DuckDBDateValue ({ days })          -> 'yyyy-mm-dd'
+//   DuckDBTimestamp(TZ)Value ({ micros }) -> ISO 8601 string (UTC)
+// The micros case matters because the wrapper holds a BigInt internally, which
+// json() would otherwise choke on ("Do not know how to serialize a BigInt").
 function clean(v: unknown): unknown {
   if (typeof v === 'bigint') return Number(v);
   if (v instanceof Date) return v.toISOString().slice(0, 10);
-  if (v && typeof v === 'object' && 'days' in v) // DuckDBDateValue
-    return new Date((v as { days: number }).days * 86400000).toISOString().slice(0, 10);
+  if (v && typeof v === 'object') {
+    if ('days' in v) // DuckDBDateValue
+      return new Date((v as { days: number }).days * 86400000).toISOString().slice(0, 10);
+    if ('micros' in v) // DuckDBTimestamp(TZ)Value: micros since epoch
+      return new Date(Number((v as { micros: bigint }).micros) / 1000).toISOString();
+  }
   return v;
 }
 
