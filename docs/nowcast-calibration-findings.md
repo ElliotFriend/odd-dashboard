@@ -1,8 +1,15 @@
 # Gap-week MAD nowcast — calibration findings
 
-**Date:** 2026-06-03 · **Verdict:** ❌ git-clone cannot reproduce ODD's MAD. The
-rate-limited GitHub REST/GraphQL APIs can't either. Only the GitHub **event
-firehose** (GH Archive) tracks ODD — at the cost of bulk data, not a polite API.
+**Date:** 2026-06-03 · **Verdict:** ❌ No public source reproduces ODD's MAD.
+git-clone undercounts ~16–33% (variable); REST/GraphQL hit the same ref-based
+ceiling; and GH Archive — tested against the real files — carries **no commit-author
+data at all** (its modern `PushEvent` payload was stripped to push metadata + the
+pusher). The live-week git clone is the least-bad option, but it is not trend-safe.
+
+> **Correction (this doc's earlier draft was wrong):** it claimed GH Archive was the
+> accurate "event firehose" path. We then downloaded a real week of GH Archive and
+> disproved that — see "GH Archive probe" below. ODD's advantage turns out to be
+> *continuous ingestion timing*, not a recoverable firehose.
 
 ## The problem we tried to solve
 
@@ -77,25 +84,60 @@ by definition — the objects are gone from Git's graph.
   it returned **4 commits / 2 authors** (= clone's default branch, < clone+PR-refs's
   25/5, ≪ ODD). Rate limit 60/hr (5000 with token). So: fits limits, **doesn't track
   ODD**. Worst of both worlds.
-- **GH Archive** (https://data.gharchive.org) — hourly global `PushEvent` JSON,
-  including force-pushed/rebased commits. Reachable for the period (HTTP 200). This is
-  almost certainly ODD's source, **not rate-limited**, but it's bulk data (~GBs/week,
-  or the `githubarchive` BigQuery public dataset), not a per-repo API.
+- **GH Archive** (https://data.gharchive.org) — downloaded a full real week (May 11–17,
+  168 hourly files, 4.4 GB gz) and tested it. **It carries no commit-author data.** The
+  modern `PushEvent` payload is `{repository_id, push_id, ref, head, before}` — verified
+  three ways: DuckDB `json_keys` (0 of 625,926 pushes have a `commits` key), the BigQuery
+  schema (`payload` is an opaque `STRING`, no commit fields), and raw `json.loads`
+  (payload is a dict with only those 5 keys). GitHub stripped per-commit detail out of
+  the Events API. All you get per push is the **pusher** (a GitHub account) and the
+  head/before SHAs.
+
+## GH Archive probe (the disproof)
+
+For the 29 stellar-org repos over May 11–17, GH Archive yields:
+
+| metric | GH Archive | vs ODD |
+|---|---|---|
+| distinct **pushers** | 32 | vs 62–63 **authors** — and pushers are merging maintainers, the *wrong population* |
+| pushes / head SHAs | 149 | (ODD: 1,046 commits) |
+| authors reachable via push-head SHAs* | 29 / 63 (~46%) | *even granting a magic SHA→author resolver |
+
+\* 121 of the 149 push-head SHAs are real ODD commits, but a push exposes only its tip
+commit, so they reach <half the authors.
+
+**Three-way comparison (29 repos, May 11–17):**
+
+| source | distinct devs | commits/pushes | author data? |
+|---|---|---|---|
+| ODD (truth) | 62–63 | 1,046 | yes |
+| git clone (+PR refs, crosswalk) | 52 | 721 (66% SHA) | yes (emails) |
+| GH Archive | 32 pushers | 149 pushes | **none** |
+
+**Why ODD still has commits the clone can't reach:** not recoverable force-pushes — ODD
+**ingests continuously**, capturing commits while PR refs are still live, before
+squash/rebase/delete. A clone run weeks later misses rewritten history. This is why
+clone coverage was highest (84%) for the *freshest* week and decayed to ~67% for older
+weeks — and why a *live*-week clone is the best available approximation.
 
 ## Conclusion & recommendation
 
-- **Do not build a git-clone MAD nowcast.** It has a hard ~30% (variable) dev
-  undercount that no cloning/identity cleverness fixes.
-- **The rate-limited REST/GraphQL APIs don't fix it either** (same ref-based ceiling).
-- **If a gap-week MAD nowcast is worth real effort, the path is GH Archive** (the event
-  firehose / BigQuery `githubarchive`), reconciled to canonical IDs via ODD's `commits`
-  crosswalk — and even then, kept strictly separate from ODD tables and labeled an
-  estimate (separate `nowcast.duckdb` / `gitfill_*`, `source='git'`, never aliased to
-  `canonical_developer_id`, additive-only).
-- **Otherwise, accept the ~7-day blind spot** (now described correctly in README/CLAUDE).
+- **No public source reproduces ODD's MAD.** git-clone undercounts ~16–33% (variable);
+  REST/GraphQL hit the same ref-based ceiling; GH Archive has no author data at all.
+- **GH Archive is *not* the answer** (this corrects the earlier draft): its modern
+  payload lacks commit authorship, and its pushers (32) are the wrong population — worse
+  for MAD than the clone.
+- **The least-bad option is a *live*-week git clone** (+ `refs/pull/*`, + ODD's `commits`
+  email→canonical crosswalk, + bot filter), run while PR refs are still fresh (~84%
+  coverage). But it still undercounts, and the undercount is time-dependent (the freshest
+  point reads artificially high), so **it is not safe for reading the MAD trend**.
+- **Recommended: accept the ~7-day blind spot** (now described correctly in README/CLAUDE)
+  rather than ship a biased nowcast.
 
-What clone *could* still do honestly: a coarse, clearly-labeled "≥N devs / something is
-happening" floor for spotting new repos or surges in the gap — never a MAD figure.
+What a live clone *could* still do honestly: a coarse, clearly-labeled "≥N devs /
+something is happening" floor for spotting new repos or surges in the gap — never a MAD
+figure, and never a trend line. If ever built: separate `nowcast.duckdb` / `gitfill_*`,
+`source='git'`, never aliased to `canonical_developer_id`, additive-only.
 
 ## Reproduce
 
@@ -113,3 +155,14 @@ git -C r.git log --all --pretty='%H%x09%ae%x09%aI' | awk -F'\t' '$3>="2026-05-11
 ```
 ODD's commit detail + crosswalk come from `read_parquet(<manifest commits.parquet>)`
 filtered to the repo set (see `stellar_odd.py` `load_manifest`).
+
+```bash
+# GH Archive disproof — confirm the payload has no commit authors:
+gzcat scratch/2026-05-11-0.json.gz | python3 -c "
+import sys,json
+for l in sys.stdin:
+    e=json.loads(l)
+    if e['type']=='PushEvent':
+        print(list(e['payload'].keys())); break"
+# -> ['repository_id','push_id','ref','head','before']   (no 'commits')
+```
