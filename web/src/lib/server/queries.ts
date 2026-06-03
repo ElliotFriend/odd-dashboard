@@ -4,7 +4,7 @@ import { query, meta } from '$lib/server/db';
 import { loadEvents } from '$lib/server/events';
 import type {
   WindowedRow, DailyRow, ApiRow, MauResponse,
-  RepoRow, ReposResponse, CohortRow, Intensity, SurgeDay, DiagnoseResponse
+  RepoRow, ReposResponse, RepoAgg, CohortRow, Intensity, SurgeDay, DiagnoseResponse
 } from '$lib/types';
 
 /** 28-day windowed MAD series + daily overlay + fresher API points + provenance. */
@@ -51,6 +51,33 @@ export async function getRepos(days: number, by: string): Promise<ReposResponse>
      FROM w LEFT JOIN repos rp ON rp."${idCol}" = w.repo_id
      ORDER BY ${order} DESC LIMIT 30`, [days]);
   return { rows, days, order: order as 'devs' | 'commits' };
+}
+
+/** Per-repo devs+commits for the 28/60/90-day windows at once, for repos active in
+ *  the last 90 days. The page loads this once and the leaderboard derives the chosen
+ *  window + sort client-side (no re-query per toggle). */
+export async function getRepoAggregates(): Promise<RepoAgg[]> {
+  const rc = await query<{ name: string }>("PRAGMA table_info('repos')");
+  const names = rc.map((r) => r.name);
+  const idCol = names.includes('id') ? 'id' : 'repo_id';
+  const nameCol = ['name', 'repo_url', 'url'].find((n) => names.includes(n)) || idCol;
+  const urlCol = ['link', 'repo_url', 'url'].find((n) => names.includes(n)) || nameCol;
+  return query<RepoAgg>(`
+    WITH h AS (SELECT max(day) AS m FROM repo_day),
+    w AS (
+      SELECT repo_id, max(day) AS last_active_day,
+        COUNT(DISTINCT dev) FILTER (WHERE day > (SELECT m FROM h) - 28)        AS d28,
+        COALESCE(SUM(num_commits) FILTER (WHERE day > (SELECT m FROM h) - 28), 0) AS c28,
+        COUNT(DISTINCT dev) FILTER (WHERE day > (SELECT m FROM h) - 60)        AS d60,
+        COALESCE(SUM(num_commits) FILTER (WHERE day > (SELECT m FROM h) - 60), 0) AS c60,
+        COUNT(DISTINCT dev) FILTER (WHERE day > (SELECT m FROM h) - 90)        AS d90,
+        COALESCE(SUM(num_commits) FILTER (WHERE day > (SELECT m FROM h) - 90), 0) AS c90
+      FROM repo_day
+      WHERE day > (SELECT m FROM h) - 90
+      GROUP BY repo_id)
+    SELECT rp."${urlCol}" AS url, rp."${nameCol}" AS repo, w.last_active_day,
+           w.d28, w.c28, w.d60, w.c60, w.d90, w.c90
+    FROM w LEFT JOIN repos rp ON rp."${idCol}" = w.repo_id`);
 }
 
 /** "What moved the metric": rolling cohort split, contributor intensity, daily surges. */

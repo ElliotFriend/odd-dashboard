@@ -4,10 +4,11 @@
 
   let { mau }: { mau: MauResponse } = $props();
 
-  // recurring-base estimate: median daily-active over the window (de-surged signal)
+  // recurring-base estimate: median daily-active over the last 90 entries (a stable
+  // recent figure; mau.daily is now the full history).
   const recurringBase = $derived.by(() => {
-    if (!mau?.daily?.length) return null;
-    const v = mau.daily.map((d) => d.daily_active_devs).sort((a, b) => a - b);
+    const d = mau.daily; if (!d.length) return null;
+    const v = d.slice(-90).map((x) => x.daily_active_devs).sort((a, b) => a - b);
     return v[Math.floor(v.length / 2)];
   });
 </script>

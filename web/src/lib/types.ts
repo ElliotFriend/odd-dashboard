@@ -83,6 +83,17 @@ export interface ReposResponse {
   order: 'devs' | 'commits';
 }
 
+/** Per-repo devs+commits across the 28/60/90-day windows (loaded once; the leaderboard
+ *  picks a window + sort client-side). */
+export interface RepoAgg {
+  repo: string; // owner/repo (display)
+  url: string;  // full GitHub URL (href)
+  last_active_day: string;
+  d28: number; c28: number;
+  d60: number; c60: number;
+  d90: number; c90: number;
+}
+
 // ---- /api/diagnose ----
 
 /** Rolling cohort split (recurring vs new) per anchor day. */

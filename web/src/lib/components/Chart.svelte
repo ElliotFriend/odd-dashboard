@@ -93,7 +93,7 @@
   <svg viewBox={`0 0 ${W} ${height}`} role="img" aria-label="time series chart"
        onmousemove={onMove} onmouseleave={() => (hover = null)}>
     {#if xy}
-      {#each bands as b}
+      {#each bands as b (b.event.title)}
         <rect class="band" x={b.left} y={PAD.t} width={b.width} height={height - PAD.t - PAD.b}
               fill={b.color} opacity="0.10" />
         <line class="band" x1={b.left} x2={b.left} y1={PAD.t} y2={height - PAD.b}
@@ -102,20 +102,20 @@
               font-family="var(--mono)">{b.event.title}</text>
       {/each}
 
-      {#each ticks as t, i}
+      {#each ticks as t (t)}
         <line x1={PAD.l} x2={W - PAD.r} y1={xy.y(t)} y2={xy.y(t)} stroke="var(--grid)" stroke-width="1" />
         <text x={PAD.l - 8} y={xy.y(t) + 3} text-anchor="end" font-size="10" fill="var(--faint)" font-family="var(--mono)">{t.toLocaleString()}</text>
       {/each}
 
       {#if bars}
-        {#each bars.data as d}
+        {#each bars.data as d (d.day)}
           <rect x={xy.x(d.day) - Math.max(1, xy.innerW / xy.days.length / 2)} y={xy.y(d.value)}
                 width={Math.max(1.2, xy.innerW / xy.days.length * 0.7)} height={xy.y(0) - xy.y(d.value)}
                 fill={bars.color} opacity="0.28" />
         {/each}
       {/if}
 
-      {#each lines as l}
+      {#each lines as l (l.name)}
         <path d={path(l.data, xy.x, xy.y)} fill="none" stroke={l.color} stroke-width="2"
               stroke-dasharray={l.dash || 'none'} stroke-linejoin="round" />
       {/each}
@@ -133,14 +133,14 @@
       {/if}
 
       <!-- x labels: first, middle, last -->
-      {#each [xy.days[0], xy.days[Math.floor(xy.days.length/2)], xy.days[xy.days.length-1]] as d}
+      {#each [xy.days[0], xy.days[Math.floor(xy.days.length/2)], xy.days[xy.days.length-1]] as d (d)}
         <text x={xy.x(d)} y={height - 8} text-anchor="middle" font-size="10" fill="var(--faint)" font-family="var(--mono)">{d?.slice(5)}</text>
       {/each}
 
       {#if hover}
         <line x1={xy.x(hover)} x2={xy.x(hover)} y1={PAD.t} y2={height - PAD.b} stroke="var(--amber)" stroke-width="1" opacity="0.5" />
-        {#each lines as l}
-          {#each l.data.filter((d) => d.day === hover) as d}
+        {#each lines as l (l.name)}
+          {#each l.data.filter((d) => d.day === hover) as d (d.day)}
             <circle cx={xy.x(d.day)} cy={xy.y(d.value)} r="3.5" fill={l.color} stroke="var(--bg)" stroke-width="1.5" />
           {/each}
         {/each}
@@ -151,15 +151,15 @@
   {#if hover && xy}
     <div class="tip" style={`left:${Math.min(xy.x(hover) + 10, W - 150)}px`}>
       <div class="tip-day">{hover} {weekday(hover)}</div>
-      {#each lines as l}
-        {#each l.data.filter((d) => d.day === hover) as d}
+      {#each lines as l (l.name)}
+        {#each l.data.filter((d) => d.day === hover) as d (d.day)}
           <div class="tip-row"><span style={`color:${l.color}`}>●</span> {l.name}<b class="tnum">{d.value.toLocaleString()}</b></div>
         {/each}
       {/each}
-      {#if bars}{#each bars.data.filter((d) => d.day === hover) as d}
+      {#if bars}{#each bars.data.filter((d) => d.day === hover) as d (d.day)}
         <div class="tip-row"><span style={`color:${bars.color};opacity:.5`}>▮</span> {bars.name}<b class="tnum">{d.value.toLocaleString()}</b></div>
       {/each}{/if}
-      {#each eventsOn(hover) as e}
+      {#each eventsOn(hover) as e (e.title)}
         <div class="tip-row"><span style={`color:${partnerColor(e.partner)}`}>▮</span> {e.title}<b>{e.partner}</b></div>
       {/each}
     </div>

@@ -73,15 +73,19 @@ geography) for all-time or trailing windows, and explain movements in the
 - `web/src/lib/server/db.ts` opens the extract READ_ONLY (so a scheduled `extract`
   won't lock it). BigInt/Date values are normalized there.
 - **Data loads server-side, NOT via client `$effect`+fetch.** `+page.server.ts` `load`
-  reads view state from URL params (`days`, `repoWin`, `repoBy`) and returns all data;
-  `+layout.server.ts` loads the global `meta` for the header. Toggles call `goto('?…')`
-  (URL is the source of truth), which re-runs `load`. No `$effect` for data.
-- All SQL lives in `web/src/lib/server/queries.ts` (`getMau`/`getRepos`/`getDiagnose`).
-  The `/api/{mau,repos,diagnose,events}` endpoints are thin wrappers over those — kept
-  for external use; the page itself uses `load`, not fetch.
+  returns ALL data at full extent (no params); `+layout.server.ts` loads the global
+  `meta` for the header. **View state (chart range, repo window/sort) is plain `$state`
+  in `+page.svelte`** (bound into the components), and the components slice/sort the
+  loaded data client-side via `$derived` — NO URL params, NO `goto`, NO `$effect`.
+  (User preference: view state is `$state`/`$derived`, never URL search params.)
+- All SQL lives in `web/src/lib/server/queries.ts` (`getMau`/`getRepoAggregates`/
+  `getDiagnose`; `getMau(100000)` = full series, `getRepoAggregates` returns per-repo
+  28/60/90-day windows so the leaderboard derives its window+sort with no re-query).
+  The `/api/{mau,repos,diagnose,events}` endpoints are thin wrappers — kept for external
+  use; the page uses `load`, not fetch.
 - Shared data shapes: `web/src/lib/types.ts`. Display helpers: `web/src/lib/format.ts`.
-- Page is split into components in `web/src/lib/`: `StatCards`, `WhatMoved`, `MauChart`,
-  `RepoLeaderboard`. Header + footer live in `+layout.svelte`.
+- Components live in `web/src/lib/components/`: `Chart`, `StatCards`, `WhatMoved`,
+  `MauChart`, `RepoLeaderboard`. Header + footer live in `+layout.svelte`.
 - `Chart.svelte` is dependency-free SVG. Marquee view = 28d-windowed MAD line with
   faint DAILY-active bars behind it, so roll-offs read as roll-offs, not cliffs.
 - Repo leaderboard rows link to the repo's GitHub URL (`RepoRow.url`, opens new tab).
