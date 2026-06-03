@@ -73,11 +73,13 @@ geography) for all-time or trailing windows, and explain movements in the
 - `web/src/lib/server/db.ts` opens the extract READ_ONLY (so a scheduled `extract`
   won't lock it). BigInt/Date values are normalized there.
 - **Data loads server-side, NOT via client `$effect`+fetch.** `+page.server.ts` `load`
-  returns ALL data at full extent (no params); `+layout.server.ts` loads the global
-  `meta` for the header. **View state (chart range, repo window/sort) is plain `$state`
-  in `+page.svelte`** (bound into the components), and the components slice/sort the
-  loaded data client-side via `$derived` — NO URL params, NO `goto`, NO `$effect`.
-  (User preference: view state is `$state`/`$derived`, never URL search params.)
+  returns data BOUNDED to 365 days by default (small payload); `+layout.server.ts` loads
+  the global `meta`. **View state (chart range, repo window/sort) is plain `$state` in
+  `+page.svelte`** (passed into components), which slice/sort the loaded data client-side
+  via `$derived` — NO `$effect`. (User preference: view state is `$state`/`$derived`,
+  not URL params.) The ONE exception: the chart's `all` view needs the full since-2015
+  series, so selecting it `goto('?range=all')` to re-load full (navigation re-runs `load`
+  natively — no `depends`/`invalidate` needed). Default ≈730 series rows vs ≈8,945 full.
 - All SQL lives in `web/src/lib/server/queries.ts` (`getMau`/`getRepoAggregates`/
   `getDiagnose`; `getMau(100000)` = full series, `getRepoAggregates` returns per-repo
   28/60/90-day windows so the leaderboard derives its window+sort with no re-query).

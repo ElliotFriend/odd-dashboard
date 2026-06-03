@@ -30,6 +30,9 @@
     <div class="mono-label">daily active (latest day)</div>
     <div class="big tnum">{fmt(latest(mau.daily, 'daily_active_devs'))}</div>
     <div class="split">recurring base ≈ {fmt(recurringBase)}/day</div>
+    <p class="cardnote">“Recurring base” = the median number of developers active on a typical
+      day over the last 90 days. Using the median (not the average) makes it robust to
+      surge spikes, so it estimates the steady, always-there developer population.</p>
   </div>
   <div class="panel card">
     <div class="mono-label">api total (freshest)</div>
@@ -43,5 +46,6 @@
   .card{padding:16px}
   .big{font-family:var(--display);font-size:34px;font-weight:600;margin-top:6px;line-height:1}
   .split{margin-top:8px;font-size:11px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+  .cardnote{margin:8px 0 0;font-size:10.5px;line-height:1.45;color:var(--faint)}
   @media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}}
 </style>

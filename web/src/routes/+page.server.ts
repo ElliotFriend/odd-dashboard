@@ -10,15 +10,20 @@ const minusDays = (day: string, n: number): string =>
   new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)) - n * 86400000)
     .toISOString().slice(0, 10);
 
-export const load: PageServerLoad = async ({ parent }) => {
+export const load: PageServerLoad = async ({ url, parent }) => {
+  // Default load is bounded to 365 days (covers the 60/90/120/365 toggles via
+  // client-side slicing — small payload). The `all` chart view escalates to the full
+  // series via a single `?range=all` flag; navigating to it re-runs this load natively.
+  const full = url.searchParams.get('range') === 'all';
+
   // sequential: the DuckDB connection is a single shared handle
-  const mau = await getMau(100000);          // full series; the chart slices client-side
-  const diag = await getDiagnose(400);       // max cohort/surge range
+  const mau = await getMau(full ? 100000 : 365);
+  const diag = await getDiagnose(400);       // cohort/surge range (capped regardless)
   const repos = await getRepoAggregates();   // 28/60/90-day windows; leaderboard derives
   const events = await loadEvents();
 
   const { meta } = await parent();
   const windowStart = meta?.parquet_horizon ? minusDays(meta.parquet_horizon, 28) : null;
 
-  return { mau, diag, repos, events, windowStart };
+  return { mau, diag, repos, events, windowStart, full };
 };

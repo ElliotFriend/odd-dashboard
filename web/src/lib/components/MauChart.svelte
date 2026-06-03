@@ -6,13 +6,14 @@
   import { partnerColor } from '$lib/colors';
 
   let {
-    mau, diag, events, windowStart, days = $bindable(120)
+    mau, diag, events, windowStart, days, onDays
   }: {
     mau: MauResponse;
     diag: DiagnoseResponse;
     events: TimelineEvent[];
     windowStart: string | null;
-    days?: number;
+    days: number;
+    onDays: (d: number) => void;
   } = $props();
 
   // mau/diag are now full-extent — slice to the last `days` days before building series.
@@ -47,7 +48,7 @@
     <h2>MAU vs. daily activity</h2>
     <div class="toggle">
       {#each [60, 90, 120, 365, 100000] as d (d)}
-        <button class:active={days === d} onclick={() => (days = d)}>{d >= 100000 ? 'all' : d + 'd'}</button>
+        <button class:active={days === d} onclick={() => onDays(d)}>{d >= 100000 ? 'all' : d + 'd'}</button>
       {/each}
     </div>
   </div>
