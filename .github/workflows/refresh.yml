@@ -11,8 +11,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with: { enable-cache: true }
-      # uv reads .python-version and syncs the locked deps (duckdb) before running.
-      - run: uv run python stellar_odd.py extract --out ./stellar_extract.duckdb
-      - run: uv run python stellar_odd.py snapshot-api --db ./stellar_extract.duckdb
+      # uv reads .python-version and syncs the locked deps before running.
+      # --no-dev skips the dev group (pandas/pytz, for local inspection only) — CI just needs duckdb.
+      - run: uv run --no-dev python stellar_odd.py extract --out ./stellar_extract.duckdb
+      - run: uv run --no-dev python stellar_odd.py snapshot-api --db ./stellar_extract.duckdb
       - uses: actions/upload-artifact@v4
         with: { name: stellar_extract, path: stellar_extract.duckdb }

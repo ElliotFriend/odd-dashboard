@@ -95,6 +95,10 @@ GrantFox is unrelated to it.
 - `repo_developer_activities` counts a dev on EVERY repo they touch — summing per-repo
   `devs` over-counts people on multiple repos. Fine for ranking, not a partition.
 - `start`/`end` are reserved words in DuckDB — alias as `min_day`/`max_day`.
+- Reading the extract via the **Python** duckdb client needs `pytz` (+ `numpy`/`pandas`
+  for `.fetchdf()`) to materialize the `meta.extracted_at` TIMESTAMPTZ — they're in the
+  uv `dev` group, so `uv run python` has them; CI runs `uv run --no-dev` (duckdb only).
+  The dashboard's Node client is unaffected.
 - Column names are introspected at runtime in the CLI; prefer that over hardcoding.
 
 ## Open next steps
