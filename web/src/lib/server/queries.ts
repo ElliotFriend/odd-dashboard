@@ -3,60 +3,84 @@
 import { query, meta } from '$lib/server/db';
 import { loadEvents } from '$lib/server/events';
 import type {
-  WindowedRow, DailyRow, ApiRow, MauResponse,
-  RepoRow, ReposResponse, RepoAgg, DevAgg, CohortRow, Intensity, SurgeDay, DiagnoseResponse,
-  DevDetail, RepoDetail, DevRepoRow, RepoDevRow
+    WindowedRow,
+    DailyRow,
+    ApiRow,
+    MauResponse,
+    RepoRow,
+    ReposResponse,
+    RepoAgg,
+    DevAgg,
+    CohortRow,
+    Intensity,
+    SurgeDay,
+    DiagnoseResponse,
+    DevDetail,
+    RepoDetail,
+    DevRepoRow,
+    RepoDevRow,
 } from '$lib/types';
 
 // repos column names (introspected once; the extract carries id/name/link).
 async function repoCols() {
-  const names = (await query<{ name: string }>("PRAGMA table_info('repos')")).map((r) => r.name);
-  return {
-    id: names.includes('id') ? 'id' : 'repo_id',
-    name: ['name', 'repo_url', 'url'].find((n) => names.includes(n)) || 'id',
-    url: ['link', 'repo_url', 'url'].find((n) => names.includes(n)) || 'name'
-  };
+    const names = (await query<{ name: string }>("PRAGMA table_info('repos')")).map((r) => r.name);
+    return {
+        id: names.includes('id') ? 'id' : 'repo_id',
+        name: ['name', 'repo_url', 'url'].find((n) => names.includes(n)) || 'id',
+        url: ['link', 'repo_url', 'url'].find((n) => names.includes(n)) || 'name',
+    };
 }
 
 async function hasDevelopers(): Promise<boolean> {
-  return (await query("SELECT 1 FROM information_schema.tables WHERE table_name = 'developers'")).length > 0;
+    return (
+        (await query("SELECT 1 FROM information_schema.tables WHERE table_name = 'developers'"))
+            .length > 0
+    );
 }
 
 /** 28-day windowed MAD series + daily overlay + fresher API points + provenance. */
 export async function getMau(days: number): Promise<MauResponse> {
-  const windowed = await query<WindowedRow>(
-    `SELECT day, all_devs, exclusive_devs, multichain_devs, num_commits
+    const windowed = await query<WindowedRow>(
+        `SELECT day, all_devs, exclusive_devs, multichain_devs, num_commits
      FROM eco_mads
      WHERE day > (SELECT max(day) FROM eco_mads) - ?
-     ORDER BY day`, [days]);
+     ORDER BY day`,
+        [days],
+    );
 
-  const daily = await query<DailyRow>(
-    `SELECT day, daily_active_devs, daily_commits
+    const daily = await query<DailyRow>(
+        `SELECT day, daily_active_devs, daily_commits
      FROM daily_activity
      WHERE day > (SELECT max(day) FROM daily_activity) - ?
-     ORDER BY day`, [days]);
+     ORDER BY day`,
+        [days],
+    );
 
-  let api: ApiRow[] = [];
-  try {
-    api = await query<ApiRow>(
-      `SELECT day, total, single_chain, multi_chain FROM mau_api_history
-       WHERE day > (SELECT max(day) FROM mau_api_history) - ? ORDER BY day`, [days]);
-  } catch { /* mau_api_history may not exist yet */ }
+    let api: ApiRow[] = [];
+    try {
+        api = await query<ApiRow>(
+            `SELECT day, total, single_chain, multi_chain FROM mau_api_history
+       WHERE day > (SELECT max(day) FROM mau_api_history) - ? ORDER BY day`,
+            [days],
+        );
+    } catch {
+        /* mau_api_history may not exist yet */
+    }
 
-  return { windowed, daily, api, meta: await meta() };
+    return { windowed, daily, api, meta: await meta() };
 }
 
 /** Repo leaderboard over a trailing window: devs + commits per repo, with names + URLs. */
 export async function getRepos(days: number, by: string): Promise<ReposResponse> {
-  const order = by === 'commits' ? 'commits' : 'devs';
-  const rc = await query<{ name: string }>("PRAGMA table_info('repos')");
-  const names = rc.map((r) => r.name);
-  const idCol = names.includes('id') ? 'id' : 'repo_id';
-  const nameCol = ['name', 'repo_url', 'url'].find((n) => names.includes(n)) || idCol;     // owner/repo display
-  const urlCol = ['link', 'repo_url', 'url'].find((n) => names.includes(n)) || nameCol;     // full GitHub URL
+    const order = by === 'commits' ? 'commits' : 'devs';
+    const rc = await query<{ name: string }>("PRAGMA table_info('repos')");
+    const names = rc.map((r) => r.name);
+    const idCol = names.includes('id') ? 'id' : 'repo_id';
+    const nameCol = ['name', 'repo_url', 'url'].find((n) => names.includes(n)) || idCol; // owner/repo display
+    const urlCol = ['link', 'repo_url', 'url'].find((n) => names.includes(n)) || nameCol; // full GitHub URL
 
-  const rows = await query<RepoRow>(
-    `WITH w AS (
+    const rows = await query<RepoRow>(
+        `WITH w AS (
        SELECT repo_id, count(DISTINCT dev) AS devs, sum(num_commits) AS commits,
               max(day) AS last_active_day
        FROM repo_day
@@ -64,20 +88,22 @@ export async function getRepos(days: number, by: string): Promise<ReposResponse>
        GROUP BY repo_id)
      SELECT rp."${urlCol}" AS url, rp."${nameCol}" AS repo, w.devs, w.commits, w.last_active_day
      FROM w LEFT JOIN repos rp ON rp."${idCol}" = w.repo_id
-     ORDER BY ${order} DESC LIMIT 30`, [days]);
-  return { rows, days, order: order as 'devs' | 'commits' };
+     ORDER BY ${order} DESC LIMIT 30`,
+        [days],
+    );
+    return { rows, days, order: order as 'devs' | 'commits' };
 }
 
 /** Per-repo devs+commits for the 28/60/90-day windows at once, for repos active in
  *  the last 90 days. The page loads this once and the leaderboard derives the chosen
  *  window + sort client-side (no re-query per toggle). */
 export async function getRepoAggregates(): Promise<RepoAgg[]> {
-  const rc = await query<{ name: string }>("PRAGMA table_info('repos')");
-  const names = rc.map((r) => r.name);
-  const idCol = names.includes('id') ? 'id' : 'repo_id';
-  const nameCol = ['name', 'repo_url', 'url'].find((n) => names.includes(n)) || idCol;
-  const urlCol = ['link', 'repo_url', 'url'].find((n) => names.includes(n)) || nameCol;
-  return query<RepoAgg>(`
+    const rc = await query<{ name: string }>("PRAGMA table_info('repos')");
+    const names = rc.map((r) => r.name);
+    const idCol = names.includes('id') ? 'id' : 'repo_id';
+    const nameCol = ['name', 'repo_url', 'url'].find((n) => names.includes(n)) || idCol;
+    const urlCol = ['link', 'repo_url', 'url'].find((n) => names.includes(n)) || nameCol;
+    return query<RepoAgg>(`
     WITH h AS (SELECT max(day) AS m FROM repo_day),
     w AS (
       SELECT repo_id, max(day) AS last_active_day,
@@ -99,8 +125,8 @@ export async function getRepoAggregates(): Promise<RepoAgg[]> {
  *  28/60/90-day window, joined to the `developers` identity table (name + GitHub login).
  *  Returns [] if `developers` hasn't been built yet (`stellar_odd.py resolve-devs`). */
 export async function getDevAggregates(): Promise<DevAgg[]> {
-  try {
-    return await query<DevAgg>(`
+    try {
+        return await query<DevAgg>(`
       WITH hd AS (SELECT max(day) m FROM dev_day),
       hr AS (SELECT max(day) m FROM repo_day),
       dd AS (
@@ -126,17 +152,17 @@ export async function getDevAggregates(): Promise<DevAgg[]> {
       JOIN developers dv ON dv.canonical_developer_id = dd.dev AND NOT dv.is_bot
       LEFT JOIN rr ON rr.dev = dd.dev
       ORDER BY dd.c90 DESC LIMIT 200`);
-  } catch {
-    return []; // developers table not built yet
-  }
+    } catch {
+        return []; // developers table not built yet
+    }
 }
 
 /** "What moved the metric": rolling cohort split, contributor intensity, daily surges. */
 export async function getDiagnose(days: number): Promise<DiagnoseResponse> {
-  const W = 28;
-  const R = Math.max(60, Math.min(400, days || 120));
+    const W = 28;
+    const R = Math.max(60, Math.min(400, days || 120));
 
-  const cohort = await query<CohortRow>(`
+    const cohort = await query<CohortRow>(`
     WITH anchors AS (
       SELECT DISTINCT day AS d FROM dev_day
       WHERE day > (SELECT max(day) FROM dev_day) - ${R}),
@@ -150,12 +176,15 @@ export async function getDiagnose(days: number): Promise<DiagnoseResponse> {
     FROM cur LEFT JOIN prv ON prv.d = cur.d AND prv.dev = cur.dev
     GROUP BY cur.d ORDER BY cur.d`);
 
-  const intensity = (await query<Intensity>(`
+    const intensity =
+        (
+            await query<Intensity>(`
     SELECT SUM(num_commits) AS commits, COUNT(DISTINCT dev) AS devs,
            ROUND(SUM(num_commits)*1.0/NULLIF(COUNT(DISTINCT dev),0), 2) AS commits_per_dev
-    FROM dev_day WHERE day > (SELECT max(day) FROM dev_day) - ${W}`))[0] ?? {};
+    FROM dev_day WHERE day > (SELECT max(day) FROM dev_day) - ${W}`)
+        )[0] ?? {};
 
-  const surgeDays = await query<SurgeDay>(`
+    const surgeDays = await query<SurgeDay>(`
     WITH d AS (SELECT day, daily_active_devs,
         median(daily_active_devs) OVER (ORDER BY day RANGE BETWEEN 90 PRECEDING AND 1 PRECEDING) AS base
       FROM daily_activity)
@@ -164,7 +193,7 @@ export async function getDiagnose(days: number): Promise<DiagnoseResponse> {
       AND day > (SELECT max(day) FROM daily_activity) - ${R}
     ORDER BY day`);
 
-  return { cohort, intensity, surgeDays, window: W };
+    return { cohort, intensity, surgeDays, window: W };
 }
 
 // commits + active-days per 28/60/90-day window and all-time, for a repo_day GROUP BY.
@@ -182,36 +211,48 @@ const WINDOW_COLS = `
 /** Drill-down: every repo a developer (by GitHub login) committed to, with per-window
  *  (28/60/90d + all-time) commits/active-days so the page can filter client-side. */
 export async function getDevDetail(login: string): Promise<DevDetail | null> {
-  if (!(await hasDevelopers())) return null;
-  const dev = (await query<{ cid: number; name: string | null; login: string }>(
-    "SELECT canonical_developer_id cid, name, login FROM developers WHERE login = ? LIMIT 1", [login]))[0];
-  if (!dev) return null;
-  const c = await repoCols();
-  const repos = await query<DevRepoRow>(
-    `WITH h AS (SELECT max(day) m FROM repo_day)
+    if (!(await hasDevelopers())) return null;
+    const dev = (
+        await query<{ cid: number; name: string | null; login: string }>(
+            'SELECT canonical_developer_id cid, name, login FROM developers WHERE login = ? LIMIT 1',
+            [login],
+        )
+    )[0];
+    if (!dev) return null;
+    const c = await repoCols();
+    const repos = await query<DevRepoRow>(
+        `WITH h AS (SELECT max(day) m FROM repo_day)
      SELECT rp."${c.name}" AS repo, rp."${c.url}" AS url, ${WINDOW_COLS}
      FROM repo_day rd JOIN repos rp ON rp."${c.id}" = rd.repo_id
-     WHERE rd.dev = ? GROUP BY 1, 2 ORDER BY c_all DESC LIMIT 200`, [dev.cid]);
-  return { login: dev.login, name: dev.name, repos };
+     WHERE rd.dev = ? GROUP BY 1, 2 ORDER BY c_all DESC LIMIT 200`,
+        [dev.cid],
+    );
+    return { login: dev.login, name: dev.name, repos };
 }
 
 /** Drill-down: every developer who has committed to a repo (by owner/repo name), all-time. */
 export async function getRepoDetail(slug: string): Promise<RepoDetail | null> {
-  const c = await repoCols();
-  const repo = (await query<{ id: number; repo: string; url: string }>(
-    `SELECT "${c.id}" AS id, "${c.name}" AS repo, "${c.url}" AS url FROM repos WHERE "${c.name}" = ? LIMIT 1`, [slug]))[0];
-  if (!repo) return null;
-  // join identities when the developers table exists; otherwise devs show as ids only
-  const hasDev = await hasDevelopers();
-  const idJoin = hasDev ? 'LEFT JOIN developers dv ON dv.canonical_developer_id = rd.dev' : '';
-  const nameExpr = hasDev ? 'any_value(dv.name)' : 'NULL';
-  const loginExpr = hasDev ? 'any_value(dv.login)' : 'NULL';
-  const devs = await query<RepoDevRow>(
-    `WITH h AS (SELECT max(day) m FROM repo_day)
+    const c = await repoCols();
+    const repo = (
+        await query<{ id: number; repo: string; url: string }>(
+            `SELECT "${c.id}" AS id, "${c.name}" AS repo, "${c.url}" AS url FROM repos WHERE "${c.name}" = ? LIMIT 1`,
+            [slug],
+        )
+    )[0];
+    if (!repo) return null;
+    // join identities when the developers table exists; otherwise devs show as ids only
+    const hasDev = await hasDevelopers();
+    const idJoin = hasDev ? 'LEFT JOIN developers dv ON dv.canonical_developer_id = rd.dev' : '';
+    const nameExpr = hasDev ? 'any_value(dv.name)' : 'NULL';
+    const loginExpr = hasDev ? 'any_value(dv.login)' : 'NULL';
+    const devs = await query<RepoDevRow>(
+        `WITH h AS (SELECT max(day) m FROM repo_day)
      SELECT rd.dev, ${nameExpr} AS "name", ${loginExpr} AS "login", ${WINDOW_COLS}
      FROM repo_day rd ${idJoin}
-     WHERE rd.repo_id = ? GROUP BY rd.dev ORDER BY c_all DESC LIMIT 200`, [repo.id]);
-  return { repo: repo.repo, url: repo.url, devs };
+     WHERE rd.repo_id = ? GROUP BY rd.dev ORDER BY c_all DESC LIMIT 200`,
+        [repo.id],
+    );
+    return { repo: repo.repo, url: repo.url, devs };
 }
 
 export { loadEvents };

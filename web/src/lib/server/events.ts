@@ -9,14 +9,14 @@ import type { TimelineEvent } from '$lib/types';
 const EVENTS_FILE = env.EVENTS_FILE || '../events.json';
 
 export async function loadEvents(): Promise<TimelineEvent[]> {
-  try {
-    const raw = await readFile(EVENTS_FILE, 'utf8');
-    const data: unknown = JSON.parse(raw);
-    if (!Array.isArray(data)) return [];
-    return (data as TimelineEvent[])
-      .filter((e) => e && e.title && e.start && e.end)
-      .sort((a, b) => a.start.localeCompare(b.start));
-  } catch {
-    return []; // missing/invalid file → no annotations, the dashboard still works
-  }
+    try {
+        const raw = await readFile(EVENTS_FILE, 'utf8');
+        const data: unknown = JSON.parse(raw);
+        if (!Array.isArray(data)) return [];
+        return (data as TimelineEvent[])
+            .filter((e) => e && e.title && e.start && e.end)
+            .sort((a, b) => a.start.localeCompare(b.start));
+    } catch {
+        return []; // missing/invalid file → no annotations, the dashboard still works
+    }
 }

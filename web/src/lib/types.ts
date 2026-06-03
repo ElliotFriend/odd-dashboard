@@ -4,137 +4,146 @@
 
 /** A single point on a time series: ISO yyyy-mm-dd day + numeric value. */
 export interface ChartPoint {
-  day: string;
-  value: number;
+    day: string;
+    value: number;
 }
 
 /** A line series for Chart.svelte. */
 export interface ChartLine {
-  name: string;
-  color: string;
-  data: ChartPoint[];
-  /** SVG stroke-dasharray, e.g. '4 3' for a dashed line. */
-  dash?: string;
+    name: string;
+    color: string;
+    data: ChartPoint[];
+    /** SVG stroke-dasharray, e.g. '4 3' for a dashed line. */
+    dash?: string;
 }
 
 /** A bar series for Chart.svelte (drawn faintly behind the lines). */
 export interface ChartBars {
-  name: string;
-  color: string;
-  data: ChartPoint[];
+    name: string;
+    color: string;
+    data: ChartPoint[];
 }
 
 // ---- /api/mau ----
 
 /** 28-day windowed metrics from eco_mads. */
 export interface WindowedRow {
-  day: string;
-  all_devs: number;
-  exclusive_devs: number;
-  multichain_devs: number;
-  num_commits: number;
+    day: string;
+    all_devs: number;
+    exclusive_devs: number;
+    multichain_devs: number;
+    num_commits: number;
 }
 
 /** Daily (un-windowed) activity from daily_activity. */
 export interface DailyRow {
-  day: string;
-  daily_active_devs: number;
-  daily_commits: number;
+    day: string;
+    daily_active_devs: number;
+    daily_commits: number;
 }
 
 /** Fresher MAU points captured from developerreport.com by `snapshot-api`. */
 export interface ApiRow {
-  day: string;
-  total: number | null;
-  single_chain: number | null;
-  multi_chain: number | null;
+    day: string;
+    total: number | null;
+    single_chain: number | null;
+    multi_chain: number | null;
 }
 
 /** Extract provenance (the `meta` table). */
 export interface Meta {
-  snapshot_version?: string;
-  parquet_horizon?: string;
-  extracted_at?: string;
-  ecosystem?: string;
-  ecosystem_id?: string;
+    snapshot_version?: string;
+    parquet_horizon?: string;
+    extracted_at?: string;
+    ecosystem?: string;
+    ecosystem_id?: string;
 }
 
 export interface MauResponse {
-  windowed: WindowedRow[];
-  daily: DailyRow[];
-  api: ApiRow[];
-  meta: Meta;
+    windowed: WindowedRow[];
+    daily: DailyRow[];
+    api: ApiRow[];
+    meta: Meta;
 }
 
 // ---- /api/repos ----
 
 /** A repo leaderboard row over a trailing window. */
 export interface RepoRow {
-  repo: string; // owner/repo (display)
-  url: string;  // full GitHub URL (href)
-  devs: number;
-  commits: number;
-  last_active_day: string;
+    repo: string; // owner/repo (display)
+    url: string; // full GitHub URL (href)
+    devs: number;
+    commits: number;
+    last_active_day: string;
 }
 
 export interface ReposResponse {
-  rows: RepoRow[];
-  days: number;
-  order: 'devs' | 'commits';
+    rows: RepoRow[];
+    days: number;
+    order: 'devs' | 'commits';
 }
 
 /** Per-developer commits / active-days / repos-touched across the 28/60/90-day windows,
  *  with GitHub identity (from the `developers` table). The leaderboard picks a window +
  *  sort client-side. `login` is null when it couldn't be resolved. */
 export interface DevAgg {
-  dev: number;
-  name: string | null;
-  login: string | null;
-  c28: number; a28: number; r28: number;
-  c60: number; a60: number; r60: number;
-  c90: number; a90: number; r90: number;
+    dev: number;
+    name: string | null;
+    login: string | null;
+    c28: number;
+    a28: number;
+    r28: number;
+    c60: number;
+    a60: number;
+    r60: number;
+    c90: number;
+    a90: number;
+    r90: number;
 }
 
 /** Per-repo devs+commits across the 28/60/90-day windows (loaded once; the leaderboard
  *  picks a window + sort client-side). */
 export interface RepoAgg {
-  repo: string; // owner/repo (display)
-  url: string;  // full GitHub URL (href)
-  last_active_day: string;
-  d28: number; c28: number;
-  d60: number; c60: number;
-  d90: number; c90: number;
+    repo: string; // owner/repo (display)
+    url: string; // full GitHub URL (href)
+    last_active_day: string;
+    d28: number;
+    c28: number;
+    d60: number;
+    c60: number;
+    d90: number;
+    c90: number;
 }
 
 // ---- /api/diagnose ----
 
 /** Rolling cohort split (recurring vs new) per anchor day. */
 export interface CohortRow {
-  day: string;
-  total: number;
-  recurring: number;
-  new_devs: number;
+    day: string;
+    total: number;
+    recurring: number;
+    new_devs: number;
 }
 
 /** Contributor intensity for the current window. May be empty if no rows. */
 export interface Intensity {
-  commits?: number | null;
-  devs?: number | null;
-  commits_per_dev?: number | null;
+    commits?: number | null;
+    devs?: number | null;
+    commits_per_dev?: number | null;
 }
 
 /** A detected daily surge day (daily devs > 2x trailing-90d median). */
 export interface SurgeDay {
-  day: string;
-  devs: number;
-  base: number;
+    day: string;
+    devs: number;
+    base: number;
 }
 
 export interface DiagnoseResponse {
-  cohort: CohortRow[];
-  intensity: Intensity;
-  surgeDays: SurgeDay[];
-  window: number;
+    cohort: CohortRow[];
+    intensity: Intensity;
+    surgeDays: SurgeDay[];
+    window: number;
 }
 
 // ---- drill-down detail pages (/dev/[login], /repo/[...slug]) ----
@@ -142,30 +151,38 @@ export interface DiagnoseResponse {
 /** Per-window (28/60/90d) + all-time commits & active-days. The detail pages pick a
  *  window client-side; a row with 0 commits in the chosen window is filtered out. */
 export interface WindowMetrics {
-  c28: number; a28: number;
-  c60: number; a60: number;
-  c90: number; a90: number;
-  c_all: number; a_all: number;
-  last_active: string;
+    c28: number;
+    a28: number;
+    c60: number;
+    a60: number;
+    c90: number;
+    a90: number;
+    c_all: number;
+    a_all: number;
+    last_active: string;
 }
 
 /** One repo a developer has committed to. */
 export interface DevRepoRow extends WindowMetrics {
-  repo: string; url: string;
+    repo: string;
+    url: string;
 }
 export interface DevDetail {
-  login: string;
-  name: string | null;
-  repos: DevRepoRow[];
+    login: string;
+    name: string | null;
+    repos: DevRepoRow[];
 }
 
 /** One developer who has committed to a repo. */
 export interface RepoDevRow extends WindowMetrics {
-  dev: number; name: string | null; login: string | null;
+    dev: number;
+    name: string | null;
+    login: string | null;
 }
 export interface RepoDetail {
-  repo: string; url: string;
-  devs: RepoDevRow[];
+    repo: string;
+    url: string;
+    devs: RepoDevRow[];
 }
 
 // ---- /api/events ----
@@ -173,14 +190,14 @@ export interface RepoDetail {
 /** A curated timeline event (bounty program, hackathon, …) to annotate the chart.
  *  Source of truth is the version-controlled events.json at the repo root. */
 export interface TimelineEvent {
-  title: string;
-  partner: string;
-  start: string; // yyyy-mm-dd (inclusive)
-  end: string;   // yyyy-mm-dd (inclusive)
-  description?: string;
-  url?: string;
+    title: string;
+    partner: string;
+    start: string; // yyyy-mm-dd (inclusive)
+    end: string; // yyyy-mm-dd (inclusive)
+    description?: string;
+    url?: string;
 }
 
 export interface EventsResponse {
-  events: TimelineEvent[];
+    events: TimelineEvent[];
 }
