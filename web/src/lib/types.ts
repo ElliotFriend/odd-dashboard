@@ -70,7 +70,8 @@ export interface MauResponse {
 
 /** A repo leaderboard row over a trailing window. */
 export interface RepoRow {
-  repo: string;
+  repo: string; // owner/repo (display)
+  url: string;  // full GitHub URL (href)
   devs: number;
   commits: number;
   last_active_day: string;

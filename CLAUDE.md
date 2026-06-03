@@ -72,11 +72,21 @@ geography) for all-time or trailing windows, and explain movements in the
 ## The dashboard (SvelteKit, Svelte 5 runes, TypeScript) — lives in `web/`
 - `web/src/lib/server/db.ts` opens the extract READ_ONLY (so a scheduled `extract`
   won't lock it). BigInt/Date values are normalized there.
-- Shared data shapes live in `web/src/lib/types.ts` (chart series + `/api/*` payloads);
-  endpoints type their `query<T>(...)` rows against them.
-- Routes: `/api/mau`, `/api/repos`, `/api/diagnose`, `/api/events`. Page: `web/src/routes/+page.svelte`.
+- **Data loads server-side, NOT via client `$effect`+fetch.** `+page.server.ts` `load`
+  reads view state from URL params (`days`, `repoWin`, `repoBy`) and returns all data;
+  `+layout.server.ts` loads the global `meta` for the header. Toggles call `goto('?…')`
+  (URL is the source of truth), which re-runs `load`. No `$effect` for data.
+- All SQL lives in `web/src/lib/server/queries.ts` (`getMau`/`getRepos`/`getDiagnose`).
+  The `/api/{mau,repos,diagnose,events}` endpoints are thin wrappers over those — kept
+  for external use; the page itself uses `load`, not fetch.
+- Shared data shapes: `web/src/lib/types.ts`. Display helpers: `web/src/lib/format.ts`.
+- Page is split into components in `web/src/lib/`: `StatCards`, `WhatMoved`, `MauChart`,
+  `RepoLeaderboard`. Header + footer live in `+layout.svelte`.
 - `Chart.svelte` is dependency-free SVG. Marquee view = 28d-windowed MAD line with
   faint DAILY-active bars behind it, so roll-offs read as roll-offs, not cliffs.
+- Repo leaderboard rows link to the repo's GitHub URL (`RepoRow.url`, opens new tab).
+- Favicons: `web/static/` (`favicon.svg` amber ✦ + ico/apple-touch/manifest PNGs,
+  generated locally via `qlmanage`+`sips`); `site.webmanifest`; wired in `app.html`.
 - Run: `cd web && STELLAR_DB=../stellar_extract.duckdb pnpm dev` (JS via pnpm; Python
   CLI at repo root via `uv run`). The extract is built at the repo root; `db.ts`
   defaults to `./stellar_extract.duckdb`, so set `STELLAR_DB` when running from `web/`.
