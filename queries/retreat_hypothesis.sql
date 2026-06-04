@@ -1,6 +1,6 @@
 -- retreat_hypothesis.sql
 -- Investigates whether the SDF all-staff retreat (May 18-22, 2026) pulled core
--- engineers off github.com/stellar/* repos enough to compound the May MAU drop.
+-- engineers off github.com/stellar/* repos enough to compound the May MAD drop.
 --
 -- Run:  duckdb stellar_extract.duckdb < queries/retreat_hypothesis.sql
 --   (or via the Python client: duckdb.connect('stellar_extract.duckdb', read_only=True))

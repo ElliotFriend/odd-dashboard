@@ -24,7 +24,7 @@ export interface ChartBars {
     data: ChartPoint[];
 }
 
-// ---- /api/mau ----
+// ---- /api/mad ----
 
 /** 28-day windowed metrics from eco_mads. */
 export interface WindowedRow {
@@ -42,7 +42,8 @@ export interface DailyRow {
     daily_commits: number;
 }
 
-/** Fresher MAU points captured from developerreport.com by `snapshot-api`. */
+/** Fresher MAD points captured from developerreport.com by `snapshot-api`
+ *  (their live series labels this "MAU" — same number: ≥1 commit in the 28-day window). */
 export interface ApiRow {
     day: string;
     total: number | null;
@@ -59,7 +60,7 @@ export interface Meta {
     ecosystem_id?: string;
 }
 
-export interface MauResponse {
+export interface MadResponse {
     windowed: WindowedRow[];
     daily: DailyRow[];
     api: ApiRow[];
@@ -183,6 +184,35 @@ export interface RepoDetail {
     repo: string;
     url: string;
     devs: RepoDevRow[];
+}
+
+// ---- day drill-down (/day/[date]) ----
+
+/** One (repo, developer) pair active on a given day, with names/identity + commit count.
+ *  `login`/`name` are null when the dev's identity couldn't be resolved; `is_bot` is false
+ *  when the `developers` table is absent. The page groups these by repo and by dev. */
+export interface DayPair {
+    repo_id: number;
+    repo: string; // owner/repo (display)
+    url: string; // full GitHub URL (href)
+    dev: number; // canonical_developer_id
+    name: string | null;
+    login: string | null;
+    is_bot: boolean;
+    commits: number;
+}
+
+export interface DayDetail {
+    date: string;
+    /** Every (repo, dev) pair active that day — ≤~1.2k rows; groupings derive client-side. */
+    pairs: DayPair[];
+    /** Of devs active that day: how many also committed in the prior 28d (returning) vs not (fresh). */
+    cohort: { total: number; returning: number; fresh: number };
+    /** Nearest active day before/after (null at the ends); + the full data range for the picker. */
+    prev: string | null;
+    next: string | null;
+    earliest: string;
+    latest: string;
 }
 
 // ---- /api/events ----

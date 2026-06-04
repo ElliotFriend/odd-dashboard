@@ -7,10 +7,10 @@ Subcommands
   extract       Build a small `stellar_extract.duckdb` (Stellar rows only) that
                 the dashboard reads. Reads remote parquet via DuckDB httpfs and
                 writes only Stellar slices locally.
-  diagnose      Explain movements in the 28-day MAD ("MAU") series: daily-vs-
+  diagnose      Explain movements in the 28-day MAD series: daily-vs-
                 windowed overlay, surge auto-detection, cohort exit schedule, and
                 repos that drove a period then went silent.
-  snapshot-api  Append the live developerreport.com MAU series into the extract
+  snapshot-api  Append the live developerreport.com MAD series into the extract
                 so you capture recent points BEFORE the public parquet catches up
                 (the parquet trails ~7 days). Run weekly on a schedule.
 
@@ -33,7 +33,8 @@ from urllib.parse import urljoin
 import duckdb
 
 MANIFEST_URL = "https://data.opendevdata.org/manifest.json"
-DEVREPORT_MAU = "https://www.developerreport.com/api/charts/dev_mau/{eco}"
+# developerreport.com's own endpoint is named `dev_mau`; the metric is our MAD.
+DEVREPORT_MAD = "https://www.developerreport.com/api/charts/dev_mau/{eco}"
 DEFAULT_OUT = "./stellar_extract.duckdb"
 
 
@@ -254,7 +255,7 @@ def cmd_diagnose(args):
 
 # --------------------------------------------------------------------------- snapshot-api
 def devreport_series(eco="stellar") -> list[tuple]:
-    data = http_json(DEVREPORT_MAU.format(eco=eco))
+    data = http_json(DEVREPORT_MAD.format(eco=eco))
     series = {s["name"]: s["data"] for s in data["series"]}
     by_ts = {}
     for name, pts in series.items():
@@ -268,20 +269,20 @@ def devreport_series(eco="stellar") -> list[tuple]:
 
 
 def cmd_snapshot_api(args):
-    data = http_json(DEVREPORT_MAU.format(eco=args.ecosystem.lower()))
+    data = http_json(DEVREPORT_MAD.format(eco=args.ecosystem.lower()))
     series = {s["name"]: s["data"] for s in data["series"]}
     by_ts = {}
     for name, pts in series.items():
         for ts, val in pts:
             by_ts.setdefault(ts, {})[name] = val
     con = connect(args.db)
-    con.execute("""CREATE TABLE IF NOT EXISTS mau_api_history(
+    con.execute("""CREATE TABLE IF NOT EXISTS mad_api_history(
         captured_at TIMESTAMP, ecosystem VARCHAR, day DATE, total INTEGER,
         single_chain INTEGER, multi_chain INTEGER, PRIMARY KEY (ecosystem, day))""")
     n = 0
     for ts, row in by_ts.items():
         d = time.strftime("%Y-%m-%d", time.gmtime(ts/1000))
-        con.execute("""INSERT INTO mau_api_history VALUES (now(), ?, ?, ?, ?, ?)
+        con.execute("""INSERT INTO mad_api_history VALUES (now(), ?, ?, ?, ?, ?)
             ON CONFLICT (ecosystem, day) DO UPDATE SET total=excluded.total,
               single_chain=excluded.single_chain, multi_chain=excluded.multi_chain,
               captured_at=excluded.captured_at""",
@@ -289,7 +290,7 @@ def cmd_snapshot_api(args):
              row.get("Single-chain developers"), row.get("Multi-chain developers")])
         n += 1
     con.close()
-    print(f"Upserted {n} API points into {args.db} (table mau_api_history).")
+    print(f"Upserted {n} API points into {args.db} (table mad_api_history).")
 
 
 # --------------------------------------------------------------------------- events (events.json)

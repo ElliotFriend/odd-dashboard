@@ -1,13 +1,13 @@
 <script lang="ts">
-    import type { MauResponse } from '$lib/types';
+    import type { MadResponse } from '$lib/types';
     import { fmt, latest } from '$lib/format';
 
-    let { mau }: { mau: MauResponse } = $props();
+    let { mad }: { mad: MadResponse } = $props();
 
-    // recurring-base estimate: median daily-active over the last 90 entries (a stable
-    // recent figure; mau.daily is now the full history).
-    const recurringBase = $derived.by(() => {
-        const d = mau.daily;
+    // typical-daily-base estimate: median daily-active over the last 90 entries (a stable
+    // recent figure; mad.daily is now the full history).
+    const typicalDailyBase = $derived.by(() => {
+        const d = mad.daily;
         if (!d.length) return null;
         const v = d
             .slice(-90)
@@ -20,35 +20,30 @@
 <section class="cards">
     <div class="panel card">
         <div class="mono-label">monthly active devs (28d)</div>
-        <div class="big tnum">{fmt(latest(mau.windowed, 'all_devs'))}</div>
+        <div class="big tnum">{fmt(latest(mad.windowed, 'all_devs'))}</div>
         <div class="split">
             <span style="color:var(--cyan)"
-                >◆ {fmt(latest(mau.windowed, 'exclusive_devs'))} single</span
+                >◆ {fmt(latest(mad.windowed, 'exclusive_devs'))} single</span
             >
             <span style="color:var(--rose)"
-                >◆ {fmt(latest(mau.windowed, 'multichain_devs'))} multi</span
+                >◆ {fmt(latest(mad.windowed, 'multichain_devs'))} multi</span
             >
         </div>
     </div>
     <div class="panel card">
         <div class="mono-label">commits in window (28d)</div>
-        <div class="big tnum">{fmt(latest(mau.windowed, 'num_commits'))}</div>
+        <div class="big tnum">{fmt(latest(mad.windowed, 'num_commits'))}</div>
     </div>
     <div class="panel card">
         <div class="mono-label">daily active (latest day)</div>
-        <div class="big tnum">{fmt(latest(mau.daily, 'daily_active_devs'))}</div>
-        <div class="split">recurring base ≈ {fmt(recurringBase)}/day</div>
-        <p class="cardnote">
-            “Recurring base” = the median number of developers active on a typical day over the last
-            90 days. Using the median (not the average) makes it robust to surge spikes, so it
-            estimates the steady, always-there developer population.
-        </p>
+        <div class="big tnum">{fmt(latest(mad.daily, 'daily_active_devs'))}</div>
+        <div class="split">typical daily base ≈ {fmt(typicalDailyBase)}/day</div>
     </div>
     <div class="panel card">
         <div class="mono-label">api total (freshest)</div>
-        <div class="big tnum">{fmt(latest(mau.api, 'total'))}</div>
+        <div class="big tnum">{fmt(latest(mad.api, 'total'))}</div>
         <div class="split">
-            {mau.api?.length ? `as of ${latest(mau.api, 'day')}` : 'run snapshot-api'}
+            {mad.api?.length ? `as of ${latest(mad.api, 'day')}` : 'run snapshot-api'}
         </div>
     </div>
 </section>
@@ -77,12 +72,6 @@
         display: flex;
         gap: 12px;
         flex-wrap: wrap;
-    }
-    .cardnote {
-        margin: 8px 0 0;
-        font-size: 10.5px;
-        line-height: 1.45;
-        color: var(--faint);
     }
     @media (max-width: 760px) {
         .cards {

@@ -10,6 +10,7 @@
         horizon?: string | null;
         windowStart?: string | null;
         events?: TimelineEvent[];
+        onSelectDay?: (day: string) => void;
     }
     let {
         lines = [],
@@ -18,6 +19,7 @@
         horizon = null,
         windowStart = null,
         events = [],
+        onSelectDay,
     }: Props = $props();
 
     const PAD = { l: 52, r: 16, t: 16, b: 28 };
@@ -105,12 +107,9 @@
     }
     const ticks = $derived(xy ? [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(xy.ymax * f)) : []);
 
-    // hover
-    let hover = $state<string | null>(null);
-    function onMove(e: MouseEvent & { currentTarget: EventTarget & SVGSVGElement }) {
-        if (!xy) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        const px = e.clientX - rect.left;
+    // The day whose x is nearest a pixel offset within the plot (used by hover + click).
+    function nearestDay(px: number): string | null {
+        if (!xy) return null;
         let best: string | null = null,
             bd = 1e9;
         for (const d of xy.days) {
@@ -120,17 +119,35 @@
                 best = d;
             }
         }
-        hover = best;
+        return best;
+    }
+
+    // hover
+    let hover = $state<string | null>(null);
+    function pxOf(e: MouseEvent & { currentTarget: EventTarget & SVGSVGElement }): number {
+        return e.clientX - e.currentTarget.getBoundingClientRect().left;
+    }
+    function onMove(e: MouseEvent & { currentTarget: EventTarget & SVGSVGElement }) {
+        hover = nearestDay(pxOf(e));
+    }
+    function onClick(e: MouseEvent & { currentTarget: EventTarget & SVGSVGElement }) {
+        const day = nearestDay(pxOf(e));
+        if (day && onSelectDay) onSelectDay(day);
     }
 </script>
 
 <div class="chart" bind:clientWidth={W}>
+    <!-- Click-to-inspect-day is a pointer enhancement; the day route is reachable by keyboard
+         via its date picker, prev/next links, and the repo/dev leaderboards. -->
+    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
     <svg
         viewBox={`0 0 ${W} ${height}`}
         role="img"
         aria-label="time series chart"
+        class:clickable={!!onSelectDay}
         onmousemove={onMove}
         onmouseleave={() => (hover = null)}
+        onclick={onClick}
     >
         {#if xy}
             {#each bands as b (b.event.title)}
@@ -321,6 +338,9 @@
     svg {
         width: 100%;
         display: block;
+    }
+    svg.clickable {
+        cursor: pointer;
     }
     .tip {
         position: absolute;

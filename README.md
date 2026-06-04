@@ -12,9 +12,9 @@ built on Electric Capital's **Open Dev Data** (ODD) parquet dataset.
   range requests, isolates **only Stellar**, and writes a small
   `stellar_extract.duckdb` (tens of MB, not the ~47 GB full dataset).
   - `extract` — build/refresh the extract.
-  - `diagnose` — explain MAU movements (daily-vs-windowed, surge detection,
+  - `diagnose` — explain MAD movements (daily-vs-windowed, surge detection,
     cohort exit schedule, repos that drove a period then went silent).
-  - `snapshot-api` — append developerreport.com's live (weekly) MAU series for
+  - `snapshot-api` — append developerreport.com's live (weekly) MAD series for
     cross-checking. Note: it's only ~1 day fresher than the parquet — both are
     ~7 days behind today — so it does NOT fill the recent ~7-day gap.
   - `events add|list|rm` — manage curated timeline events (bounty programs,
@@ -25,13 +25,15 @@ built on Electric Capital's **Open Dev Data** (ODD) parquet dataset.
     GitHub GraphQL API when `GITHUB_TOKEN` is set). Powers the developer
     leaderboard. Run with `uv run --env-file .env python stellar_odd.py resolve-devs`.
 - **SvelteKit app** (in [`./web`](./web)) — reads `stellar_extract.duckdb` server-side
-  and renders the MAU-vs-daily overlay, single/multi split, commit totals, and a
+  and renders the MAD-vs-daily overlay, single/multi split, commit totals, and a
   repo leaderboard.
 
 ## Key concepts (confirmed against the ODD data dictionary)
 
-- **MAD / "MAU"** = developers with ≥1 commit in a **28-day rolling window**
-  (`eco_mads.all_devs`). `all_devs = exclusive_devs + multichain_devs`.
+- **MAD** ("Monthly Active Developers") = developers with ≥1 commit in a
+  **28-day rolling window** (`eco_mads.all_devs`). `all_devs = exclusive_devs +
+  multichain_devs`. (Developer Report's live series labels the same number "MAU";
+  we standardize on MAD since the metric counts *developers*, not generic users.)
 - `eco_mads.num_commits` is **also 28-day windowed**.
 - Contribution ranks (`full_time/part_time/one_time_devs`) use an **84-day** window.
 - Tenure (`devs_0_1y/1_2y/2y_plus`) is by first blockchain commit.
@@ -75,7 +77,7 @@ uv run python stellar_odd.py events add \
 
 The dashboard reads these and draws a partner-colored band over each event's date range.
 
-## Investigate a MAU move (e.g. the May 2026 drop)
+## Investigate a MAD move (e.g. the May 2026 drop)
 
 ```bash
 python stellar_odd.py diagnose --as-of 2026-05-19 \
@@ -89,7 +91,7 @@ python stellar_odd.py diagnose --as-of 2026-05-19 \
 ```cron
 # refresh the Stellar extract daily at 14:10 UTC (after EC's daily publish)
 10 14 * * *  cd /path/to/proj && uv run python stellar_odd.py extract --out ./stellar_extract.duckdb >> extract.log 2>&1
-# snapshot the live API every Monday (your weekly MAU tracking)
+# snapshot the live API every Monday (your weekly MAD tracking)
 0 13 * * 1   cd /path/to/proj && uv run python stellar_odd.py snapshot-api --db ./stellar_extract.duckdb >> api.log 2>&1
 ```
 

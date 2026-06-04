@@ -3,7 +3,7 @@
 // the page as plain $state and slices/sorts this data client-side — so toggling a
 // control is instant and never re-runs the load or touches the URL.
 import {
-    getMau,
+    getMad,
     getDiagnose,
     getRepoAggregates,
     getDevAggregates,
@@ -24,7 +24,7 @@ export const load: PageServerLoad = async ({ url, parent }) => {
     const full = url.searchParams.get('range') === 'all';
 
     // sequential: the DuckDB connection is a single shared handle
-    const mau = await getMau(full ? 100000 : 365);
+    const mad = await getMad(full ? 100000 : 365);
     const diag = await getDiagnose(400); // cohort/surge range (capped regardless)
     const repos = await getRepoAggregates(); // 28/60/90-day windows; leaderboard derives
     const devs = await getDevAggregates(); // top devs w/ identity; [] until resolve-devs
@@ -33,5 +33,5 @@ export const load: PageServerLoad = async ({ url, parent }) => {
     const { meta } = await parent();
     const windowStart = meta?.parquet_horizon ? minusDays(meta.parquet_horizon, 28) : null;
 
-    return { mau, diag, repos, devs, events, windowStart, full };
+    return { mad, diag, repos, devs, events, windowStart, full };
 };

@@ -1,7 +1,8 @@
 <script lang="ts">
     import StatCards from '$lib/components/StatCards.svelte';
     import WhatMoved from '$lib/components/WhatMoved.svelte';
-    import MauChart from '$lib/components/MauChart.svelte';
+    import MadChart from '$lib/components/MadChart.svelte';
+    import Definitions from '$lib/components/Definitions.svelte';
     import RepoLeaderboard from '$lib/components/RepoLeaderboard.svelte';
     import DevLeaderboard from '$lib/components/DevLeaderboard.svelte';
     import { goto } from '$app/navigation';
@@ -27,15 +28,17 @@
     }
 </script>
 
-<StatCards mau={data.mau} />
+<StatCards mad={data.mad} />
 <WhatMoved diag={data.diag} />
-<MauChart
-    mau={data.mau}
+<MadChart
+    mad={data.mad}
     diag={data.diag}
     events={data.events}
     windowStart={data.windowStart}
     {days}
     {onDays}
+    onSelectDay={(day) => goto(resolve('/day/[date]', { date: day }))}
 />
+<Definitions />
 <RepoLeaderboard repos={data.repos} bind:repoWindow={repoWin} bind:repoBy />
 <DevLeaderboard devs={data.devs} bind:win={devWin} bind:by={devBy} />

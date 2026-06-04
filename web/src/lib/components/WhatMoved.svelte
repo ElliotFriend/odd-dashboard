@@ -7,7 +7,7 @@
     // current cohort decomposition (latest day of the rolling split)
     const cohortNow = $derived(diag?.cohort?.length ? diag.cohort[diag.cohort.length - 1] : null);
     // fallback 0 (never rendered: every use sits inside {#if cohortNow}) keeps the type non-null
-    const recurringPct = $derived(
+    const retainedPct = $derived(
         cohortNow ? Math.round((100 * cohortNow.recurring) / cohortNow.total) : 0,
     );
 
@@ -45,23 +45,23 @@
     </div>
     <div class="diag-grid">
         <div class="diag-box">
-            <div class="mono-label">recurring vs. new (this window)</div>
+            <div class="mono-label">retained vs. new (this window)</div>
             {#if cohortNow}
                 <div class="stack">
-                    <div class="seg rec" style={`width:${recurringPct}%`}></div>
-                    <div class="seg new" style={`width:${100 - recurringPct}%`}></div>
+                    <div class="seg rec" style={`width:${retainedPct}%`}></div>
+                    <div class="seg new" style={`width:${100 - retainedPct}%`}></div>
                 </div>
                 <div class="legend">
                     <span
-                        ><b class="tnum">{fmt(cohortNow.recurring)}</b> recurring ({recurringPct}%)</span
+                        ><b class="tnum">{fmt(cohortNow.recurring)}</b> retained ({retainedPct}%)</span
                     >
                     <span
                         ><b class="tnum">{fmt(cohortNow.new_devs)}</b> new ({100 -
-                            recurringPct}%)</span
+                            retainedPct}%)</span
                     >
                 </div>
                 <p class="hint">
-                    Recurring = also active in the prior 28-day window. A spike in <em>new</em> that later
+                    Retained = also active in the prior 28-day window. A spike in <em>new</em> that later
                     vanishes is a program/event wave, not base growth.
                 </p>
             {/if}
@@ -95,8 +95,8 @@
                 <div class="big small">{lastSurge.start.slice(5)} → {lastSurge.end.slice(5)}</div>
                 <div class="hint">
                     Peak ≈ <b class="tnum">{fmt(lastSurge.peak)}</b> daily devs. Activity surges roll
-                    off the 28-day window ~28 days later — so a surge here mechanically deflates MAU about
-                    four weeks on, even with no change in the recurring base.
+                    off the 28-day window ~28 days later — so a surge here mechanically deflates MAD about
+                    four weeks on, even with no change in the retained base.
                 </div>
             {:else}<div class="hint">No multi-day surge detected in range.</div>{/if}
         </div>

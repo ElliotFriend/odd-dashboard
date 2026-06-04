@@ -12,7 +12,9 @@ small Stellar-only extract; a SvelteKit app reads it.
 ## Goal
 Answer questions about Stellar devs (who, which repos, commits, classifications,
 geography) for all-time or trailing windows, and explain movements in the
-28-day "Monthly Active Developers" (MAD/MAU) metric.
+28-day "Monthly Active Developers" (MAD) metric. (Standardize on **MAD**, not
+"MAU" — the metric counts developers; developerreport.com's live series labels
+the same number "MAU".)
 
 ## Data source & access
 - Manifest (always current snapshot): https://data.opendevdata.org/manifest.json
@@ -43,7 +45,7 @@ geography) for all-time or trailing windows, and explain movements in the
 - `repos(id, repo_url, ...)` — join `repos.id = repo_developer_activities.repo_id`.
 
 ### Definitions / invariants
-- MAD ("MAU") = developers with ≥1 commit in the **28-day** rolling window (`all_devs`).
+- MAD = developers with ≥1 commit in the **28-day** rolling window (`all_devs`).
 - Invariant: `all_devs = exclusive_devs + multichain_devs` (use it as a validation check).
 - `exclusive_devs` ≈ "single-chain" but precisely = contributed to a first-party-org
   repo of this ecosystem OR only this ecosystem's repos within the 28d window.
@@ -54,7 +56,7 @@ geography) for all-time or trailing windows, and explain movements in the
 - `extract`  — build/refresh `stellar_extract.duckdb` (Stellar slices only).
 - `diagnose` — daily-vs-windowed table, surge auto-detection, cohort exit schedule,
   and "repos active in a window but silent since" anti-join.
-- `snapshot-api` — upsert developerreport.com MAU series into the extract (idempotent).
+- `snapshot-api` — upsert developerreport.com MAD series into the extract (idempotent).
 - `events add|list|rm` — manage curated timeline events (bounty programs, hackathons)
   in `events.json`. e.g. `events add --title "Drips Wave 5" --partner Drips
   --start 2026-05-26 --end 2026-06-02 [--description ... --url ...]`.
@@ -82,7 +84,7 @@ geography) for all-time or trailing windows, and explain movements in the
   `../events.json`) and serves `/api/events`. The chart draws a translucent band per
   event spanning start→end, colored by partner (`web/src/lib/colors.ts::partnerColor`).
 - Seeded with the 5 Drips Waves (Jan–Jun 2026); Wave 4 (Apr 22–29) is the confirmed surge
-  behind the May MAU roll-off.
+  behind the May MAD roll-off.
 
 ## The dashboard (SvelteKit, Svelte 5 runes, TypeScript) — lives in `web/`
 - `web/src/lib/server/db.ts` opens the extract READ_ONLY (so a scheduled `extract`
@@ -95,14 +97,18 @@ geography) for all-time or trailing windows, and explain movements in the
   not URL params.) The ONE exception: the chart's `all` view needs the full since-2015
   series, so selecting it `goto('?range=all')` to re-load full (navigation re-runs `load`
   natively — no `depends`/`invalidate` needed). Default ≈730 series rows vs ≈8,945 full.
-- All SQL lives in `web/src/lib/server/queries.ts` (`getMau`/`getRepoAggregates`/
-  `getDiagnose`; `getMau(100000)` = full series, `getRepoAggregates` returns per-repo
+- All SQL lives in `web/src/lib/server/queries.ts` (`getMad`/`getRepoAggregates`/
+  `getDiagnose`; `getMad(100000)` = full series, `getRepoAggregates` returns per-repo
   28/60/90-day windows so the leaderboard derives its window+sort with no re-query).
-  The `/api/{mau,repos,diagnose,events}` endpoints are thin wrappers — kept for external
+  The `/api/{mad,repos,diagnose,events}` endpoints are thin wrappers — kept for external
   use; the page uses `load`, not fetch.
 - Shared data shapes: `web/src/lib/types.ts`. Display helpers: `web/src/lib/format.ts`.
 - Components live in `web/src/lib/components/`: `Chart`, `StatCards`, `WhatMoved`,
-  `MauChart`, `RepoLeaderboard`, `DevLeaderboard`. Header + footer live in `+layout.svelte`.
+  `MadChart`, `Definitions`, `RepoLeaderboard`, `DevLeaderboard`. Header + footer live in
+  `+layout.svelte`.
+- `Definitions` is a static, expandable `<details>` glossary ("legend for the whole site")
+  rendered directly under the chart; its color dots match the chart series. Add new terms to
+  its `terms[]` array — it has no props. Keep term wording in sync with the labels elsewhere.
 - `DevLeaderboard` (devs by commits / active-days / repos-touched over 28/60/90d); fed by
   `getDevAggregates()` (top 200 by 90d commits).
 - Drill-down routes (server-loaded): `/dev/[login]` lists every repo a dev committed to;
@@ -110,8 +116,20 @@ geography) for all-time or trailing windows, and explain movements in the
   cross-link, and leaderboard names link INTO them (the detail pages carry the GitHub ↗
   links). Queries: `getDevDetail`/`getRepoDetail` over all-time `repo_day`. Repo-page dev
   identities depend on the `developers` table (resolved devs only; others show `dev #id`).
+- Date drill-down (server-loaded): `/day/[date]` (yyyy-mm-dd) — what happened on one
+  calendar day. `getDayDetail(date)` runs ONE small `repo_day WHERE day = ?` pairs query
+  (≤~1.2k rows even on a surge day) + a returning-vs-new cohort split (`dev_day`, prior 28d)
+  + prev/next active-day bounds. The page derives BOTH groupings client-side from that one
+  payload: a "repos active" table (expand a row → its devs) and a "developers active" table
+  (expand a row → their repos), side-by-side (`.cols` grid; stacks <860px). Rows cross-link
+  into `/repo` + `/dev`. Reached three ways: clicking a day on the chart, the page's
+  prev/next + jump-to-latest links, and a bounded `<input type=date>` picker. Validation:
+  malformed/out-of-range date → 404; an in-range day with no activity → empty state (NOT a
+  404). NOTE: only daily *aggregates* exist (no individual commits/SHAs) — it shows counts.
+  GOTCHA: `next` is a DuckDB reserved word — the bounds query quotes the alias (`AS "next"`).
 - `Chart.svelte` is dependency-free SVG. Marquee view = 28d-windowed MAD line with
-  faint DAILY-active bars behind it, so roll-offs read as roll-offs, not cliffs.
+  faint DAILY-active bars behind it, so roll-offs read as roll-offs, not cliffs. Optional
+  `onSelectDay(day)` prop makes days click-to-inspect (wired on the dashboard → `/day/[date]`).
 - Repo leaderboard rows link to the repo's GitHub URL (`RepoRow.url`, opens new tab).
 - Favicons: `web/static/` (`favicon.svg` amber ✦ + ico/apple-touch/manifest PNGs,
   generated locally via `qlmanage`+`sips`); `site.webmanifest`; wired in `app.html`.
@@ -123,7 +141,7 @@ geography) for all-time or trailing windows, and explain movements in the
   NOT `@sveltejs/vite-plugin-svelte` (that exports `svelte`).
 
 ## Investigation result (the founding use case — keep this context)
-The May 19→26 2026 MAU drop (1,676 → 1,075 on developerreport.com) was NOT an exodus.
+The May 19→26 2026 MAD drop (1,676 → 1,075 on developerreport.com) was NOT an exodus.
 It is the mechanical roll-off of an **April 22–29 activity surge** aging out of the
 28-day window (~28-day delay). Evidence, four ways:
 1. Daily activity spiked Apr 22–29 (peak ~692 devs/day vs ~120 baseline), back to
@@ -140,7 +158,8 @@ contributors touching 3–33 repos in one week (bounty-farming signature).
 — https://www.drips.network/wave/stellar . Drips Wave is a recurring ~one-week-per-month
 "Fix, Merge, Earn" bounty cycle (launched with SDF Jan 2026); the surge dates line up
 exactly. Rise In (bootcamps) ruled out by the per-repo swarm signature. Stellar's
-recurring base ≈ 1,000–1,100; programs transiently inflate MAU above it.
+retained base ≈ 1,000–1,100 (the 28d-windowed "retained devs" line, NOT the ~130/day
+"typical daily base" stat card — two different scales); programs transiently inflate MAD above it.
 
 NOTE on platforms (an earlier draft conflated these): **Drips Wave** and **GrantFox**
 are *separate, parallel* contributor platforms — both filling the gap OnlyDust left

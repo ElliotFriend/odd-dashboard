@@ -1,7 +1,7 @@
 <script lang="ts">
     import Chart from '$lib/components/Chart.svelte';
     import type {
-        MauResponse,
+        MadResponse,
         DiagnoseResponse,
         ChartLine,
         ChartBars,
@@ -10,22 +10,24 @@
     import { partnerColor } from '$lib/colors';
 
     let {
-        mau,
+        mad,
         diag,
         events,
         windowStart,
         days,
         onDays,
+        onSelectDay,
     }: {
-        mau: MauResponse;
+        mad: MadResponse;
         diag: DiagnoseResponse;
         events: TimelineEvent[];
         windowStart: string | null;
         days: number;
         onDays: (d: number) => void;
+        onSelectDay?: (day: string) => void;
     } = $props();
 
-    // mau/diag are now full-extent — slice to the last `days` days before building series.
+    // mad/diag are now full-extent — slice to the last `days` days before building series.
     function sliceByDays<T extends { day: string }>(rows: T[], days: number): T[] {
         if (!rows.length || days >= 100000) return rows;
         const max = rows[rows.length - 1].day;
@@ -36,9 +38,9 @@
             .slice(0, 10);
         return rows.filter((r) => r.day > cutoff);
     }
-    const wWindowed = $derived(sliceByDays(mau.windowed, days));
-    const wDaily = $derived(sliceByDays(mau.daily, days));
-    const wApi = $derived(sliceByDays(mau.api, days));
+    const wWindowed = $derived(sliceByDays(mad.windowed, days));
+    const wDaily = $derived(sliceByDays(mad.daily, days));
+    const wApi = $derived(sliceByDays(mad.api, days));
     const wCohort = $derived(sliceByDays(diag.cohort, days));
 
     // Build chart series from the sliced windowed + daily payloads.
@@ -71,7 +73,7 @@
         ...(wCohort.length
             ? [
                   {
-                      name: 'recurring base',
+                      name: 'retained devs (prior 28d)',
                       color: '#7d8aa8',
                       dash: '2 3',
                       data: wCohort.map((d) => ({ day: d.day, value: d.recurring })),
@@ -88,7 +90,7 @@
 
 <section class="panel chartwrap">
     <div class="chart-head">
-        <h2>MAU vs. daily activity</h2>
+        <h2>MAD vs. daily activity</h2>
         <div class="toggle">
             {#each [60, 90, 120, 365, 100000] as d (d)}
                 <button class:active={days === d} onclick={() => onDays(d)}
@@ -101,7 +103,7 @@
         The bold line is the 28-day rolling MAD (what Developer Report plots). Faint bars are <em
             >daily</em
         > active devs. When the windowed line falls while the daily bars hold steady, you're seeing a
-        past surge roll off the back of the window — not an exodus.
+        past surge roll off the back of the window — not an exodus. Click any day to inspect it.
     </p>
     {#if events.length}
         <div class="evlegend">
@@ -111,7 +113,7 @@
             {/each}
         </div>
     {/if}
-    <Chart {lines} {bars} {events} {windowStart} horizon={mau.meta?.parquet_horizon} />
+    <Chart {lines} {bars} {events} {windowStart} {onSelectDay} horizon={mad.meta?.parquet_horizon} />
 </section>
 
 <style>

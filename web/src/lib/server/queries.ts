@@ -6,7 +6,7 @@ import type {
     WindowedRow,
     DailyRow,
     ApiRow,
-    MauResponse,
+    MadResponse,
     RepoRow,
     ReposResponse,
     RepoAgg,
@@ -19,6 +19,8 @@ import type {
     RepoDetail,
     DevRepoRow,
     RepoDevRow,
+    DayPair,
+    DayDetail,
 } from '$lib/types';
 
 // repos column names (introspected once; the extract carries id/name/link).
@@ -39,7 +41,7 @@ async function hasDevelopers(): Promise<boolean> {
 }
 
 /** 28-day windowed MAD series + daily overlay + fresher API points + provenance. */
-export async function getMau(days: number): Promise<MauResponse> {
+export async function getMad(days: number): Promise<MadResponse> {
     const windowed = await query<WindowedRow>(
         `SELECT day, all_devs, exclusive_devs, multichain_devs, num_commits
      FROM eco_mads
@@ -59,12 +61,12 @@ export async function getMau(days: number): Promise<MauResponse> {
     let api: ApiRow[] = [];
     try {
         api = await query<ApiRow>(
-            `SELECT day, total, single_chain, multi_chain FROM mau_api_history
-       WHERE day > (SELECT max(day) FROM mau_api_history) - ? ORDER BY day`,
+            `SELECT day, total, single_chain, multi_chain FROM mad_api_history
+       WHERE day > (SELECT max(day) FROM mad_api_history) - ? ORDER BY day`,
             [days],
         );
     } catch {
-        /* mau_api_history may not exist yet */
+        /* mad_api_history may not exist yet */
     }
 
     return { windowed, daily, api, meta: await meta() };
@@ -253,6 +255,58 @@ export async function getRepoDetail(slug: string): Promise<RepoDetail | null> {
         [repo.id],
     );
     return { repo: repo.repo, url: repo.url, devs };
+}
+
+/** Day drill-down: everything active on one calendar day. One small pairs query (≤~1.2k
+ *  rows) drives both the repo→devs and dev→repos groupings client-side; plus a
+ *  returning-vs-new cohort split and prev/next active-day bounds for navigation. */
+export async function getDayDetail(date: string): Promise<DayDetail> {
+    const c = await repoCols();
+    const hasDev = await hasDevelopers();
+    // Identity columns toggle on the developers table, mirroring getRepoDetail.
+    const idJoin = hasDev ? 'LEFT JOIN developers dv ON dv.canonical_developer_id = rd.dev' : '';
+    const nameExpr = hasDev ? 'dv.name' : 'NULL';
+    const loginExpr = hasDev ? 'dv.login' : 'NULL';
+    const botExpr = hasDev ? 'COALESCE(dv.is_bot, FALSE)' : 'FALSE';
+
+    const pairs = await query<DayPair>(
+        `SELECT rd.repo_id, rp."${c.name}" AS repo, rp."${c.url}" AS url,
+            rd.dev, ${nameExpr} AS "name", ${loginExpr} AS "login",
+            ${botExpr} AS is_bot, rd.num_commits AS commits
+     FROM repo_day rd JOIN repos rp ON rp."${c.id}" = rd.repo_id ${idJoin}
+     WHERE rd.day = ?`,
+        [date],
+    );
+
+    const cohort = (
+        await query<{ total: number; returning: number; fresh: number }>(
+            `WITH today AS (SELECT DISTINCT dev FROM dev_day WHERE day = ?),
+            prior AS (SELECT DISTINCT dev FROM dev_day WHERE day > ?::DATE - 28 AND day < ?)
+     SELECT COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE p.dev IS NOT NULL) AS "returning",
+            COUNT(*) FILTER (WHERE p.dev IS NULL)     AS fresh
+     FROM today t LEFT JOIN prior p USING (dev)`,
+            [date, date, date],
+        )
+    )[0] ?? { total: 0, returning: 0, fresh: 0 };
+
+    const bounds = (
+        await query<{
+            prev: string | null;
+            next: string | null;
+            earliest: string;
+            latest: string;
+        }>(
+            // "next" is a DuckDB reserved word — quote it (CLAUDE.md gotcha).
+            `SELECT (SELECT max(day) FROM repo_day WHERE day < ?) AS prev,
+            (SELECT min(day) FROM repo_day WHERE day > ?) AS "next",
+            (SELECT min(day) FROM repo_day)               AS earliest,
+            (SELECT max(day) FROM repo_day)               AS latest`,
+            [date, date],
+        )
+    )[0];
+
+    return { date, pairs, cohort, ...bounds };
 }
 
 export { loadEvents };
