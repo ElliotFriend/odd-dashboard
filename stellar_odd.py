@@ -90,6 +90,14 @@ def need(name: str, val: str | None, cols: list[str]) -> str:
     return val
 
 
+def resolve_cols(con, url: str, **wanted: list[str]) -> dict[str, str]:
+    """Introspect a parquet's columns once and resolve each wanted logical name from its
+    list of candidate column names (first match wins; required). Raises with the available
+    columns if any is missing. Centralizes the pick/need dance the commands used to repeat."""
+    cols = columns(con, url)
+    return {name: need(name, pick(cols, *cands), cols) for name, cands in wanted.items()}
+
+
 def stellar_id(con, table_url, eco_name="Stellar"):
     url = table_url["ecosystems"]; cols = columns(con, url)
     name_col = need("ecosystem name", pick(cols, "name", "eco_name", "ecosystem_name"), cols)
@@ -105,6 +113,41 @@ def stellar_id(con, table_url, eco_name="Stellar"):
     return rows[0][0]
 
 
+# ----------------------------------------------------------------- shared relation builder
+def build_activity_relations(con, table_url, sid, *, target: str = "") -> tuple[str, str | None]:
+    """Build the dev_day / daily_activity / repo_day relations from the ODD parquet, filtered
+    to ecosystem `sid`. Shared by `extract` (target='ex.' → materialized tables in the extract)
+    and `diagnose`'s remote path (target='' → TEMP VIEWs). Returns the repos table's
+    (id, url) column names, which callers need for repo joins."""
+    kind = "TABLE" if target else "TEMP VIEW"
+
+    def create(name: str, body: str):
+        con.execute(f"CREATE OR REPLACE {kind} {target}{name} AS {body}")
+
+    u = table_url["eco_developer_activities"]
+    c = resolve_cols(con, u, ecosystem_id=["ecosystem_id", "eco_id"],
+                     day=["day", "date", "snapshot_date"],
+                     dev=["canonical_developer_id", "developer_id", "dev_id"],
+                     num_commits=["num_commits", "commits", "commit_count"])
+    create("dev_day", f'''SELECT "{c['dev']}" AS dev, "{c['day']}" AS day,
+                "{c['num_commits']}" AS num_commits
+            FROM read_parquet('{u}') WHERE "{c['ecosystem_id']}" = '{sid}' ''')
+    create("daily_activity", f'''SELECT day, COUNT(DISTINCT dev) AS daily_active_devs,
+                SUM(num_commits) AS daily_commits
+            FROM {target}dev_day GROUP BY 1 ORDER BY 1''')
+
+    u = table_url["repo_developer_activities"]
+    c = resolve_cols(con, u, ecosystem_id=["ecosystem_id", "eco_id"], day=["day", "date"],
+                     repo_id=["repo_id", "repo"], dev=["canonical_developer_id", "developer_id"],
+                     num_commits=["num_commits", "commits"])
+    create("repo_day", f'''SELECT "{c['repo_id']}" AS repo_id, "{c['day']}" AS day,
+                "{c['dev']}" AS dev, "{c['num_commits']}" AS num_commits
+            FROM read_parquet('{u}') WHERE "{c['ecosystem_id']}" = '{sid}' ''')
+
+    rc = columns(con, table_url["repos"])
+    return pick(rc, "id", "repo_id"), pick(rc, "repo_url", "url", "name")
+
+
 # --------------------------------------------------------------------------- extract
 def cmd_extract(args):
     version, table_url = load_manifest()
@@ -115,40 +158,22 @@ def cmd_extract(args):
 
     con.execute(f"ATTACH '{args.out}' AS ex;")
 
-    url = table_url["eco_mads"]; c = columns(con, url)
-    eco = need("eco_mads.ecosystem_id", pick(c, "ecosystem_id", "eco_id"), c)
+    # eco_mads: the presentation table, copied verbatim (Stellar rows only).
+    url = table_url["eco_mads"]
+    eco = resolve_cols(con, url, ecosystem_id=["ecosystem_id", "eco_id"])["ecosystem_id"]
     con.execute(f'CREATE OR REPLACE TABLE ex.eco_mads AS '
-                f'SELECT * FROM read_parquet(\'{url}\') WHERE "{eco}" = ?', [sid])
+                f'SELECT * FROM read_parquet(\'{url}\') WHERE "{eco}" = \'{sid}\'')
     print(f"  eco_mads rows (Stellar): {con.execute('SELECT COUNT(*) FROM ex.eco_mads').fetchone()[0]:,}")
 
-    url = table_url["eco_developer_activities"]; c = columns(con, url)
-    eco = need("eco_dev.ecosystem_id", pick(c, "ecosystem_id", "eco_id"), c)
-    day = need("eco_dev.day", pick(c, "day", "date", "snapshot_date"), c)
-    dev = need("eco_dev.developer_id", pick(c, "canonical_developer_id", "developer_id", "dev_id"), c)
-    com = need("eco_dev.num_commits", pick(c, "num_commits", "commits", "commit_count"), c)
-    con.execute(f'''CREATE OR REPLACE TABLE ex.daily_activity AS
-        SELECT "{day}" AS day, COUNT(DISTINCT "{dev}") AS daily_active_devs,
-               SUM("{com}") AS daily_commits
-        FROM read_parquet('{url}') WHERE "{eco}" = ? GROUP BY 1 ORDER BY 1''', [sid])
-    con.execute(f'''CREATE OR REPLACE TABLE ex.dev_day AS
-        SELECT "{dev}" AS dev, "{day}" AS day, "{com}" AS num_commits
-        FROM read_parquet('{url}') WHERE "{eco}" = ?''', [sid])
+    # dev_day / daily_activity / repo_day: shared with diagnose.
+    build_activity_relations(con, table_url, sid, target="ex.")
     horizon = con.execute("SELECT MAX(day) FROM ex.daily_activity").fetchone()[0]
     print(f"  daily_activity through: {horizon}")
-
-    url = table_url["repo_developer_activities"]; c = columns(con, url)
-    eco = need("repo_dev.ecosystem_id", pick(c, "ecosystem_id", "eco_id"), c)
-    day = need("repo_dev.day", pick(c, "day", "date"), c)
-    rid = need("repo_dev.repo_id", pick(c, "repo_id", "repo"), c)
-    dev = need("repo_dev.developer_id", pick(c, "canonical_developer_id", "developer_id"), c)
-    com = need("repo_dev.num_commits", pick(c, "num_commits", "commits"), c)
-    con.execute(f'''CREATE OR REPLACE TABLE ex.repo_day AS
-        SELECT "{rid}" AS repo_id, "{day}" AS day, "{dev}" AS dev, "{com}" AS num_commits
-        FROM read_parquet('{url}') WHERE "{eco}" = ?''', [sid])
     print(f"  repo_day rows: {con.execute('SELECT COUNT(*) FROM ex.repo_day').fetchone()[0]:,}")
 
-    url = table_url["repos"]; c = columns(con, url)
-    rid = need("repos.id", pick(c, "id", "repo_id"), c)
+    # repos: only those Stellar touched (semi join against repo_day).
+    url = table_url["repos"]
+    rid = resolve_cols(con, url, id=["id", "repo_id"])["id"]
     con.execute(f'''CREATE OR REPLACE TABLE ex.repos AS
         SELECT r.* FROM read_parquet('{url}') r
         SEMI JOIN (SELECT DISTINCT repo_id FROM ex.repo_day) s ON r."{rid}" = s.repo_id''')
@@ -181,23 +206,9 @@ def cmd_diagnose(args):
         version, table_url = load_manifest()
         sid = stellar_id(con, table_url, args.ecosystem)
         print(f"(reading remote snapshot {version}; Stellar id={sid})")
-        u = table_url["eco_developer_activities"]; c = columns(con, u)
-        eco = pick(c, "ecosystem_id"); day = pick(c, "day", "date")
-        dev = pick(c, "canonical_developer_id", "developer_id"); com = pick(c, "num_commits", "commits")
-        con.execute(f'''CREATE TEMP VIEW dev_day AS SELECT "{dev}" dev, "{day}" day, "{com}" num_commits
-            FROM read_parquet('{u}') WHERE "{eco}" = '{sid}' ''')
-        con.execute("""CREATE TEMP VIEW daily_activity AS SELECT day,
-            COUNT(DISTINCT dev) daily_active_devs, SUM(num_commits) daily_commits
-            FROM dev_day GROUP BY 1""")
-        u = table_url["repo_developer_activities"]; c = columns(con, u)
-        eco = pick(c, "ecosystem_id"); day = pick(c, "day", "date"); rid = pick(c, "repo_id")
-        dev = pick(c, "canonical_developer_id", "developer_id"); com = pick(c, "num_commits", "commits")
-        con.execute(f'''CREATE TEMP VIEW repo_day AS SELECT "{rid}" repo_id, "{day}" day,
-            "{dev}" dev, "{com}" num_commits FROM read_parquet('{u}') WHERE "{eco}" = '{sid}' ''')
+        repos_id, repos_url = build_activity_relations(con, table_url, sid)  # TEMP VIEWs
         daily, devday, repoday = "daily_activity", "dev_day", "repo_day"
         repos = f"read_parquet('{table_url['repos']}')"
-        rc = columns(con, table_url["repos"])
-        repos_id = pick(rc, "id", "repo_id"); repos_url = pick(rc, "repo_url", "url", "name")
 
     W = args.window
     horizon = con.execute(f"SELECT MAX(day) FROM {daily}").fetchone()[0]
