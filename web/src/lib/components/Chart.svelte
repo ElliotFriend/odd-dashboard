@@ -11,6 +11,7 @@
         windowStart?: string | null;
         events?: TimelineEvent[];
         onSelectDay?: (day: string) => void;
+        onHover?: (day: string | null) => void;
     }
     let {
         lines = [],
@@ -20,6 +21,7 @@
         windowStart = null,
         events = [],
         onSelectDay,
+        onHover,
     }: Props = $props();
 
     const PAD = { l: 52, r: 16, t: 16, b: 28 };
@@ -90,16 +92,6 @@
             });
     });
 
-    const eventsOn = (day: string): TimelineEvent[] =>
-        events.filter((e) => e.start <= day && day <= e.end);
-
-    // Short weekday for an ISO day, computed in UTC so it never drifts by timezone.
-    const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    function weekday(day: string): string {
-        const [y, m, d] = day.split('-').map(Number);
-        return WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-    }
-
     function path(data: ChartPoint[], x: (day: string) => number, y: (value: number) => number) {
         return data
             .map((d, i) => `${i ? 'L' : 'M'}${x(d.day).toFixed(1)},${y(d.value).toFixed(1)}`)
@@ -129,6 +121,7 @@
     }
     function onMove(e: MouseEvent & { currentTarget: EventTarget & SVGSVGElement }) {
         hover = nearestDay(pxOf(e));
+        onHover?.(hover);
     }
     function onClick(e: MouseEvent & { currentTarget: EventTarget & SVGSVGElement }) {
         const day = nearestDay(pxOf(e));
@@ -146,7 +139,10 @@
         aria-label="time series chart"
         class:clickable={!!onSelectDay}
         onmousemove={onMove}
-        onmouseleave={() => (hover = null)}
+        onmouseleave={() => {
+            hover = null;
+            onHover?.(null);
+        }}
         onclick={onClick}
     >
         {#if xy}
@@ -302,32 +298,6 @@
             {/if}
         {/if}
     </svg>
-
-    {#if hover && xy}
-        <div class="tip" style={`left:${Math.min(xy.x(hover) + 10, W - 150)}px`}>
-            <div class="tip-day">{hover} {weekday(hover)}</div>
-            {#each lines as l (l.name)}
-                {#each l.data.filter((d) => d.day === hover) as d (d.day)}
-                    <div class="tip-row">
-                        <span style={`color:${l.color}`}>●</span>
-                        {l.name}<b class="tnum">{d.value.toLocaleString()}</b>
-                    </div>
-                {/each}
-            {/each}
-            {#if bars}{#each bars.data.filter((d) => d.day === hover) as d (d.day)}
-                    <div class="tip-row">
-                        <span style={`color:${bars.color};opacity:.5`}>▮</span>
-                        {bars.name}<b class="tnum">{d.value.toLocaleString()}</b>
-                    </div>
-                {/each}{/if}
-            {#each eventsOn(hover) as e (e.title)}
-                <div class="tip-row">
-                    <span style={`color:${partnerColor(e.partner)}`}>▮</span>
-                    {e.title}<b>{e.partner}</b>
-                </div>
-            {/each}
-        </div>
-    {/if}
 </div>
 
 <style>
@@ -341,31 +311,6 @@
     }
     svg.clickable {
         cursor: pointer;
-    }
-    .tip {
-        position: absolute;
-        top: 8px;
-        background: #0c111b;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        padding: 8px 10px;
-        font-size: 11px;
-        pointer-events: none;
-        min-width: 130px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    }
-    .tip-day {
-        color: var(--muted);
-        margin-bottom: 4px;
-        letter-spacing: 0.06em;
-    }
-    .tip-row {
-        display: flex;
-        gap: 6px;
-        align-items: baseline;
-    }
-    .tip-row b {
-        margin-left: auto;
     }
     .band {
         pointer-events: none;
