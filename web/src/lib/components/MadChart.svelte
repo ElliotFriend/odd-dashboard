@@ -172,6 +172,20 @@
         onHover={(d) => (hovered = d)}
         horizon={mad.meta?.parquet_horizon}
     />
+    <p class="source">
+        Source:
+        <a
+            href="https://github.com/electric-capital/open-dev-data"
+            target="_blank"
+            rel="noopener noreferrer">Open Dev Data by Electric Capital</a
+        >, licensed
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer"
+            >CC BY 4.0</a
+        >. Live MAD series via
+        <a href="https://www.developerreport.com" target="_blank" rel="noopener noreferrer"
+            >www.developerreport.com</a
+        >.
+    </p>
 </section>
 
 <style>
@@ -298,5 +312,15 @@
         .head-side .toggle {
             flex-wrap: wrap;
         }
+    }
+    /* CC BY 4.0 requires attribution immediately adjacent to the data, linking back
+       to the source — so this sits directly under the chart, not only in the footer. */
+    .source {
+        font-size: 11px;
+        color: var(--faint);
+        margin: 8px 0 2px;
+    }
+    .source a {
+        color: var(--amber-soft);
     }
 </style>
