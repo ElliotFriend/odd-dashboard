@@ -1,6 +1,6 @@
 [
   {
-    "title": "Drips Wave 1",
+    "title": "Wave 1",
     "partner": "Drips",
     "start": "2026-01-21",
     "end": "2026-01-31",
@@ -8,7 +8,15 @@
     "url": "https://www.drips.network/wave/stellar"
   },
   {
-    "title": "Drips Wave 2",
+    "title": "ZK Gaming",
+    "partner": "Stellar Hacks",
+    "start": "2026-02-09",
+    "end": "2026-02-23",
+    "description": "Hackathon focusing on zero-knowledge proofs on Stellar, in gaming applications.",
+    "url": "https://dorahacks.io/hackathon/stellar-hacks-zk-gaming"
+  },
+  {
+    "title": "Wave 2",
     "partner": "Drips",
     "start": "2026-02-19",
     "end": "2026-02-26",
@@ -16,7 +24,7 @@
     "url": "https://www.drips.network/wave/stellar"
   },
   {
-    "title": "Drips Wave 3",
+    "title": "Wave 3",
     "partner": "Drips",
     "start": "2026-03-23",
     "end": "2026-03-30",
@@ -24,7 +32,15 @@
     "url": "https://www.drips.network/wave/stellar"
   },
   {
-    "title": "Drips Wave 4",
+    "title": "Agents",
+    "partner": "Stellar Hacks",
+    "start": "2026-03-30",
+    "end": "2026-04-13",
+    "description": "Hackathon focusing on x402, MPP and other agentic payment use-cases.",
+    "url": "https://dorahacks.io/hackathon/stellar-agents-x402-stripe-mpp"
+  },
+  {
+    "title": "Wave 4",
     "partner": "Drips",
     "start": "2026-04-22",
     "end": "2026-04-29",
@@ -32,7 +48,7 @@
     "url": "https://www.drips.network/wave/stellar"
   },
   {
-    "title": "Drips Wave 5",
+    "title": "Wave 5",
     "partner": "Drips",
     "start": "2026-05-26",
     "end": "2026-06-02",

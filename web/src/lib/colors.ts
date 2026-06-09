@@ -4,6 +4,7 @@
 const KNOWN: Record<string, string> = {
     Drips: '#6f8fff',
     GrantFox: '#b58cff',
+    "Stellar Hacks": "#c85c14",
 };
 const FALLBACK = ['#7ec97e', '#e8a85a', '#e0738d', '#5fd4d0', '#b58cff', '#6f8fff'];
 
