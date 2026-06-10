@@ -178,12 +178,30 @@ export async function getDiagnose(days: number): Promise<DiagnoseResponse> {
     FROM cur LEFT JOIN prv ON prv.d = cur.d AND prv.dev = cur.dev
     GROUP BY cur.d ORDER BY cur.d`);
 
+    // Windowed commits/dev lives in a narrow band (~14-36 observed since 2024), so the
+    // badge reads the current value against the trailing year's own quartiles rather
+    // than absolute thresholds. Empirically (events.json-labeled windows), event-heavy
+    // windows run HIGH — participants out-commit the quiet base — and the lows are
+    // post-event cooldowns; interpretation lives in WhatMoved.svelte.
     const intensity =
         (
             await query<Intensity>(`
-    SELECT SUM(num_commits) AS commits, COUNT(DISTINCT dev) AS devs,
-           ROUND(SUM(num_commits)*1.0/NULLIF(COUNT(DISTINCT dev),0), 2) AS commits_per_dev
-    FROM dev_day WHERE day > (SELECT max(day) FROM dev_day) - ${W}`)
+    WITH cur AS (
+      SELECT SUM(num_commits) AS commits, COUNT(DISTINCT dev) AS devs,
+             ROUND(SUM(num_commits)*1.0/NULLIF(COUNT(DISTINCT dev),0), 2) AS commits_per_dev
+      FROM dev_day WHERE day > (SELECT max(day) FROM dev_day) - ${W}),
+    anchors AS (
+      SELECT DISTINCT day AS d FROM dev_day
+      WHERE day > (SELECT max(day) FROM dev_day) - 365),
+    hist AS (
+      SELECT a.d, SUM(dd.num_commits)*1.0/NULLIF(COUNT(DISTINCT dd.dev),0) AS cpd
+      FROM anchors a JOIN dev_day dd ON dd.day > a.d - ${W} AND dd.day <= a.d
+      GROUP BY a.d)
+    SELECT cur.commits, cur.devs, cur.commits_per_dev,
+           ROUND(median(hist.cpd), 2)              AS baseline_cpd,
+           ROUND(quantile_cont(hist.cpd, 0.25), 2) AS cpd_p25,
+           ROUND(quantile_cont(hist.cpd, 0.75), 2) AS cpd_p75
+    FROM hist, cur GROUP BY cur.commits, cur.devs, cur.commits_per_dev`)
         )[0] ?? {};
 
     const surgeDays = await query<SurgeDay>(`

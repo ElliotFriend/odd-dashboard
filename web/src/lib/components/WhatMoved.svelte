@@ -28,13 +28,26 @@
     });
     const lastSurge = $derived(surgeRuns.length ? surgeRuns[surgeRuns.length - 1] : null);
 
-    // intensity read in plain language
+    // Intensity read in plain language, calibrated against events.json ground truth
+    // (2026 windows: corr(cpd, event-days-in-window) = +0.41, median commits/dev
+    // +0.63, light-committer share -0.72). Empirically the OPPOSITE of the intuitive
+    // dilution story: bounty-wave windows run HIGH — participants out-commit the
+    // quiet base — and the lows are post-event cooldowns after that cohort rolls off.
+    // (Drips waves lift daily actives 2.8-4.9x; Stellar Hacks hackathons don't
+    // register in ODD at all — likely untracked personal repos — so "event" here
+    // effectively means bounty waves.)
+    // So the badge is descriptive, relative to the trailing year's quartiles; influx
+    // itself is the cohort card's job (retained vs new), not this number's.
     const intensityRead = $derived.by(() => {
-        const cpd = diag?.intensity?.commits_per_dev;
+        const i = diag?.intensity;
+        const cpd = i?.commits_per_dev;
         if (cpd == null) return null;
-        if (cpd < 8) return { tag: 'drive-by / program-driven', tone: 'rose' };
-        if (cpd < 20) return { tag: 'mixed', tone: 'amber' };
-        return { tag: 'sustained building', tone: 'cyan' };
+        const lo = i?.cpd_p25,
+            hi = i?.cpd_p75;
+        if (lo == null || hi == null) return { tag: 'no baseline', tone: 'amber' };
+        if (cpd < lo) return { tag: 'subdued — low output/dev', tone: 'rose' };
+        if (cpd > hi) return { tag: 'event-charged — high output/dev', tone: 'cyan' };
+        return { tag: 'typical range', tone: 'amber' };
     });
 </script>
 
@@ -79,12 +92,17 @@
                     >{intensityRead.tag}</span
                 >
                 <p class="hint">
-                    Low commits-per-dev across many contributors is the signature of drive-by /
-                    bounty-program activity — e.g. monthly bounty sprints like <a
+                    Total 28d commits ÷ distinct devs, read against its own trailing year (middle
+                    half {fmt(diag?.intensity?.cpd_p25)}–{fmt(diag?.intensity?.cpd_p75)}, median {fmt(
+                        diag?.intensity?.baseline_cpd,
+                    )}). Counterintuitively, this runs <em>high</em> while a bounty sprint like <a
                         href="https://www.drips.network/wave/stellar"
                         target="_blank"
                         rel="noreferrer">Drips Wave</a
-                    > — rather than sustained team building.
+                    > sits in the window — participants out-commit the quiet base (Wave 4 devs landed
+                    a median 7 commits in the week, vs 3 for the prior week's devs) — then sags for ~a
+                    month as that cohort rolls off. A dip here is post-event cooldown, not exodus; for
+                    influx itself, read retained-vs-new on the left.
                 </p>
             {/if}
         </div>

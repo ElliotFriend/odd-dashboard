@@ -126,11 +126,16 @@ export interface CohortRow {
     new_devs: number;
 }
 
-/** Contributor intensity for the current window. May be empty if no rows. */
+/** Contributor intensity for the current window, plus the trailing-365d distribution
+ *  of the same windowed figure (median + quartiles) so the badge can read the current
+ *  value relative to its own history. May be empty if no rows. */
 export interface Intensity {
     commits?: number | null;
     devs?: number | null;
     commits_per_dev?: number | null;
+    baseline_cpd?: number | null;
+    cpd_p25?: number | null;
+    cpd_p75?: number | null;
 }
 
 /** A detected daily surge day (daily devs > 2x trailing-90d median). */
