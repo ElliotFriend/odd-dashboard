@@ -62,5 +62,12 @@
     "end": "2026-06-29",
     "description": "This hackathon is wide open: build anything you want with zero-knowledge on Stellar.",
     "url": "https://dorahacks.io/hackathon/stellar-hacks-zk"
+  },
+  {
+    "title": "Campaign",
+    "partner": "GrantFox",
+    "start": "2026-06-15",
+    "end": "2026-06-29",
+    "url": "https://contribute.grantfox.xyz/campaigns"
   }
 ]
