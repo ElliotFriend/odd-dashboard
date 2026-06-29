@@ -59,7 +59,7 @@
     "title": "ZK Real World",
     "partner": "Stellar Hacks",
     "start": "2026-06-15",
-    "end": "2026-06-29",
+    "end": "2026-07-03",
     "description": "This hackathon is wide open: build anything you want with zero-knowledge on Stellar.",
     "url": "https://dorahacks.io/hackathon/stellar-hacks-zk"
   },
@@ -69,5 +69,13 @@
     "start": "2026-06-15",
     "end": "2026-06-29",
     "url": "https://contribute.grantfox.xyz/campaigns"
+  },
+  {
+    "title": "Wave 6",
+    "partner": "Drips",
+    "start": "2026-06-23",
+    "end": "2026-06-30",
+    "description": "Stellar Wave 6 — monthly one-week bounty sprint (Fix, Merge, Earn).",
+    "url": "https://www.drips.network/wave/stellar"
   }
 ]
