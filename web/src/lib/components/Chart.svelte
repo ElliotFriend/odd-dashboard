@@ -73,23 +73,89 @@
         return x(before) + t * (x(after) - x(before));
     }
 
-    // Event bands clipped to the visible window.
+    // Event bands are full-height fills. Where events overlap in time, the full
+    // plot height is SPLIT equally among the concurrent events (a stacked ribbon):
+    // one event → full height; three overlapping → each 1/3 height, together still
+    // filling the band. The split is computed per x-segment (between the sorted
+    // event start/end breakpoints), so the partition tracks actual concurrency.
     const bands = $derived.by(() => {
-        if (!xy || !events.length) return [];
+        if (!xy || !events.length) return { fills: [], labels: [] };
         const first = xy.days[0],
             last = xy.days[xy.days.length - 1];
-        return events
+        const top = PAD.t,
+            H = xy.innerH;
+        const vis = events
             .filter((e) => e.end >= first && e.start <= last)
-            .map((e) => {
-                const left = xAt(e.start),
-                    right = xAt(e.end);
-                return {
-                    event: e,
-                    left,
-                    width: Math.max(2, right - left),
-                    color: partnerColor(e.partner),
-                };
+            .map((e) => ({
+                event: e,
+                left: xAt(e.start),
+                right: xAt(e.end),
+                color: partnerColor(e.partner),
+                row: 0,
+            }))
+            .sort((a, b) => a.left - b.left || a.right - b.right);
+        // Stable row per event via greedy interval packing on the date range, so an
+        // event keeps the same vertical slot across every segment it spans (ribbons
+        // don't cross or jump between segments).
+        const rowEnds: number[] = [];
+        for (const v of vis) {
+            let row = rowEnds.findIndex((end) => v.left >= end);
+            if (row === -1) row = rowEnds.length;
+            rowEnds[row] = v.right;
+            v.row = row;
+        }
+        // events covering a segment [x0,x1], ordered by their stable row
+        const covering = (x0: number, x1: number) =>
+            vis
+                .filter((v) => v.left <= x0 + 0.01 && v.right >= x1 - 0.01)
+                .sort((a, b) => a.row - b.row);
+        // breakpoints: every start/end x; the active set is constant between them
+        const xs = [...new Set(vis.flatMap((v) => [v.left, v.right]))].sort((a, b) => a - b);
+        const fills: {
+            key: string;
+            x: number;
+            w: number;
+            y: number;
+            h: number;
+            color: string;
+        }[] = [];
+        for (let i = 0; i < xs.length - 1; i++) {
+            const x0 = xs[i],
+                x1 = xs[i + 1];
+            const act = covering(x0, x1);
+            if (!act.length) continue;
+            const h = H / act.length;
+            act.forEach((v, slot) => {
+                fills.push({
+                    key: `${v.event.title}@${i}`,
+                    x: x0,
+                    w: Math.max(1, x1 - x0),
+                    y: top + slot * h,
+                    h,
+                    color: v.color,
+                });
             });
+        }
+        // one label + left border per event, sized to its slice in the starting segment
+        const labels = vis.map((v) => {
+            const segEnd = xs.find((x) => x > v.left + 0.01) ?? v.right;
+            const act = covering(v.left, segEnd);
+            const k = Math.max(1, act.length);
+            const slot = Math.max(0, act.indexOf(v));
+            const h = H / k;
+            const sliceTop = top + slot * h;
+            return {
+                key: v.event.title,
+                x: v.left + 4,
+                y: sliceTop + 10,
+                color: v.color,
+                title: v.event.title,
+                left: v.left,
+                y0: sliceTop,
+                y1: sliceTop + h,
+            };
+        });
+        return { fills, labels };
     });
 
     function path(data: ChartPoint[], x: (day: string) => number, y: (value: number) => number) {
@@ -146,33 +212,36 @@
         onclick={onClick}
     >
         {#if xy}
-            {#each bands as b (b.event.title)}
+            <!-- full-height fills, split equally where events overlap -->
+            {#each bands.fills as f (f.key)}
                 <rect
                     class="band"
-                    x={b.left}
-                    y={PAD.t}
-                    width={b.width}
-                    height={height - PAD.t - PAD.b}
-                    fill={b.color}
-                    opacity="0.10"
+                    x={f.x}
+                    y={f.y}
+                    width={f.w}
+                    height={f.h}
+                    fill={f.color}
+                    opacity="0.12"
                 />
+            {/each}
+            {#each bands.labels as b (b.key)}
                 <line
                     class="band"
                     x1={b.left}
                     x2={b.left}
-                    y1={PAD.t}
-                    y2={height - PAD.b}
+                    y1={b.y0}
+                    y2={b.y1}
                     stroke={b.color}
                     stroke-width="1"
                     opacity="0.45"
                 />
                 <text
                     class="band"
-                    x={b.left + 4}
-                    y={PAD.t + 9}
+                    x={b.x}
+                    y={b.y}
                     font-size="9"
                     fill={b.color}
-                    font-family="var(--mono)">{b.event.title}</text
+                    font-family="var(--mono)">{b.title}</text
                 >
             {/each}
 
