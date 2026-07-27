@@ -24,9 +24,13 @@ uv run --no-dev python .claude/skills/clean-mad/clean_mad.py
 - `--no-dev` because reading the extract needs only duckdb (no pandas/pytz here).
 - Fast path (skip the slow canonical rank download): add `--no-ranks`.
 - Point at a different extract: `--db /path/to/stellar_extract.duckdb`.
+- Backfill / trend: `--as-of 2026-07-17,2026-07-18` recomputes PAST horizons (any day in
+  `eco_mads`; `repo_day` holds full history so the windows are exact). One remote rank read
+  covers every requested day, and a summary table prints at the end. Use `--out-dir` to write
+  elsewhere when you don't want to clobber existing dated files.
 
 It prints the summary tables AND writes `clean-mad-<horizon>.md` next to the extract
-(horizon = latest `eco_mads.day`).
+(horizon = latest `eco_mads.day`, or each `--as-of` day).
 
 ## What it computes
 
@@ -52,3 +56,8 @@ It prints the summary tables AND writes `clean-mad-<horizon>.md` next to the ext
   but `--no-dev` keeps it minimal/fast.
 - Quoting `full_time_devs` straight from `eco_mads` as "clean" — it's polluted too;
   use this skill's rank table.
+- **Building a trend by stitching dated `clean-mad-<day>.md` files together.** ODD restates
+  history: the same horizon reads +26 to +45 devs higher weeks later (real-repo backfill; the
+  winget-only count does NOT move). The freshest 3–4 horizons are always undercounts, so
+  stitched files manufacture a fake plateau/decline. For any trend, recompute the whole range
+  with one `--as-of` run. See `clean-mad-series-2026-07.md` and the memory note.

@@ -19,9 +19,16 @@ Method (mirrors the hand-verified session recompute):
 
 Writes clean-mad-<horizon>.md next to the extract and prints a summary.
 
+Backfill: `--as-of` recomputes PAST horizons from the same extract (repo_day holds
+full history, so any 28d window ending on a day present in eco_mads is exact). Ranks
+for all requested days come from ONE remote read of the current snapshot's parquet.
+Note ranks are then as the CURRENT snapshot states them for that day — a same-day
+snapshot could differ slightly if EC restated history.
+
 Usage (from repo root):
   uv run --no-dev python .claude/skills/clean-mad/clean_mad.py
   uv run --no-dev python .claude/skills/clean-mad/clean_mad.py --db ./stellar_extract.duckdb --no-ranks
+  uv run --no-dev python .claude/skills/clean-mad/clean_mad.py --as-of 2026-07-17,2026-07-18
 """
 import argparse
 import os
@@ -40,6 +47,8 @@ def main():
     ap.add_argument("--db", default="./stellar_extract.duckdb", help="path to the extract")
     ap.add_argument("--out-dir", default=None, help="where to write the markdown (default: next to the db)")
     ap.add_argument("--no-ranks", action="store_true", help="skip the slow canonical remote rank verification")
+    ap.add_argument("--as-of", default=None,
+                    help="comma-separated horizon days (yyyy-mm-dd) to (re)compute instead of the latest")
     args = ap.parse_args()
 
     if not os.path.exists(args.db):
@@ -48,8 +57,66 @@ def main():
     loc = duckdb.connect(args.db, read_only=True)
 
     version = loc.execute("select snapshot_version from meta").fetchone()[0]
-    H = loc.execute("select max(day) from eco_mads").fetchone()[0]
-    lo = loc.execute("select (max(day) - INTERVAL 27 DAY)::DATE from eco_mads").fetchone()[0]
+    latest = loc.execute("select max(day) from eco_mads").fetchone()[0]
+
+    if args.as_of:
+        days = []
+        for tok in args.as_of.split(","):
+            tok = tok.strip()
+            if not tok:
+                continue
+            row = loc.execute("select day from eco_mads where day = ?::DATE", [tok]).fetchone()
+            if not row:
+                sys.exit(f"{tok} is not a day in eco_mads (latest = {latest}); nothing to compute")
+            days.append(row[0])
+        days.sort()
+    else:
+        days = [latest]
+
+    out_dir = args.out_dir or os.path.dirname(os.path.abspath(args.db))
+    ranks_by_day = {} if args.no_ranks else fetch_ranks(version, days)
+
+    headlines = []
+    for H in days:
+        md, headline = compute_day(loc, version, H, ranks_by_day.get(H))
+        out_path = os.path.join(out_dir, f"clean-mad-{H}.md")
+        with open(out_path, "w") as f:
+            f.write(md)
+        print(md)
+        print(f"\n--- written to {out_path} ---", file=sys.stderr)
+        headlines.append(headline)
+
+    if len(headlines) > 1:
+        print("\n\n# Backfill summary\n")
+        print("| horizon | official | winget-only | **clean MAD** | clean full_time |")
+        print("|---|---:|---:|---:|---:|")
+        for h in headlines:
+            print(h)
+
+
+def fetch_ranks(version, days):
+    """One remote read of the canonical rank parquet covering every requested day."""
+    try:
+        rc = duckdb.connect()
+        rc.execute("install httpfs; load httpfs;")
+        url = f"https://data.opendevdata.org/snapshots/{version}/eco_developer_contribution_ranks.parquet"
+        rows = rc.execute(
+            "select day, contribution_rank, canonical_developer_id from read_parquet(?) "
+            "where ecosystem_id = ? and day in (select unnest(?::DATE[]))",
+            [url, STELLAR_ECOSYSTEM_ID, [str(d) for d in days]],
+        ).fetchall()
+    except Exception as e:
+        print(f"WARNING: canonical rank verification failed ({e}); writing without ranks.",
+              file=sys.stderr)
+        return {}
+    out = defaultdict(lambda: defaultdict(set))
+    for day, rank, dev in rows:
+        out[day][rank].add(dev)
+    return out
+
+
+def compute_day(loc, version, H, byrank):
+    lo = loc.execute("select (?::DATE - INTERVAL 27 DAY)::DATE", [H]).fetchone()[0]
 
     m = loc.execute(
         "select all_devs, num_commits, full_time_devs, part_time_devs, one_time_devs, "
@@ -98,42 +165,22 @@ def main():
         print(f"WARNING: local distinct devs {total} != eco_mads.all_devs {off_all} "
               "(schema drift? investigate before trusting the clean number)", file=sys.stderr)
 
-    # --- canonical remote rank verification (optional, slow) ---
+    # --- canonical rank split (byrank was fetched once for all requested days) ---
     ranks = None
-    if not args.no_ranks:
-        try:
-            rc = duckdb.connect()
-            rc.execute("install httpfs; load httpfs;")
-            base = f"https://data.opendevdata.org/snapshots/{version}/eco_developer_contribution_ranks.parquet"
-            rows = rc.execute(
-                "select contribution_rank, canonical_developer_id from read_parquet(?) "
-                "where ecosystem_id = ? and day = ?",
-                [base, STELLAR_ECOSYSTEM_ID, H],
-            ).fetchall()
-            byrank = defaultdict(set)
-            for rank, dev in rows:
-                byrank[rank].add(dev)
-            ranks = {}
-            for k in ("full_time", "part_time", "one_time"):
-                off = len(byrank[k])
-                w = len(byrank[k] & winget_only_ids)
-                ranks[k] = (off, w, off - w)
-        except Exception as e:
-            print(f"WARNING: canonical rank verification failed ({e}); writing without ranks.",
-                  file=sys.stderr)
-            ranks = None
+    if byrank:
+        ranks = {}
+        for k in ("full_time", "part_time", "one_time"):
+            off = len(byrank[k])
+            w = len(byrank[k] & winget_only_ids)
+            ranks[k] = (off, w, off - w)
 
     md = render(H, lo, version, off_all, total, winget_touch, winget_only, clean_mad,
                 tot_c, wing_c, daily, ranks, off_ft, off_pt, off_ot,
                 exclusive, multichain, d01, d12, d2p)
 
-    out_dir = args.out_dir or os.path.dirname(os.path.abspath(args.db))
-    out_path = os.path.join(out_dir, f"clean-mad-{H}.md")
-    with open(out_path, "w") as f:
-        f.write(md)
-
-    print(md)
-    print(f"\n--- written to {out_path} ---", file=sys.stderr)
+    ft = f"**{ranks['full_time'][2]:,}**" if ranks else "—"
+    headline = (f"| {H} | {off_all:,} | {winget_only:,} | **{clean_mad:,}** | {ft} |")
+    return md, headline
 
 
 def render(H, lo, version, off_all, total, winget_touch, winget_only, clean_mad,
