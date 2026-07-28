@@ -77,5 +77,21 @@
     "end": "2026-06-30",
     "description": "Stellar Wave 6 — monthly one-week bounty sprint (Fix, Merge, Earn).",
     "url": "https://www.drips.network/wave/stellar"
+  },
+  {
+    "title": "Wave 7",
+    "partner": "Drips",
+    "start": "2026-07-23",
+    "end": "2026-07-30",
+    "description": "Stellar Wave 7 — monthly one-week bounty sprint (Fix, Merge, Earn).",
+    "url": "https://www.drips.network/wave/stellar"
+  },
+  {
+    "title": "Builder Summit SP",
+    "partner": "GrantFox",
+    "start": "2026-08-03",
+    "end": "2026-08-06",
+    "description": "Stellar Wave 7 — monthly one-week bounty sprint (Fix, Merge, Earn).",
+    "url": "https://bounties.grantfox.xyz/events/stellar-summit-sp-2026"
   }
 ]
