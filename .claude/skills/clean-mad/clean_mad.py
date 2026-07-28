@@ -17,7 +17,10 @@ Method (mirrors the hand-verified session recompute):
     intersected with the winget-only dev set. Needs httpfs + network; the whole
     parquet downloads (~1 min). Skip with --no-ranks for a fast local-only run.
 
-Writes clean-mad-<horizon>.md next to the extract and prints a summary.
+Writes docs/clean-mads/clean-mad-<horizon>.md (beside the extract) and prints a summary.
+Those dated files are version-controlled: each one records what the snapshot current at
+run time said, and the drift tables measure against them. When recomputing an already
+written horizon just to refresh a trend, pass --out-dir to keep the baseline intact.
 
 Backfill: `--as-of` recomputes PAST horizons from the same extract (repo_day holds
 full history, so any 28d window ending on a day present in eco_mads is exact). Ranks
@@ -45,7 +48,8 @@ MANIFEST_URL = "https://data.opendevdata.org/manifest.json"
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--db", default="./stellar_extract.duckdb", help="path to the extract")
-    ap.add_argument("--out-dir", default=None, help="where to write the markdown (default: next to the db)")
+    ap.add_argument("--out-dir", default=None,
+                    help="where to write the markdown (default: docs/clean-mads/ beside the db)")
     ap.add_argument("--no-ranks", action="store_true", help="skip the slow canonical remote rank verification")
     ap.add_argument("--as-of", default=None,
                     help="comma-separated horizon days (yyyy-mm-dd) to (re)compute instead of the latest")
@@ -73,7 +77,10 @@ def main():
     else:
         days = [latest]
 
-    out_dir = args.out_dir or os.path.dirname(os.path.abspath(args.db))
+    # dated reports are version-controlled docs, not build artifacts beside the extract
+    out_dir = args.out_dir or os.path.join(os.path.dirname(os.path.abspath(args.db)),
+                                           "docs", "clean-mads")
+    os.makedirs(out_dir, exist_ok=True)
     ranks_by_day = {} if args.no_ranks else fetch_ranks(version, days)
 
     headlines = []
@@ -151,7 +158,8 @@ def compute_day(loc, version, H, byrank):
         "select sum(num_commits) from repo_day where day between ? and ? and repo_id = ?",
         [lo, H, WINGET_REPO_ID],
     ).fetchone()[0]
-    tot_c, wing_c = int(tot_c), int(wing_c)
+    # SUM over an empty set is NULL: pre-April horizons have zero winget activity.
+    tot_c, wing_c = int(tot_c or 0), int(wing_c or 0)
 
     daily = loc.execute(
         """select day, count(distinct dev) d, sum(num_commits) c

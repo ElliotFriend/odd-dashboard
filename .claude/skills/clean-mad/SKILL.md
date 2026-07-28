@@ -8,7 +8,8 @@ description: Use when the user asks for the "clean" Stellar MAD, MAD without the
 Recompute Stellar MAD with the `stellar/winget-pkgs` phantom devs removed.
 `stellar/winget-pkgs` (repo id `1770468`) is a fork of Microsoft's winget-pkgs;
 crypto-ecosystems attributes its hundreds of upstream package-manifest contributors
-to Stellar, inflating the 28-day MAD (`all_devs`) since ~2026-06-17. This is a bug
+to Stellar, inflating the 28-day MAD (`all_devs`) since **2026-04-02** (volume onset — the
+fork was mapped to Stellar from creation; attributed activity exploded in April). This is a bug
 we expect Electric Capital to fix — **this skill is temporary; delete it once the
 fork is no longer counted.** Full background: `winget-pkgs-phantom-devs` memory.
 
@@ -29,8 +30,19 @@ uv run --no-dev python .claude/skills/clean-mad/clean_mad.py
   covers every requested day, and a summary table prints at the end. Use `--out-dir` to write
   elsewhere when you don't want to clobber existing dated files.
 
-It prints the summary tables AND writes `clean-mad-<horizon>.md` next to the extract
-(horizon = latest `eco_mads.day`, or each `--as-of` day).
+It prints the summary tables AND writes `docs/clean-mads/clean-mad-<horizon>.md`
+(horizon = latest `eco_mads.day`, or each `--as-of` day; the dir is created if missing).
+
+## Where the reports live: `docs/clean-mads/`
+
+All of it is version-controlled — these are the record of what each snapshot said.
+
+- `clean-mad-<yyyy-mm-dd>.md` — one horizon, written on the snapshot current when it ran.
+  Treat an existing dated file as an **"as first observed" baseline**: it's what the drift
+  tables are measured against. When recomputing an already-written horizon just to refresh
+  a trend, send it to `--out-dir <scratch>` so the baseline survives.
+- `clean-mad-series-2026-07.md` — daily series, every row from ONE snapshot. The trend doc.
+- `clean-mad-monthly-2026.md` — month-end series, one snapshot. Cite this for month-over-month.
 
 ## What it computes
 
@@ -60,4 +72,8 @@ It prints the summary tables AND writes `clean-mad-<horizon>.md` next to the ext
   history: the same horizon reads +26 to +45 devs higher weeks later (real-repo backfill; the
   winget-only count does NOT move). The freshest 3–4 horizons are always undercounts, so
   stitched files manufacture a fake plateau/decline. For any trend, recompute the whole range
-  with one `--as-of` run. See `clean-mad-series-2026-07.md` and the memory note.
+  with one `--as-of` run. See `docs/clean-mads/clean-mad-series-2026-07.md` and the memory note.
+- **Extrapolating restatement size from elapsed days.** Drift is lumpy, not ≈+2/day — one
+  1-day snapshot step moved 19 consecutive July horizons by exactly +1 (a single late-landing
+  dev whose activity spanned every affected window). Fresh horizons are undercounts, but the
+  size of the eventual correction is not predictable.
