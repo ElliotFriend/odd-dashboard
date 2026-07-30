@@ -10,15 +10,7 @@
     const d = $derived(data.day);
 
     // UTC weekday (same logic as Chart.svelte) — never drifts by timezone.
-    const WEEKDAYS = [
-        'Sunday',
-        'Monday',
-        'Tuesday',
-        'Wednesday',
-        'Thursday',
-        'Friday',
-        'Saturday',
-    ];
+    const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const weekday = $derived.by(() => {
         const [y, m, dd] = d.date.split('-').map(Number);
         return WEEKDAYS[new Date(Date.UTC(y, m - 1, dd)).getUTCDay()];
@@ -156,151 +148,156 @@
     </div>
 
     <div class="cols">
-    <section class="panel">
-        <div class="phead">
-            <h2>repos active</h2>
-            <div class="toggle">
-                <button class:active={repoBy === 'commits'} onclick={() => (repoBy = 'commits')}
-                    >commits</button
-                >
-                <button class:active={repoBy === 'devs'} onclick={() => (repoBy = 'devs')}
-                    >devs</button
-                >
+        <section class="panel">
+            <div class="phead">
+                <h2>repos active</h2>
+                <div class="toggle">
+                    <button class:active={repoBy === 'commits'} onclick={() => (repoBy = 'commits')}
+                        >commits</button
+                    >
+                    <button class:active={repoBy === 'devs'} onclick={() => (repoBy = 'devs')}
+                        >devs</button
+                    >
+                </div>
             </div>
-        </div>
-        <table>
-            <thead>
-                <tr
-                    ><th></th><th>repo</th><th class="r">commits</th><th class="r">devs</th></tr
-                >
-            </thead>
-            <tbody>
-                {#each repos as g (g.repo_id)}
-                    {@const open = openRepos.has(g.repo_id)}
-                    <tr>
-                        <td class="exptd"
-                            ><button
-                                class="exp"
-                                aria-expanded={open}
-                                aria-label="toggle developers"
-                                onclick={() => toggle(openRepos, g.repo_id)}
-                                >{open ? '▾' : '▸'}</button
-                            ></td
-                        >
-                        <td>
-                            <a href={resolve('/repo/[...slug]', { slug: g.repo })}>{g.repo}</a>
-                            <a
-                                class="ext"
-                                href={g.url}
-                                target="_blank"
-                                rel="external noreferrer noopener">↗</a
+            <table>
+                <thead>
+                    <tr><th></th><th>repo</th><th class="r">commits</th><th class="r">devs</th></tr>
+                </thead>
+                <tbody>
+                    {#each repos as g (g.repo_id)}
+                        {@const open = openRepos.has(g.repo_id)}
+                        <tr>
+                            <td class="exptd"
+                                ><button
+                                    class="exp"
+                                    aria-expanded={open}
+                                    aria-label="toggle developers"
+                                    onclick={() => toggle(openRepos, g.repo_id)}
+                                    >{open ? '▾' : '▸'}</button
+                                ></td
                             >
-                        </td>
-                        <td class="r tnum">{fmt(g.commits)}</td>
-                        <td class="r tnum">{fmt(g.devs.length)}</td>
-                    </tr>
-                    {#if open}
-                        <tr class="sub">
-                            <td></td>
-                            <td colspan="3">
-                                <ul class="sublist">
-                                    {#each g.devs as p (p.dev)}
-                                        <li>
-                                            {#if p.login}
-                                                <a href={resolve('/dev/[login]', { login: p.login })}
-                                                    >@{p.login}</a
-                                                >
-                                            {:else}
-                                                <span class="faint"
-                                                    >{p.name ?? `developer #${p.dev}`}</span
-                                                >
-                                            {/if}
-                                            {#if p.is_bot}<span class="bot">bot</span>{/if}
-                                            <span class="faint tnum">{fmt(p.commits)}</span>
-                                        </li>
-                                    {/each}
-                                </ul>
-                            </td>
-                        </tr>
-                    {/if}
-                {/each}
-            </tbody>
-        </table>
-    </section>
-
-    <section class="panel">
-        <div class="phead">
-            <h2>developers active</h2>
-            <div class="toggle">
-                <button class:active={devBy === 'commits'} onclick={() => (devBy = 'commits')}
-                    >commits</button
-                >
-                <button class:active={devBy === 'repos'} onclick={() => (devBy = 'repos')}
-                    >repos</button
-                >
-            </div>
-        </div>
-        <table>
-            <thead>
-                <tr
-                    ><th></th><th>developer</th><th class="r">commits</th><th class="r">repos</th
-                    ></tr
-                >
-            </thead>
-            <tbody>
-                {#each devs as g (g.dev)}
-                    {@const open = openDevs.has(g.dev)}
-                    <tr>
-                        <td class="exptd"
-                            ><button
-                                class="exp"
-                                aria-expanded={open}
-                                aria-label="toggle repos"
-                                onclick={() => toggle(openDevs, g.dev)}
-                                >{open ? '▾' : '▸'}</button
-                            ></td
-                        >
-                        <td>
-                            {#if g.login}
-                                <a href={resolve('/dev/[login]', { login: g.login })}>@{g.login}</a>
-                                {#if g.name && g.name.toLowerCase() !== g.login.toLowerCase()}<span
-                                        class="faint">{g.name}</span
-                                    >{/if}
+                            <td>
+                                <a href={resolve('/repo/[...slug]', { slug: g.repo })}>{g.repo}</a>
                                 <a
                                     class="ext"
-                                    href={`https://github.com/${g.login}`}
+                                    href={g.url}
                                     target="_blank"
-                                    rel="noreferrer noopener">↗</a
+                                    rel="external noreferrer noopener">↗</a
                                 >
-                            {:else}
-                                {g.name ?? `developer #${g.dev}`}
-                            {/if}
-                            {#if g.is_bot}<span class="bot">bot</span>{/if}
-                        </td>
-                        <td class="r tnum">{fmt(g.commits)}</td>
-                        <td class="r tnum">{fmt(g.repos.length)}</td>
-                    </tr>
-                    {#if open}
-                        <tr class="sub">
-                            <td></td>
-                            <td colspan="3">
-                                <ul class="sublist">
-                                    {#each g.repos as p (p.repo_id)}
-                                        <li>
-                                            <a href={resolve('/repo/[...slug]', { slug: p.repo })}
-                                                >{p.repo}</a
-                                            >
-                                            <span class="faint tnum">{fmt(p.commits)}</span>
-                                        </li>
-                                    {/each}
-                                </ul>
                             </td>
+                            <td class="r tnum">{fmt(g.commits)}</td>
+                            <td class="r tnum">{fmt(g.devs.length)}</td>
                         </tr>
-                    {/if}
-                {/each}
-            </tbody>
-        </table>
-    </section>
+                        {#if open}
+                            <tr class="sub">
+                                <td></td>
+                                <td colspan="3">
+                                    <ul class="sublist">
+                                        {#each g.devs as p (p.dev)}
+                                            <li>
+                                                {#if p.login}
+                                                    <a
+                                                        href={resolve('/dev/[login]', {
+                                                            login: p.login,
+                                                        })}>@{p.login}</a
+                                                    >
+                                                {:else}
+                                                    <span class="faint"
+                                                        >{p.name ?? `developer #${p.dev}`}</span
+                                                    >
+                                                {/if}
+                                                {#if p.is_bot}<span class="bot">bot</span>{/if}
+                                                <span class="faint tnum">{fmt(p.commits)}</span>
+                                            </li>
+                                        {/each}
+                                    </ul>
+                                </td>
+                            </tr>
+                        {/if}
+                    {/each}
+                </tbody>
+            </table>
+        </section>
+
+        <section class="panel">
+            <div class="phead">
+                <h2>developers active</h2>
+                <div class="toggle">
+                    <button class:active={devBy === 'commits'} onclick={() => (devBy = 'commits')}
+                        >commits</button
+                    >
+                    <button class:active={devBy === 'repos'} onclick={() => (devBy = 'repos')}
+                        >repos</button
+                    >
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr
+                        ><th></th><th>developer</th><th class="r">commits</th><th class="r"
+                            >repos</th
+                        ></tr
+                    >
+                </thead>
+                <tbody>
+                    {#each devs as g (g.dev)}
+                        {@const open = openDevs.has(g.dev)}
+                        <tr>
+                            <td class="exptd"
+                                ><button
+                                    class="exp"
+                                    aria-expanded={open}
+                                    aria-label="toggle repos"
+                                    onclick={() => toggle(openDevs, g.dev)}
+                                    >{open ? '▾' : '▸'}</button
+                                ></td
+                            >
+                            <td>
+                                {#if g.login}
+                                    <a href={resolve('/dev/[login]', { login: g.login })}
+                                        >@{g.login}</a
+                                    >
+                                    {#if g.name && g.name.toLowerCase() !== g.login.toLowerCase()}<span
+                                            class="faint">{g.name}</span
+                                        >{/if}
+                                    <a
+                                        class="ext"
+                                        href={`https://github.com/${g.login}`}
+                                        target="_blank"
+                                        rel="noreferrer noopener">↗</a
+                                    >
+                                {:else}
+                                    {g.name ?? `developer #${g.dev}`}
+                                {/if}
+                                {#if g.is_bot}<span class="bot">bot</span>{/if}
+                            </td>
+                            <td class="r tnum">{fmt(g.commits)}</td>
+                            <td class="r tnum">{fmt(g.repos.length)}</td>
+                        </tr>
+                        {#if open}
+                            <tr class="sub">
+                                <td></td>
+                                <td colspan="3">
+                                    <ul class="sublist">
+                                        {#each g.repos as p (p.repo_id)}
+                                            <li>
+                                                <a
+                                                    href={resolve('/repo/[...slug]', {
+                                                        slug: p.repo,
+                                                    })}>{p.repo}</a
+                                                >
+                                                <span class="faint tnum">{fmt(p.commits)}</span>
+                                            </li>
+                                        {/each}
+                                    </ul>
+                                </td>
+                            </tr>
+                        {/if}
+                    {/each}
+                </tbody>
+            </table>
+        </section>
     </div>
 {/if}
 

@@ -95,7 +95,8 @@
                     Total 28d commits ÷ distinct devs, read against its own trailing year (middle
                     half {fmt(diag?.intensity?.cpd_p25)}–{fmt(diag?.intensity?.cpd_p75)}, median {fmt(
                         diag?.intensity?.baseline_cpd,
-                    )}). Counterintuitively, this runs <em>high</em> while a bounty sprint like <a
+                    )}). Counterintuitively, this runs <em>high</em> while a bounty sprint like
+                    <a
                         href="https://www.drips.network/wave/stellar"
                         target="_blank"
                         rel="noreferrer">Drips Wave</a
