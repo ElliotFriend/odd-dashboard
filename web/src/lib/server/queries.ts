@@ -21,7 +21,50 @@ import type {
     RepoDevRow,
     DayPair,
     DayDetail,
+    PhantomRow,
 } from '$lib/types';
+
+// ---------------------------------------------------------------------------
+// TEMPORARY: stellar/winget-pkgs phantom developers.
+//
+// Repo 1770468 is a fork of Microsoft's winget-pkgs sitting under the `stellar/`
+// GitHub org, so crypto-ecosystems attributes its upstream package-manifest
+// contributors to Stellar — inflating eco_mads.all_devs by ~23% since 2026-04-02.
+// The chart draws a "clean" series alongside the official one using the counts
+// below. We expect Electric Capital to fix the attribution; when they do, DELETE
+// this block, its two call sites in getMad(), PhantomRow + DailyRow.winget_only_devs
+// in types.ts, and the clean line + bar stack in MadChart.svelte.
+//
+// "Clean" is a DEVELOPER-level rule, not a repo-level filter: a developer is
+// dropped only if the fork was their ONLY activity in the window. Someone who
+// also touched a real repo stays, with all their commits. This matches the
+// clean-mad skill and every report in docs/clean-mads/.
+// ---------------------------------------------------------------------------
+const PHANTOM_REPO_ID = 1770468;
+
+/** Rolling 28-day count of developers whose ONLY window activity was the fork.
+ *  Restricting the rolling joins to developers who ever touched the fork keeps this
+ *  cheap (~10ms over the full series). Zero-count days are dropped — only ~112 days
+ *  in the whole history have any. */
+async function getPhantom(days: number): Promise<PhantomRow[]> {
+    return query<PhantomRow>(
+        `WITH cand AS (SELECT DISTINCT dev FROM repo_day WHERE repo_id = ?),
+       wd AS (SELECT DISTINCT dev, day FROM repo_day WHERE repo_id = ?),
+       od AS (SELECT DISTINCT r.dev, r.day FROM repo_day r JOIN cand USING (dev)
+              WHERE r.repo_id <> ?),
+       anchors AS (SELECT day AS d FROM eco_mads
+                   WHERE day >= (SELECT min(day) FROM wd)
+                     AND day > (SELECT max(day) FROM eco_mads) - ?),
+       hasw AS (SELECT a.d, wd.dev FROM anchors a
+                JOIN wd ON wd.day > a.d - 28 AND wd.day <= a.d GROUP BY 1, 2),
+       haso AS (SELECT a.d, od.dev FROM anchors a
+                JOIN od ON od.day > a.d - 28 AND od.day <= a.d GROUP BY 1, 2)
+     SELECT hasw.d AS day, count(*) FILTER (WHERE haso.dev IS NULL) AS devs
+     FROM hasw LEFT JOIN haso ON haso.d = hasw.d AND haso.dev = hasw.dev
+     GROUP BY 1 HAVING devs > 0 ORDER BY 1`,
+        [PHANTOM_REPO_ID, PHANTOM_REPO_ID, PHANTOM_REPO_ID, days],
+    );
+}
 
 // repos column names (introspected once; the extract carries id/name/link).
 async function repoCols() {
@@ -50,12 +93,20 @@ export async function getMad(days: number): Promise<MadResponse> {
         [days],
     );
 
+    // `winget_only_devs` is the phantom slice OF `daily_active_devs` (which stays the
+    // total), so the chart can stack the bars. TEMPORARY — see PHANTOM_REPO_ID above.
     const daily = await query<DailyRow>(
-        `SELECT day, daily_active_devs, daily_commits
-     FROM daily_activity
-     WHERE day > (SELECT max(day) FROM daily_activity) - ?
-     ORDER BY day`,
-        [days],
+        `WITH f AS (
+       SELECT day, dev, max(CASE WHEN repo_id <> ? THEN 1 ELSE 0 END) AS other
+       FROM repo_day GROUP BY 1, 2),
+     p AS (SELECT day, count(*) FILTER (WHERE other = 0) AS winget_only_devs
+           FROM f GROUP BY 1)
+     SELECT da.day, da.daily_active_devs, da.daily_commits,
+            COALESCE(p.winget_only_devs, 0) AS winget_only_devs
+     FROM daily_activity da LEFT JOIN p ON p.day = da.day
+     WHERE da.day > (SELECT max(day) FROM daily_activity) - ?
+     ORDER BY da.day`,
+        [PHANTOM_REPO_ID, days],
     );
 
     let api: ApiRow[] = [];
@@ -69,7 +120,9 @@ export async function getMad(days: number): Promise<MadResponse> {
         /* mad_api_history may not exist yet */
     }
 
-    return { windowed, daily, api, meta: await meta() };
+    const phantom = await getPhantom(days); // TEMPORARY — see PHANTOM_REPO_ID above
+
+    return { windowed, daily, api, phantom, meta: await meta() };
 }
 
 /** Repo leaderboard over a trailing window: devs + commits per repo, with names + URLs. */

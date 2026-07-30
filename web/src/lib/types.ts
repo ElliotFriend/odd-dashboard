@@ -22,6 +22,9 @@ export interface ChartBars {
     name: string;
     color: string;
     data: ChartPoint[];
+    /** Optional TOP segment of a stacked bar. `data` above stays the TOTAL, so the
+     *  y-scale and hover readout are unaffected and un-stacked bars render as before. */
+    stack?: { name: string; color: string; data: ChartPoint[] };
 }
 
 // ---- /api/mad ----
@@ -40,6 +43,17 @@ export interface DailyRow {
     day: string;
     daily_active_devs: number;
     daily_commits: number;
+    /** TEMPORARY (winget-pkgs fork bug): of `daily_active_devs`, how many touched
+     *  ONLY the stellar/winget-pkgs fork that day. `daily_active_devs` is unchanged. */
+    winget_only_devs: number;
+}
+
+/** TEMPORARY (winget-pkgs fork bug): per-day count of developers whose ONLY activity
+ *  in the trailing 28 days was the stellar/winget-pkgs fork. Subtract from
+ *  `WindowedRow.all_devs` for the "clean" MAD. Only days with a nonzero count are sent. */
+export interface PhantomRow {
+    day: string;
+    devs: number;
 }
 
 /** Fresher MAD points captured from developerreport.com by `snapshot-api`
@@ -64,6 +78,8 @@ export interface MadResponse {
     windowed: WindowedRow[];
     daily: DailyRow[];
     api: ApiRow[];
+    /** TEMPORARY (winget-pkgs fork bug) — see PhantomRow. */
+    phantom: PhantomRow[];
     meta: Meta;
 }
 

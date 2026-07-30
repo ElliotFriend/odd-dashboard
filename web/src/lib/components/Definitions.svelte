@@ -9,6 +9,16 @@
             def: 'Monthly Active Developers — developers with ≥1 commit in the trailing 28-day window. The headline metric, taken straight from Electric Capital’s Open Dev Data (eco_mads.all_devs). "Monthly" is really a 28-day rolling window, which is why a surge rolls off ~28 days later.',
         },
         {
+            term: 'MAD (28d, clean)',
+            color: 'var(--amber)',
+            def: 'The same 28-day MAD with the stellar/winget-pkgs phantom developers removed — the dashed amber line. That repo is a fork of Microsoft’s winget-pkgs sitting under the stellar/ GitHub org, so crypto-ecosystems attributes its upstream package-manifest contributors to Stellar. A developer is dropped only if the fork was their ONLY activity in the window; anyone who also touched a real Stellar repo still counts. The two lines are identical until April 2026, when the fork’s attributed activity took off.',
+        },
+        {
+            term: 'winget-pkgs fork',
+            color: 'var(--muted)',
+            def: 'The grey slice on top of each daily bar: developers who committed only to the stellar/winget-pkgs fork that day. Not real Stellar activity — a fork-attribution bug we expect Electric Capital to correct, at which point this slice and the clean line both disappear.',
+        },
+        {
             term: 'daily active',
             color: 'var(--amber)',
             def: 'Distinct developers who committed on a single calendar day (not windowed). Drawn as the faint bars behind the MAD line.',
