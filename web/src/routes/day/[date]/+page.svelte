@@ -25,9 +25,15 @@
     });
 
     // Totals from the pairs payload (self-consistent with daily_activity).
+    // Plain Set/Map here and in the two groupings below, NOT SvelteSet/SvelteMap: these
+    // are scratch collections local to a derivation, discarded when it returns. The
+    // derivation re-runs wholesale when `d.pairs` changes, so nothing needs to observe
+    // a mutation. Only the expand state further down is genuinely reactive.
     const totals = $derived.by(() => {
-        const devs = new Set<number>(),
-            repos = new Set<number>();
+        /* eslint-disable-next-line svelte/prefer-svelte-reactivity */
+        const devs = new Set<number>();
+        /* eslint-disable-next-line svelte/prefer-svelte-reactivity */
+        const repos = new Set<number>();
         let commits = 0;
         for (const p of d.pairs) {
             devs.add(p.dev);
@@ -58,6 +64,7 @@
 
     // Group the flat pairs two ways; each group's children sorted by commits desc.
     const byRepo = $derived.by(() => {
+        /* eslint-disable-next-line svelte/prefer-svelte-reactivity */
         const m = new Map<number, RepoGroup>();
         for (const p of d.pairs) {
             let g = m.get(p.repo_id);
@@ -72,6 +79,7 @@
         return [...m.values()];
     });
     const byDev = $derived.by(() => {
+        /* eslint-disable-next-line svelte/prefer-svelte-reactivity */
         const m = new Map<number, DevGroup>();
         for (const p of d.pairs) {
             let g = m.get(p.dev);
