@@ -1,7 +1,6 @@
 <script lang="ts">
     // Props: lines = [{name,color,data:[{day,value}],dash?}],
-    //        bars  = {name,color,data:[{day,value}],stack?:{name,color,data}}|null
-    //        (bars.data is the TOTAL height; bars.stack is a segment carved off its top)
+    //        bars  = {name,color,data:[{day,value}]}|null
     import type { ChartLine, ChartBars, ChartPoint, TimelineEvent } from '$lib/types';
     import { partnerColor } from '$lib/colors';
 
@@ -160,29 +159,18 @@
         return { fills, labels };
     });
 
-    // Bar geometry. `bars.data` is always the TOTAL height; an optional `bars.stack`
-    // carves a segment off the TOP of it (the rest is drawn in the base color), so a
-    // chart without a stack renders exactly as it did before stacking existed.
-    const stackColor = $derived(bars?.stack?.color ?? 'transparent');
+    // Bar geometry: one rect per day, full height from the baseline to `value`.
     const barGeom = $derived.by(() => {
         if (!xy || !bars) return [];
-        const s = new Map((bars.stack?.data ?? []).map((d) => [d.day, d.value]));
         const w = Math.max(1.2, (xy.innerW / xy.days.length) * 0.7);
         const half = Math.max(1, xy.innerW / xy.days.length / 2);
-        return bars.data.map((d) => {
-            // clamp: the stack is a slice OF the total, never larger than it
-            const top = Math.min(s.get(d.day) ?? 0, d.value);
-            const base = d.value - top;
-            return {
-                day: d.day,
-                x: xy.x(d.day) - half,
-                w,
-                baseY: xy.y(base),
-                baseH: xy.y(0) - xy.y(base),
-                topY: xy.y(d.value),
-                topH: xy.y(base) - xy.y(d.value),
-            };
-        });
+        return bars.data.map((d) => ({
+            day: d.day,
+            x: xy.x(d.day) - half,
+            w,
+            y: xy.y(d.value),
+            h: xy.y(0) - xy.y(d.value),
+        }));
     });
 
     function path(data: ChartPoint[], x: (day: string) => number, y: (value: number) => number) {
@@ -293,23 +281,13 @@
 
             {#if bars}
                 {#each barGeom as b (b.day)}
-                    {#if b.baseH > 0}
+                    {#if b.h > 0}
                         <rect
                             x={b.x}
-                            y={b.baseY}
+                            y={b.y}
                             width={b.w}
-                            height={b.baseH}
+                            height={b.h}
                             fill={bars.color}
-                            opacity="0.28"
-                        />
-                    {/if}
-                    {#if b.topH > 0}
-                        <rect
-                            x={b.x}
-                            y={b.topY}
-                            width={b.w}
-                            height={b.topH}
-                            fill={stackColor}
                             opacity="0.28"
                         />
                     {/if}

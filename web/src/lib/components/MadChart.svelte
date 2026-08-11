@@ -44,27 +44,12 @@
     const wApi = $derived(sliceByDays(mad.api, days));
     const wCohort = $derived(sliceByDays(diag.cohort, days));
 
-    // TEMPORARY (stellar/winget-pkgs fork bug): phantom devs per 28-day window. Only
-    // days with a nonzero count are sent, so a missing day means zero — which lets the
-    // clean line span the whole chart and lie exactly on the official line before the
-    // fork's first commit, instead of starting abruptly in Nov 2024.
-    const phantomByDay = $derived(new Map(mad.phantom.map((p) => [p.day, p.devs])));
-
     // Build chart series from the sliced windowed + daily payloads.
     const lines = $derived<ChartLine[]>([
         {
             name: 'MAD (28d)',
             color: 'var(--amber)',
             data: wWindowed.map((d) => ({ day: d.day, value: d.all_devs })),
-        },
-        {
-            name: 'MAD (28d, clean)',
-            color: 'var(--amber)',
-            dash: '6 3',
-            data: wWindowed.map((d) => ({
-                day: d.day,
-                value: d.all_devs - (phantomByDay.get(d.day) ?? 0),
-            })),
         },
         {
             name: 'single-chain',
@@ -97,17 +82,10 @@
               ]
             : []),
     ]);
-    // `data` is the untouched daily total; the stack carves the phantom slice off its
-    // top, so the bar's overall height is the same as before. TEMPORARY — fork bug.
     const bars = $derived<ChartBars | null>({
         name: 'daily active',
         color: 'var(--amber)',
         data: wDaily.map((d) => ({ day: d.day, value: d.daily_active_devs })),
-        stack: {
-            name: 'winget-pkgs fork',
-            color: 'var(--muted)',
-            data: wDaily.map((d) => ({ day: d.day, value: d.winget_only_devs })),
-        },
     });
 
     // The chart's floating tooltip used to overlap the (most interesting) right edge of the plot.
@@ -135,14 +113,6 @@
                 name: bars.name,
                 value: bars.data.find((d) => d.day === day)?.value ?? null,
             });
-            if (bars.stack) {
-                items.push({
-                    color: bars.stack.color,
-                    mark: '▮',
-                    name: bars.stack.name,
-                    value: bars.stack.data.find((d) => d.day === day)?.value ?? null,
-                });
-            }
         }
         return { day, live: hovered != null, items };
     });
@@ -154,12 +124,9 @@
             <h2>MAD vs. daily activity</h2>
             <p class="note">
                 The bold line is the 28-day rolling MAD (what Developer Report plots). Faint bars
-                are <em>daily</em> active devs. When the windowed line falls while the daily bars
-                hold steady, you're seeing a past surge roll off the back of the window — not an
-                exodus. Click any day to inspect it. The dashed <em>clean</em> line — and the grey
-                slice on top of each bar — separate out contributors to the
-                <code>stellar/winget-pkgs</code> fork, who are attributed to Stellar by a bug we expect
-                Electric Capital to correct.
+                are <em>daily</em> active devs. When the windowed line falls while the daily bars hold
+                steady, you're seeing a past surge roll off the back of the window — not an exodus. Click
+                any day to inspect it.
             </p>
             {#if events.length}
                 <div class="evlegend">
