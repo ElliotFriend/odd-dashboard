@@ -24,6 +24,14 @@
     "url": "https://www.drips.network/wave/stellar"
   },
   {
+    "title": "Beta Campaign",
+    "partner": "GrantFox",
+    "start": "2026-02-23",
+    "end": "2026-03-10",
+    "description": "This is our first rewarded beta campaign!",
+    "url": "https://contribute.grantfox.xyz/campaigns/history/bdd4beee-82b2-4b61-818f-0d117ec62dcc"
+  },
+  {
     "title": "Wave 3",
     "partner": "Drips",
     "start": "2026-03-23",
@@ -64,11 +72,12 @@
     "url": "https://dorahacks.io/hackathon/stellar-hacks-zk"
   },
   {
-    "title": "Campaign 1",
+    "title": "Official Campaign",
     "partner": "GrantFox",
     "start": "2026-06-15",
     "end": "2026-06-29",
-    "url": "https://contribute.grantfox.xyz/campaigns"
+    "description": "Join the first official campaign on GrantFox and start contributing",
+    "url": "https://contribute.grantfox.xyz/campaigns/history/777cb175-0d2e-4066-9c52-57aa1a8b1ce5"
   },
   {
     "title": "Wave 6",
@@ -77,6 +86,14 @@
     "end": "2026-06-30",
     "description": "Stellar Wave 6 — monthly one-week bounty sprint (Fix, Merge, Earn).",
     "url": "https://www.drips.network/wave/stellar"
+  },
+  {
+    "title": "FWC26",
+    "partner": "GrantFox",
+    "start": "2026-07-15",
+    "end": "2026-07-30",
+    "description": "Start contributing to curated open-source issues in GrantFox's official campaign.",
+    "url": "https://contribute.grantfox.xyz/campaigns/history/43d3ad9c-c7a6-4849-936e-65f9e51f888e"
   },
   {
     "title": "Wave 7",
@@ -91,7 +108,14 @@
     "partner": "GrantFox",
     "start": "2026-08-03",
     "end": "2026-08-06",
-    "description": "Stellar Wave 7 — monthly one-week bounty sprint (Fix, Merge, Earn).",
+    "description": "🇧🇷 We’re live at Stellar Summit São Paulo 2026! 🚀",
     "url": "https://bounties.grantfox.xyz/events/stellar-summit-sp-2026"
+  },
+  {
+    "title": "Campaign 3",
+    "partner": "GrantFox",
+    "start": "2026-08-15",
+    "end": "2026-08-30",
+    "url": "https://contribute.grantfox.xyz/campaigns"
   }
 ]
