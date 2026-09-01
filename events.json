@@ -117,5 +117,13 @@
     "start": "2026-08-15",
     "end": "2026-08-30",
     "url": "https://contribute.grantfox.xyz/campaigns"
+  },
+  {
+    "title": "Wave 8",
+    "partner": "Drips",
+    "start": "2026-08-24",
+    "end": "2026-08-31",
+    "description": "Stellar Wave 8 — monthly one-week bounty sprint (Fix, Merge, Earn).",
+    "url": "https://www.drips.network/wave/stellar"
   }
 ]
