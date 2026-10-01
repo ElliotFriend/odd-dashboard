@@ -125,5 +125,13 @@
     "end": "2026-08-31",
     "description": "Stellar Wave 8 — monthly one-week bounty sprint (Fix, Merge, Earn).",
     "url": "https://www.drips.network/wave/stellar"
+  },
+  {
+    "title": "Wave 9",
+    "partner": "Drips",
+    "start": "2026-09-23",
+    "end": "2026-09-30",
+    "description": "Stellar Wave 9 — monthly one-week bounty sprint (Fix, Merge, Earn).",
+    "url": "https://www.drips.network/wave/stellar"
   }
 ]
