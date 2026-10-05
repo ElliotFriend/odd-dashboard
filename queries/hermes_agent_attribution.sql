@@ -21,6 +21,25 @@
 --     HOW ODD links the copy to the upstream (shared commit history?) is inferred,
 --     not documented. There is no fork / parent column anywhere in ODD.
 --
+-- UPDATE (snapshot 20261005T130551, horizon 2026-09-27):
+--   * The upstream itself is now listed DIRECTLY under all nine chains, every row
+--     stamped 2026-09-28 20:08:14 (one automated batch) (Q4). A 17th copy,
+--     willl376/hermes-agent-patched, was added the same day (Q5).
+--   * MAD impact is about the same, since copies already credited the whole repo:
+--     ~6.9-7.0k hermes-only devs per chain at 2026-09-23, ~6.5-6.6k at 2026-09-27
+--     (Ethereum 13,905 -> ~7,400 without it) (Q8). Stellar: 0.
+--   * Probable trigger (inferred): the repo ships optional-skills/blockchain/evm
+--     ("8 chains: Ethereum, BNB, Base, Arbitrum, Polygon, Optimism, Avalanche,
+--     zkSync", added upstream 2026-05-13) plus optional-skills/blockchain/solana
+--     (2026-03-09). That is exactly the nine chains. Copies mapped 2026-05-19 got
+--     only Base/Solana/Arbitrum (pre-EVM-skill); full nine-chain sets start July.
+--     A hyperliquid skill also exists; Hyperliquid is not mapped (yet).
+--   * None of the nine-chain mappings are in the public open-dev-data migrations
+--     (only 3 copy repadds are), so they come from EC's internal auto-discovery /
+--     classifier, not community PRs. The same exact nine-chain fingerprint sits on
+--     61 mostly 0-star agent repos added Jul-Sep 2026 (vs ~1-9/month before), of
+--     which 10 match copy_like and 24 contain 'hermes' in the name (Q9).
+--
 -- Table cheat sheet (there is no eco_repos / eco_committers):
 --   repos                       id, name ('owner/repo'), link (URL), repo_created_at
 --   ecosystems                  id, name
@@ -208,3 +227,25 @@ SELECT e.name AS ecosystem,
 FROM w JOIN ecosystems e ON e.id = w.ecosystem_id
 LEFT JOIN eco_mads m ON m.ecosystem_id = w.ecosystem_id AND m.day = getvariable('end_day')
 GROUP BY e.name, m.all_devs ORDER BY only_this_repo_devs DESC;
+
+
+.print ''
+.print '=== Q9 · repos carrying the same chain fingerprint (all of the chosen chains) ==='
+-- Q9 · repos listed under EVERY chain in `ecos` except Stellar (the fingerprint an
+--      automated classifier leaves), by month first added, and how many are copies
+--      of the repo by name. A spike here = the classifier tagging by chain mentions.
+WITH chains AS (
+  SELECT list(id) AS ids FROM ecosystems
+  WHERE list_contains(getvariable('ecos'), name) AND name <> 'Stellar'
+),
+fp AS (
+  SELECT q.repo_id, MIN(q.created_at)::DATE AS added
+  FROM ecosystems_repos q, chains
+  WHERE list_contains(chains.ids, q.ecosystem_id)
+  GROUP BY 1
+  HAVING COUNT(DISTINCT q.ecosystem_id) = (SELECT len(ids) FROM chains)
+)
+SELECT date_trunc('month', fp.added)::DATE AS month, COUNT(*) AS repos,
+       COUNT(*) FILTER (WHERE r.name ILIKE getvariable('copy_like')) AS copy_named
+FROM fp JOIN repos r ON r.id = fp.repo_id
+GROUP BY 1 ORDER BY 1;
