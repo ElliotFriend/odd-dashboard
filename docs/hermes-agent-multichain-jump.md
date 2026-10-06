@@ -7,7 +7,7 @@ Oct 5, 2026 · @Elliot Voris
 The spring 2026 jump in total and multi-chain developers is almost entirely one AI repo: [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent). In the Sep 23 window, about 7,000 developers whose only activity is hermes-agent are counted in each of Ethereum, Solana, Polygon, Arbitrum, Base, Optimism, Avalanche, BNB Chain, and zkSync, plus the SVM Stack through Solana.
 
 - **Mechanism:** 17 forks and copies of hermes-agent are mapped to chains, 9 of them to all nine (and since Sep 28 the upstream itself is too). ODD treats each copy as the same repository as the upstream, so the upstream's entire history, including today's commits, counts toward every chain the copy is listed under. It doesn't matter that the copies are stale, deleted, or not GitHub forks at all.
-- **Size:** without hermes-only devs, Arbitrum's Sep 23 MAD falls from 8,032 to 1,025, zkSync's from 7,269 to 255, and Ethereum's from 14,336 to 7,410.
+- **Size:** without hermes-only devs, Arbitrum's Sep 23 MAD falls from 8,032 to 1,025, zkSync's from 7,269 to 255, and Ethereum's from 14,336 to 7,409.
 - **Single-chain decline is a separate, real trend.** It is not reclassification. Most February single-chain devs are simply no longer active.
 - **Stellar is unaffected:** zero hermes-agent attribution, and a recount from repo mappings matches `eco_mads` exactly.
 
@@ -27,11 +27,60 @@ The upstream repo is now mapped to all nine chains itself, and its built-in bloc
 
 The same roughly 7,000-dev block sits on top of every named chain. That's why seven EVM chains with very different histories now all land between 7,300 and 8,100 MAD.
 
-&#91;embedded content: ODD snapshot 20261001T130407 · eco\_developer\_activities recount, reconciles to eco\_mads.all\_devs\]
+![Sep 23 MAD by chain, split into devs with other activity and hermes-agent-only devs. Nine chains are 48% to 96% hermes-only; Stellar is 0%.](img/hermes-share-by-chain.svg)
+
+*ODD snapshot 20261001T130407 · `eco_developer_activities` recount, reconciles to `eco_mads.all_devs`*
+
+<details>
+<summary>Data</summary>
+
+| Chain | Total MAD | hermes-only | Without hermes | hermes share |
+| --- | ---: | ---: | ---: | ---: |
+| zkSync | 7,269 | 7,014 | 255 | 96% |
+| Avalanche | 7,456 | 7,019 | 437 | 94% |
+| Optimism | 7,621 | 7,005 | 616 | 92% |
+| BNB Chain | 7,662 | 7,017 | 645 | 92% |
+| Polygon | 7,959 | 6,996 | 963 | 88% |
+| Arbitrum | 8,032 | 7,007 | 1,025 | 87% |
+| Base | 8,102 | 6,965 | 1,137 | 86% |
+| Solana | 9,389 | 6,974 | 2,415 | 74% |
+| Ethereum | 14,336 | 6,927 | 7,409 | 48% |
+| Stellar | 3,348 | 0 | 3,348 | 0% |
+
+</details>
 
 The block builds from March onward, tracking hermes-agent's own contributor growth. It shows up in history months before the forks were mapped because ODD recomputes past windows on every snapshot.
 
-&#91;embedded content: ODD snapshot 20261001T130407 · biweekly 28-day windows, recount matches eco\_mads exactly\]
+![Arbitrum MAD every two weeks in 2026. The hermes-agent-only layer appears in March and grows to 6,913 of 7,943 by Sep 16, while the rest falls from about 2,000 to 1,030. The first nine-chain fork mappings came on Jul 22.](img/hermes-arbitrum-timeline.svg)
+
+*ODD snapshot 20261001T130407 · biweekly 28-day windows, recount matches `eco_mads` exactly*
+
+<details>
+<summary>Data</summary>
+
+| Window ending | Arbitrum MAD | hermes-only | Without hermes |
+| --- | ---: | ---: | ---: |
+| 2026-01-07 | 1,895 | 1 | 1,894 |
+| 2026-01-21 | 1,935 | 3 | 1,932 |
+| 2026-02-04 | 2,118 | 4 | 2,114 |
+| 2026-02-18 | 2,043 | 6 | 2,037 |
+| 2026-03-04 | 2,033 | 66 | 1,967 |
+| 2026-03-18 | 2,050 | 250 | 1,800 |
+| 2026-04-01 | 2,195 | 501 | 1,694 |
+| 2026-04-15 | 2,972 | 1,461 | 1,511 |
+| 2026-04-29 | 3,783 | 2,435 | 1,348 |
+| 2026-05-13 | 4,224 | 2,942 | 1,282 |
+| 2026-05-27 | 4,646 | 3,391 | 1,255 |
+| 2026-06-10 | 5,073 | 3,872 | 1,201 |
+| 2026-06-24 | 6,283 | 5,067 | 1,216 |
+| 2026-07-08 | 6,543 | 5,350 | 1,193 |
+| 2026-07-22 | 6,902 | 5,805 | 1,097 |
+| 2026-08-05 | 7,369 | 6,313 | 1,056 |
+| 2026-08-19 | 7,594 | 6,544 | 1,050 |
+| 2026-09-02 | 7,707 | 6,638 | 1,069 |
+| 2026-09-16 | 7,943 | 6,913 | 1,030 |
+
+</details>
 
 Single-chain devs did fall over the same period, but for a different reason. Of Base's 739 single-chain devs in the Feb 4 window, only 68 are active in September, and only 10 of those turned multi-chain. Ethereum's 5,867 kept 1,693 and Solana's 2,708 kept 458. Daily single-chain activity has drifted down since October 2025, steepest in Mar–Apr (Base 170 → 35 a day, Solana 621 → 244, Ethereum 1,722 → 880).
 

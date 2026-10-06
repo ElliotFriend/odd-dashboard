@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 432" width="780" height="432" font-size="12" role="img" aria-label="Sep 23 MAD by chain: about 7,000 devs in each of nine chains come only from hermes-agent; Stellar has none">
+<style>
+  svg { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .bg { fill: #fcfcfb; }
+  .t1 { fill: #0b0b0b; } .t2 { fill: #52514e; }
+  .real { fill: #c3c2b7; } .hermes { fill: #2a78d6; }
+  .grid { stroke: #e1e0d9; } .axis { stroke: #c3c2b7; } .ref { stroke: #898781; }
+  .gap { stroke: #fcfcfb; }
+  @media (prefers-color-scheme: dark) {
+    .bg { fill: #1a1a19; }
+    .t1 { fill: #ffffff; } .t2 { fill: #c3c2b7; }
+    .real { fill: #55544f; } .hermes { fill: #3987e5; }
+    .grid { stroke: #2c2c2a; } .axis { stroke: #383835; } .ref { stroke: #898781; }
+    .gap { stroke: #1a1a19; }
+  }
+</style>
+<rect class="bg" width="780" height="432"/>
+<text x="20" y="30" font-size="16" font-weight="600" class="t1">About 7,000 devs in each of nine chains come only from hermes-agent</text>
+<text x="20" y="52" class="t2">MAD, 28-day window ending 2026-09-23 (ODD snapshot 20261001T130407).</text>
+<rect x="20" y="70" width="12" height="12" rx="2" class="real"/><text x="38" y="80" class="t2">Devs with other activity in the ecosystem</text><rect x="310" y="70" width="12" height="12" rx="2" class="hermes"/><text x="328" y="80" class="t2">hermes-agent-only devs</text>
+<text x="760" y="102" text-anchor="end" class="t2">total MAD · hermes share</text>
+<text x="100" y="127" text-anchor="end" class="t1">zkSync</text>
+<rect x="110" y="112" width="8.9" height="20" class="real"/>
+<rect x="120.9" y="112" width="242.6" height="20" class="hermes"/>
+<text x="371.5" y="127" class="t1">7,269 · 96%</text>
+<text x="100" y="157" text-anchor="end" class="t1">Avalanche</text>
+<rect x="110" y="142" width="15.2" height="20" class="real"/>
+<rect x="127.2" y="142" width="242.8" height="20" class="hermes"/>
+<text x="378.0" y="157" class="t1">7,456 · 94%</text>
+<text x="100" y="187" text-anchor="end" class="t1">Optimism</text>
+<rect x="110" y="172" width="21.5" height="20" class="real"/>
+<rect x="133.5" y="172" width="242.3" height="20" class="hermes"/>
+<text x="383.8" y="187" class="t1">7,621 · 92%</text>
+<text x="100" y="217" text-anchor="end" class="t1">BNB Chain</text>
+<rect x="110" y="202" width="22.5" height="20" class="real"/>
+<rect x="134.5" y="202" width="242.7" height="20" class="hermes"/>
+<text x="385.2" y="217" class="t1">7,662 · 92%</text>
+<text x="100" y="247" text-anchor="end" class="t1">Polygon</text>
+<rect x="110" y="232" width="33.6" height="20" class="real"/>
+<rect x="145.6" y="232" width="242.0" height="20" class="hermes"/>
+<text x="395.6" y="247" class="t1">7,959 · 88%</text>
+<text x="100" y="277" text-anchor="end" class="t1">Arbitrum</text>
+<rect x="110" y="262" width="35.7" height="20" class="real"/>
+<rect x="147.7" y="262" width="242.4" height="20" class="hermes"/>
+<text x="398.1" y="277" class="t1">8,032 · 87%</text>
+<text x="100" y="307" text-anchor="end" class="t1">Base</text>
+<rect x="110" y="292" width="39.7" height="20" class="real"/>
+<rect x="151.7" y="292" width="240.9" height="20" class="hermes"/>
+<text x="400.6" y="307" class="t1">8,102 · 86%</text>
+<text x="100" y="337" text-anchor="end" class="t1">Solana</text>
+<rect x="110" y="322" width="84.2" height="20" class="real"/>
+<rect x="196.2" y="322" width="241.2" height="20" class="hermes"/>
+<text x="445.5" y="337" class="t1">9,389 · 74%</text>
+<text x="100" y="367" text-anchor="end" class="t1">Ethereum</text>
+<rect x="110" y="352" width="258.4" height="20" class="real"/>
+<rect x="370.4" y="352" width="239.6" height="20" class="hermes"/>
+<text x="618.0" y="367" class="t1">14,336 · 48%</text>
+<text x="100" y="397" text-anchor="end" class="t1">Stellar</text>
+<rect x="110" y="382" width="116.8" height="20" class="real"/>
+<text x="234.8" y="397" class="t1">3,348 · 0%</text>
+<line x1="110" x2="110" y1="106" y2="408" class="axis"/>
+</svg>
