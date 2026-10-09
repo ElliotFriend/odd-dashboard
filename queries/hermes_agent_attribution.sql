@@ -40,6 +40,17 @@
 --     61 mostly 0-star agent repos added Jul-Sep 2026 (vs ~1-9/month before), of
 --     which 10 match copy_like and 24 contain 'hermes' in the name (Q9).
 --
+-- RESOLVED (snapshot 20261009T125749, horizon 2026-10-01):
+--   * EC fixed it internally (no public open-dev-data commit, issue, or PR).
+--     The upstream is listed only under AI (Category) + Nous Research again (Q4).
+--   * The 17 copies are still listed under the chains (Q5) but no longer pass
+--     the upstream's activity through: Q3/Q7 return 0 rows and Q8 shows 0
+--     hermes-only devs in every ecosystem. History is restated back to Jan.
+--   * Official MAD now matches the old "without hermes" estimates within normal
+--     backfill (Arbitrum Sep 16: 1,048 vs 1,030; Ethereum Sep 23: 7,548 vs 7,409).
+--   * Q9 still finds the nine-chain fingerprint on ~60 Jul-Sep repos; unknown
+--     whether the fix is hermes-specific or a general copy-inheritance rule.
+--
 -- Table cheat sheet (there is no eco_repos / eco_committers):
 --   repos                       id, name ('owner/repo'), link (URL), repo_created_at
 --   ecosystems                  id, name

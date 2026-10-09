@@ -2,6 +2,8 @@
 
 Oct 5, 2026 · @Elliot Voris
 
+> **Resolved in the Oct 9 snapshot.** Electric Capital removed the hermes-agent attribution and restated history. The rest of this note describes the problem as it stood through Oct 5. See [Update: Oct 9 snapshot (resolved)](#update-oct-9-snapshot-resolved).
+
 ## Summary
 
 The spring 2026 jump in total and multi-chain developers is almost entirely one AI repo: [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent). In the Sep 23 window, about 7,000 developers whose only activity is hermes-agent are counted in each of Ethereum, Solana, Polygon, Arbitrum, Base, Optimism, Avalanche, BNB Chain, and zkSync, plus the SVM Stack through Solana.
@@ -12,6 +14,26 @@ The spring 2026 jump in total and multi-chain developers is almost entirely one 
 - **Stellar is unaffected:** zero hermes-agent attribution, and a recount from repo mappings matches `eco_mads` exactly.
 
 Confidence is high on the hermes-agent finding: the recount reconciles exactly to `eco_mads` at every two-week horizon from January to September. It is lower on *why* the forks were mapped, because only one of those mappings appears in the public taxonomy migrations. The Oct 5 update below names a likely trigger.
+
+## Update: Oct 9 snapshot (resolved)
+
+Electric Capital has fixed it: in snapshot `20261009T125749`, hermes-agent no longer counts toward any of the nine chains, and history is restated back to January. The rest of this note describes the problem as it stood through Oct 5.
+
+- **Upstream unmapped.** `NousResearch/hermes-agent` is listed only under AI (Category) and Nous Research again. The Sep 28 nine-chain batch is gone.
+- **Copies still listed, but inert.** All 17 copies keep their chain mappings, but they no longer pass the upstream's activity through. None of the ten ecosystems has a single activity row for the upstream, at any date.
+- **Hermes-only devs are zero on every chain.** The recount still matches `eco_mads.all_devs` exactly.
+- **Official MAD now matches our "without hermes" estimates**, within normal late-commit backfill (table below). Arbitrum's 2026 line now runs from about 1,900 in January to about 1,040, with no spring jump. The single-chain decline is still there; it was real.
+- **No public trace.** open-dev-data has had no commits since Oct 2 and no issue or PR mentions hermes, so the fix was internal. Whether EC removed hermes specifically or changed how copies inherit an upstream's activity is unknown. The other nine-chain-tagged repos are still listed, but none appears among Arbitrum's top September contributors.
+
+| Chain, window ending | Official now | Our estimate without hermes (Oct 1) | Official on Oct 1 |
+| --- | ---: | ---: | ---: |
+| Arbitrum, Sep 16 | 1,048 | 1,030 | 7,943 |
+| Ethereum, Sep 23 | 7,548 | 7,409 | 14,336 |
+| Solana, Sep 23 | 2,481 | 2,415 | 9,389 |
+| zkSync, Sep 23 | 258 | 255 | 7,269 |
+| Stellar, Sep 23 | 3,403 | 3,348 | 3,348 |
+
+Stellar was never affected. Its rise from 3,348 to 3,403 is the Oct 2 Stellar taxonomy import plus normal backfill.
 
 ## Update: Oct 5 snapshot
 
@@ -146,9 +168,9 @@ Stellar is unaffected. No hermes-agent fork is mapped to it, zero hermes devs ar
 
 ## Open questions and next steps
 
-- [ ] Ask Electric Capital where the chain mappings for the hermes-agent forks come from. 16 of 17 aren't in the public migrations, which suggests an internal classifier or candidate pipeline. Oct 5: the upstream is now mapped too, and the EVM and Solana skills are the likely trigger; ask EC to confirm.
-- [ ] Report the forks upstream (as with winget-pkgs), proposing removal of the fork mappings, or a rule that forks of non-crypto repos don't inherit upstream contributors.
-- [ ] Before citing any of these nine chains' 2026 MAD, subtract hermes-only devs. The "real" Sep 23 levels are about 1,000 for Arbitrum, 7,400 for Ethereum, and 2,400 for Solana.
+- [ ] Ask Electric Capital where the chain mappings for the hermes-agent forks come from. 16 of 17 aren't in the public migrations, which suggests an internal classifier or candidate pipeline. Oct 5: the upstream is now mapped too, and the EVM and Solana skills are the likely trigger; ask EC to confirm. Oct 9: EC fixed it internally; still worth asking what changed and whether it is a general rule for copies.
+- [ ] Report the forks upstream (as with winget-pkgs), proposing removal of the fork mappings, or a rule that forks of non-crypto repos don't inherit upstream contributors. Oct 9: no longer needed for hermes; the copies are still listed but pass no activity through.
+- [ ] Before citing any of these nine chains' 2026 MAD, subtract hermes-only devs. The "real" Sep 23 levels are about 1,000 for Arbitrum, 7,400 for Ethereum, and 2,400 for Solana. Oct 9: only for snapshots before 20261009; the official figures now exclude hermes.
 - [ ] Investigate the genuine single-chain decline on the EVM chains and Solana (steepest Mar–Apr 2026): AI-assisted coding shifting where devs commit, a GitHub ingestion change, or real attrition.
-- [ ] Optionally scan the full `eco_developer_activities` to see which other ecosystems hermes-agent reaches.
-- [ ] Watch for Hyperliquid: hermes-agent also ships a Hyperliquid skill, so it could be the next chain mapped. Re-run Q4 and Q9 in `queries/hermes_agent_attribution.sql` on each new snapshot.
+- [ ] Optionally scan the full `eco_developer_activities` to see which other ecosystems hermes-agent reaches. Oct 9: likely moot; the upstream has zero activity rows in all ten ecosystems checked.
+- [ ] Watch for Hyperliquid: hermes-agent also ships a Hyperliquid skill, so it could be the next chain mapped. Re-run Q4 and Q9 in `queries/hermes_agent_attribution.sql` on each new snapshot. Oct 9: the upstream is off every chain, so this is less likely.
